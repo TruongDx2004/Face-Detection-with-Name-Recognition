@@ -3,9 +3,9 @@ import numpy as np
 import os
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
-recognizer.read(r'D:\Downloads\Face-Detection-with-Name-Recognition-main-20250731T070814Z-1-001\Face-Detection-with-Name-Recognition-main\trainer\trainer.yml')
+recognizer.read("trainer/trainer.yml") # Load the trained model
 cascadePath = "haarcascade_frontalface_default.xml"
-faceCascade = cv2.CascadeClassifier(r"D:\Downloads\Face-Detection-with-Name-Recognition-main-20250731T070814Z-1-001\Face-Detection-with-Name-Recognition-main\haarcascade_frontalface_default.xml")
+faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -16,7 +16,7 @@ id = 0
 names = ['None', 'Duong', 'Lan'] # Make sure these match your trained IDs
 
 # Initialize and start realtime video capture
-video_path = "D:/Downloads/Face-Detection-with-Name-Recognition-main-20250731T070814Z-1-001/Face-Detection-with-Name-Recognition-main/input_video3.mp4"
+video_path = "input_video3.mp4"
 cam = cv2.VideoCapture(video_path)
 cam.set(3, 640) # set video widht
 cam.set(4, 480) # set video height
@@ -36,7 +36,7 @@ if fps == 0: # Fallback if FPS cannot be retrieved (e.g., from an image sequence
 # Define the codec and create VideoWriter object
 # XVID is a commonly used codec that works well
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-output_filename = 'D:/Downloads/Face-Detection-with-Name-Recognition-main-20250731T070814Z-1-001/Face-Detection-with-Name-Recognition-main/output_video_processed.avi'
+output_filename = 'output_video_processed.avi'
 out = cv2.VideoWriter(output_filename, fourcc, fps, (frame_width, frame_height))
 # --- End Video Saving Setup ---
 
