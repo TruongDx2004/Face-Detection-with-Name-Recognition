@@ -2,7 +2,7 @@ import cv2
 import os
 
 # ========== CẤU HÌNH ==========
-video_path = "input_video3.mp4"
+video_path = "1988349940405393767.mp4"
 
 output_dir = "dataset"
 face_cascade_path = "haarcascade_frontalface_default.xml"

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .camera-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .camera-container {
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .captured-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+
+        .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            font-size: 1.2em;
+            background: #f0f0f0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 150px;
+        }
+
+        .results h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .result-error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .result-confidence {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .server-config {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-item label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .server-config input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .server-config input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .token-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .token-toggle input[type="checkbox"] {
+            width: auto;
+        }
+
+        .auth-status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .auth-status.authenticated {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .auth-status.unauthenticated {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .camera-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Face Recognition Test</h1>
+            <p>Capture your face and test the recognition system</p>
+        </div>
+
+        <div class="server-config">
+            <h3 style="margin-bottom: 15px; color: #333;">🔧 Configuration</h3>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="serverUrl">Server URL:</label>
+                    <input type="text" id="serverUrl" value="http://localhost:8000" placeholder="Enter server URL">
+                </div>
+                <div class="config-item">
+                    <label for="authToken">Authentication Token:</label>
+                    <input type="password" id="authToken" placeholder="Enter JWT token (optional)">
+                    <div class="token-toggle">
+                        <input type="checkbox" id="showToken">
+                        <label for="showToken" style="font-weight: normal; margin: 0;">Show token</label>
+                    </div>
+                </div>
+            </div>
+            <div id="authStatus" class="auth-status unauthenticated">
+                🔐 No authentication token provided
+            </div>
+        </div>
+
+        <div class="camera-section">
+            <div class="camera-container">
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="camera-container">
+                <div id="capturedImageContainer" class="placeholder">
+                    📷 Captured image will appear here
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startCamera" class="btn btn-secondary">
+                📹 Start Camera
+            </button>
+            <button id="captureBtn" class="btn btn-primary" disabled>
+                📸 Capture & Recognize
+            </button>
+            <button id="testAuth" class="btn btn-secondary">
+                🔐 Test Auth
+            </button>
+            <button id="clearBtn" class="btn btn-secondary">
+                🗑️ Clear Results
+            </button>
+        </div>
+
+        <div class="results">
+            <h3>Recognition Results</h3>
+            <div id="resultsContainer" class="no-results">
+                No recognition attempts yet. Capture an image to start!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class FaceRecognitionTest {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.capturedImageContainer = document.getElementById('capturedImageContainer');
+                this.resultsContainer = document.getElementById('resultsContainer');
+                this.serverUrlInput = document.getElementById('serverUrl');
+                this.authTokenInput = document.getElementById('authToken');
+                this.showTokenCheckbox = document.getElementById('showToken');
+                this.authStatusDiv = document.getElementById('authStatus');
+                
+                this.startCameraBtn = document.getElementById('startCamera');
+                this.captureBtn = document.getElementById('captureBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.testAuthBtn = document.getElementById('testAuth');
+                
+                this.isProcessing = false;
+                this.stream = null;
+                
+                this.initEventListeners();
+                this.updateAuthStatus();
+            }
+            
+            initEventListeners() {
+                this.startCameraBtn.addEventListener('click', () => this.startCamera());
+                this.captureBtn.addEventListener('click', () => this.captureAndRecognize());
+                this.clearBtn.addEventListener('click', () => this.clearResults());
+                this.testAuthBtn.addEventListener('click', () => this.testAuthentication());
+                
+                // Token visibility toggle
+                this.showTokenCheckbox.addEventListener('change', () => {
+                    this.authTokenInput.type = this.showTokenCheckbox.checked ? 'text' : 'password';
+                });
+                
+                // Auth status update on token change
+                this.authTokenInput.addEventListener('input', () => this.updateAuthStatus());
+                this.serverUrlInput.addEventListener('input', () => this.updateAuthStatus());
+            }
+            
+            updateAuthStatus() {
+                const token = this.authTokenInput.value.trim();
+                const serverUrl = this.serverUrlInput.value.trim();
+                
+                if (!serverUrl) {
+                    this.authStatusDiv.className = 'auth-status unauthenticated';
+                    this.authStatusDiv.innerHTML = '⚠️ Please enter server URL';
+                } else if (!token) {
+                    this.authStatusDiv.className = 'auth-status unauthenticated';
+                    this.authStatusDiv.innerHTML = '🔐 No authentication token provided (public access)';
+                } else {
+                    this.authStatusDiv.className = 'auth-status authenticated';
+                    this.authStatusDiv.innerHTML = '✅ Authentication token configured';
+                }
+            }
+            
+            getAuthHeaders() {
+                const token = this.authTokenInput.value.trim();
+                const headers = {
+                    'Accept': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                return headers;
+            }
+            
+            async startCamera() {
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            width: 640, 
+                            height: 480,
+                            facingMode: 'user' // Front camera
+                        }
+                    });
+                    
+                    this.video.srcObject = this.stream;
+                    this.startCameraBtn.textContent = '✅ Camera Active';
+                    this.startCameraBtn.disabled = true;
+                    this.captureBtn.disabled = false;
+                    
+                    this.showMessage('Camera started successfully!', 'success');
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    this.showMessage(`Camera error: ${error.message}`, 'error');
+                }
+            }
+            
+            captureImage() {
+                const video = this.video;
+                const canvas = this.canvas;
+                const ctx = this.ctx;
+                
+                // Set canvas dimensions to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Draw video frame to canvas
+                ctx.drawImage(video, 0, 0);
+                
+                // Convert to blob
+                return new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                });
+            }
+            
+            async captureAndRecognize() {
+                if (this.isProcessing) return;
+                
+                this.isProcessing = true;
+                this.captureBtn.innerHTML = '<span class="loading"></span> Processing...';
+                this.captureBtn.disabled = true;
+                
+                try {
+                    // Capture image
+                    const imageBlob = await this.captureImage();
+                    
+                    // Display captured image
+                    const imageUrl = URL.createObjectURL(imageBlob);
+                    this.capturedImageContainer.innerHTML = `<img src="${imageUrl}" class="captured-image" alt="Captured">`;
+                    
+                    // Send to server for recognition
+                    await this.recognizeFace(imageBlob);
+                    
+                } catch (error) {
+                    console.error('Error during capture and recognition:', error);
+                    this.showMessage(`Error: ${error.message}`, 'error');
+                } finally {
+                    this.isProcessing = false;
+                    this.captureBtn.innerHTML = '📸 Capture & Recognize';
+                    this.captureBtn.disabled = false;
+                }
+            }
+            
+            async recognizeFace(imageBlob) {
+                const serverUrl = this.serverUrlInput.value.trim();
+                if (!serverUrl) {
+                    throw new Error('Please enter server URL');
+                }
+                
+                const formData = new FormData();
+                formData.append('image', imageBlob, 'capture.jpg');
+                
+                try {
+                    const response = await fetch(`${serverUrl}/face/recognize`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: this.getAuthHeaders()
+                    });
+                    
+                    if (response.status === 401) {
+                        throw new Error('Authentication failed. Please check your token.');
+                    } else if (response.status === 403) {
+                        throw new Error('Access forbidden. Insufficient permissions.');
+                    } else if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Server error: ${response.status} ${response.statusText}\n${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    this.displayResults(result);
+                    
+                } catch (error) {
+                    console.error('Recognition request failed:', error);
+                    this.showMessage(`Recognition failed: ${error.message}`, 'error');
+                }
+            }
+            
+            displayResults(result) {
+                console.log('Recognition result:', result);
+                
+                let html = '';
+                
+                if (result.success) {
+                    const data = result.data || result;
+                    
+                    if (data.recognized && data.user_info) {
+                        html += `
+                            <div class="result-item result-success">
+                                <div class="result-label">✅ Face Recognized!</div>
+                                <div><strong>Name:</strong> ${data.user_info.full_name || 'Unknown'}</div>
+                                <div><strong>Username:</strong> ${data.user_info.username || 'Unknown'}</div>
+                                <div><strong>Student ID:</strong> ${data.user_info.student_id || 'N/A'}</div>
+                                <div class="result-confidence">Confidence: ${(data.confidence * 100).toFixed(2)}%</div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="result-item result-error">
+                                <div class="result-label">❌ Face Not Recognized</div>
+                                <div>No matching face found in database</div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (data.processing_time) {
+                        html += `
+                            <div class="result-item">
+                                <div class="result-label">⏱️ Processing Time</div>
+                                <div>${data.processing_time.toFixed(3)} seconds</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    html += `
+                        <div class="result-item result-error">
+                            <div class="result-label">❌ Recognition Failed</div>
+                            <div>${result.message || 'Unknown error occurred'}</div>
+                        </div>
+                    `;
+                }
+                
+                this.resultsContainer.innerHTML = html;
+            }
+            
+            showMessage(message, type) {
+                const className = type === 'success' ? 'result-success' : 'result-error';
+                const icon = type === 'success' ? '✅' : '❌';
+                
+                this.resultsContainer.innerHTML = `
+                    <div class="result-item ${className}">
+                        <div class="result-label">${icon} ${message}</div>
+                    </div>
+                `;
+            }
+            
+            clearResults() {
+                this.resultsContainer.innerHTML = '<div class="no-results">No recognition attempts yet. Capture an image to start!</div>';
+                this.capturedImageContainer.innerHTML = '<div class="placeholder">📷 Captured image will appear here</div>';
+            }
+            
+            async testAuthentication() {
+                const serverUrl = this.serverUrlInput.value.trim();
+                if (!serverUrl) {
+                    this.showMessage('Please enter server URL first', 'error');
+                    return;
+                }
+                
+                this.testAuthBtn.innerHTML = '<span class="loading"></span> Testing...';
+                this.testAuthBtn.disabled = true;
+                
+                try {
+                    // Test với endpoint profile hoặc endpoint public
+                    const response = await fetch(`${serverUrl}/auth/profile`, {
+                        method: 'GET',
+                        headers: this.getAuthHeaders()
+                    });
+                    
+                    if (response.status === 401) {
+                        this.showMessage('❌ Authentication failed: Invalid or expired token', 'error');
+                    } else if (response.status === 403) {
+                        this.showMessage('❌ Access forbidden: Insufficient permissions', 'error');
+                    } else if (response.ok) {
+                        const data = await response.json();
+                        const userInfo = data.data || data;
+                        this.showMessage(`✅ Authentication successful! Welcome ${userInfo.full_name || userInfo.username || 'User'}`, 'success');
+                    } else {
+                        // Fallback: test với endpoint khác
+                        const testResponse = await fetch(`${serverUrl}/`, {
+                            method: 'GET',
+                            headers: this.getAuthHeaders()
+                        });
+                        
+                        if (testResponse.ok) {
+                            this.showMessage('✅ Server connection successful! (Auth status unknown)', 'success');
+                        } else {
+                            throw new Error(`Server error: ${response.status}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Auth test failed:', error);
+                    this.showMessage(`🔌 Connection failed: ${error.message}`, 'error');
+                } finally {
+                    this.testAuthBtn.innerHTML = '🔐 Test Auth';
+                    this.testAuthBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Initialize the application when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new FaceRecognitionTest();
+        });
+    </script>
+</body>
+</html>

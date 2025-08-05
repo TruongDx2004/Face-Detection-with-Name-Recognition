@@ -1,4 +1,8 @@
 // lib/screens/admin_dashboard_screen.dart
+import 'package:face_attendance/screens/admin/class_management_screen.dart';
+import 'package:face_attendance/screens/admin/subject_schedule_management_screen.dart';
+import 'package:face_attendance/screens/admin/user_management_screen.dart';
+import 'package:face_attendance/screens/admin/session_attendance_management_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
@@ -118,11 +122,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             spacing: 12.0,
             runSpacing: 12.0,
             children: [
-              _buildStatCard('Tổng người dùng', stats['total_users'] ?? 0, Icons.people),
-              _buildStatCard('Sinh viên', stats['total_students'] ?? 0, Icons.school),
-              _buildStatCard('Giáo viên', stats['total_teachers'] ?? 0, Icons.person),
-              _buildStatCard('Phiên điểm danh', stats['total_sessions'] ?? 0, Icons.event),
-              _buildStatCard('Lượt điểm danh', stats['total_attendances'] ?? 0, Icons.check_circle),
+              _buildStatCard(
+                  'Tổng người dùng', stats['total_users'] ?? 0, Icons.people),
+              _buildStatCard(
+                  'Sinh viên', stats['total_students'] ?? 0, Icons.school),
+              _buildStatCard(
+                  'Giáo viên', stats['total_teachers'] ?? 0, Icons.person),
+              _buildStatCard(
+                  'Phiên điểm danh', stats['total_sessions'] ?? 0, Icons.event),
+              _buildStatCard('Lượt điểm danh', stats['total_attendances'] ?? 0,
+                  Icons.check_circle),
             ],
           );
         } else {
@@ -143,9 +152,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           subtitle: 'Thêm, sửa, xóa người dùng và phân quyền',
           onTap: () {
             _logger.i('Admin: Điều hướng đến trang Quản lý người dùng');
-            // TODO: Chuyển hướng đến màn hình UserManagementScreen
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const UserManagementScreen(),
+              ),
+            );
           },
-        ),
+        ),       
         const SizedBox(height: 16),
         _buildDashboardCard(
           context,
@@ -154,7 +167,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           subtitle: 'Xem và quản lý tất cả các phiên điểm danh của giáo viên',
           onTap: () {
             _logger.i('Admin: Điều hướng đến trang Quản lý phiên điểm danh');
-            // TODO: Chuyển hướng đến màn hình SessionManagementScreen
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SessionAttendanceManagementScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildDashboardCard(
+          context,
+          icon: Icons.class_,
+          title: 'Quản lý lớp học',
+          subtitle: 'Xem, thêm và quản lý thông tin các lớp học',
+          onTap: () {
+            _logger.i('Admin: Điều hướng đến trang Quản lý lớp học');
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ClassManagementScreen(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildDashboardCard(
+          context,
+          icon: Icons.schedule,
+          title: 'Quản lý lịch học & môn học',
+          subtitle: 'Quản lý môn học, thời khóa biểu cho các lớp',
+          onTap: () {
+            _logger.i('Admin: Điều hướng đến trang Quản lý lịch học & môn học');
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SubjectScheduleManagementScreen(),
+              ),
+            );
           },
         ),
       ],
@@ -245,7 +292,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16.0, color: Colors.grey),
+              const Icon(Icons.arrow_forward_ios,
+                  size: 16.0, color: Colors.grey),
             ],
           ),
         ),

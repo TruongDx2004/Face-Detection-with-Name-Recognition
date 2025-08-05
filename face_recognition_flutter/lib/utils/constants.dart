@@ -3,7 +3,7 @@
 class ApiConstants {
   // Base URL for your FastAPI backend
   // IMPORTANT: Replace with your actual backend URL if not running locally
-  // For Android Emulator, '10.0.2.2' maps to your host machine's localhost.
+  // For Android Emulator, 'http://10.0.2.2:8000' maps to your host machine's localhost.
   // For iOS Simulator/Physical Device, use 'http://localhost:8000' or your machine's IP address.
   // Example for a deployed server: 'https://your-domain.com'
   static const String baseUrl = 'http://10.0.2.2:8000';

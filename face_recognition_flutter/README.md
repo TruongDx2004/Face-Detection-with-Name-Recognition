@@ -1,16 +1,22 @@
 # face_recognition_flutter
 
-A new Flutter project.
+python -m pip install mysql-connector-python
 
-## Getting Started
+py -m pip install requests
 
-This project is a starting point for a Flutter application.
+py -m pip install bcrypt
 
-A few resources to get you started if this is your first Flutter project:
+pip install mysql-connector-python --user
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+python -m pip install -r requirements.txt
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+python setup_server.py
+
+pip uninstall opencv-python
+pip install opencv-contrib-python
+
+python run_server.py
+python test_api.py 
+
+
+

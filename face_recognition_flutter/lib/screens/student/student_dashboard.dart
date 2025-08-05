@@ -1,6 +1,9 @@
 // lib/screens/student_dashboard.dart
+import 'package:face_attendance/utils/logout_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import '../../models/models.dart';
+import '../../models/attendance_models.dart'; // Make sure to import the correct models
 import '../../services/api_service.dart';
 import 'face_capture_screen.dart';
 
@@ -37,7 +40,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     try {
       final response = await ApiService().getActiveSessions();
       if (response.success) {
-        return response.data! as List<AttendanceSession>;
+        return response.data!;
       } else {
         _logger.e('Failed to fetch active sessions: ${response.message}');
         return [];
@@ -86,6 +89,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshData,
+              tooltip: 'Làm mới',
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => logout(context),
+              tooltip: 'Đăng xuất',
+            ),
+          ],
           title: const Text('Bảng điều khiển sinh viên'),
           backgroundColor: Colors.blueAccent,
           bottom: const TabBar(
@@ -212,4 +227,3 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     );
   }
 }
-

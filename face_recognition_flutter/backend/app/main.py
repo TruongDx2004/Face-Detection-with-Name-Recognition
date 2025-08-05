@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session # type: ignore
 from datetime import datetime, timedelta, date, time
 from typing import List, Optional
 from pydantic import BaseModel
+
 import uvicorn
 
 
@@ -48,8 +49,9 @@ class AttendanceSubmit(BaseModel):
     session_id: int
     image_data: str
 
-class FaceRegister(BaseModel):
-    images: List[str]  # List of base64 images
+class RegisterFaceRequest(BaseModel):
+    user_id: int
+    images: List[str]
 
 # Create database tables
 create_database()
@@ -103,50 +105,49 @@ async def get_profile(current_user: User = Depends(get_current_user)):
 # ============ STUDENT ROUTES ============
 @app.post("/student/register-face")
 async def register_face(
-    face_data: FaceRegister,
-    current_user: User = Depends(get_current_user),
+    request: RegisterFaceRequest,
     db: Session = Depends(get_db)
 ):
-    if current_user.role != UserRole.student:
+    user = db.query(User).filter(User.id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.student:
         raise HTTPException(status_code=403, detail="Only students can register faces")
-    
+
     try:
         saved_images = []
-        
-        # Save all face images
-        for i, image_data in enumerate(face_data.images, 1):
-            filepath = face_service.save_face_image(current_user.id, image_data, i)
+        for i, image_data in enumerate(request.images, 1):
+            filepath = face_service.save_face_image(user.id, image_data, i)
             saved_images.append(filepath)
-            
-            # Save to database
-            face_img = FaceImage(user_id=current_user.id, image_path=filepath)
+            face_img = FaceImage(user_id=user.id, image_path=filepath)
             db.add(face_img)
-        
-        # Update user face_trained status
-        current_user.face_trained = True
+
+        user.face_trained = True
         db.commit()
-        
-        # Retrain model
+        db.refresh(user)
         trained_faces = face_service.train_faces()
-        
         return {
             "message": f"Face registered successfully. {len(saved_images)} images saved.",
             "trained_faces": trained_faces
         }
-        
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error registering face: {str(e)}")
 
+
 @app.post("/student/attendance")
 async def submit_attendance(
+    user_id: int,
     attendance_data: AttendanceSubmit,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.role != UserRole.student:
+    # Lấy user từ user_id truyền từ frontend
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role != UserRole.student:
         raise HTTPException(status_code=403, detail="Only students can submit attendance")
     
     # Check if session exists and is active
@@ -161,7 +162,7 @@ async def submit_attendance(
     # Check if already attended
     existing = db.query(Attendance).filter(
         Attendance.session_id == attendance_data.session_id,
-        Attendance.student_id == current_user.id
+        Attendance.student_id == user.id
     ).first()
     
     if existing:
@@ -169,12 +170,12 @@ async def submit_attendance(
     
     # Recognize face
     try:
-        user_id, confidence = face_service.recognize_face(attendance_data.image_data)
+        recognized_user_id, confidence = face_service.recognize_face(attendance_data.image_data)
         
-        if user_id is None:
+        if recognized_user_id is None:
             raise HTTPException(status_code=400, detail="No face detected in image")
         
-        if user_id != current_user.id:
+        if recognized_user_id != user.id:
             raise HTTPException(status_code=400, detail="Face does not match your profile")
         
         if confidence < settings.CONFIDENCE_THRESHOLD:
@@ -186,7 +187,7 @@ async def submit_attendance(
         # Create attendance record
         attendance = Attendance(
             session_id=attendance_data.session_id,
-            student_id=current_user.id,
+            student_id=user.id,
             confidence_score=confidence,
             status=AttendanceStatus.present
         )

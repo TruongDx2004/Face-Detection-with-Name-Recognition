@@ -27,13 +27,13 @@ class User {
     return User(
       id: json['id'] ?? 0,
       username: json['username'] ?? '',
-      fullName: json['full_name'] ?? '',
+      fullName: json['full_name'] ?? json['student_name'] ?? '',
       email: json['email'] ?? '',
       role: UserRole.fromString(json['role'] ?? 'student'),
-      studentId: json['student_id'],
-      className: json['class_name'],
-      isActive: json['is_active'] ?? true,
-      faceTrained: json['face_trained'] ?? false,
+      studentId: json['student_id']?.toString(),
+      className: json['class_name']?.toString(),
+      isActive: json['is_active'] == 1 || json['is_active'] == true,
+      faceTrained: json['face_trained'] == 1 || json['face_trained'] == true,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
     );
   }

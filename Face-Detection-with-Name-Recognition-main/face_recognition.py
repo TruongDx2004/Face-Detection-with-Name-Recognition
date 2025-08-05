@@ -76,13 +76,7 @@ while True:
         # This will override the `names` list lookup.
         # If you want to use the `names` list, you should remove or comment out these lines.
         # If you intend to have specific overrides, keep them.
-        if(id == 13): # This 'id == 13' might not correspond to an entry in 'names' list unless you've trained for it
-            name = "HUNH"
-        else:
-            # This 'else' will catch all other IDs, including those from your 'names' list
-            # and set them to "TUONG" if they are not 'id == 13'.
-            # This logic might not be what you intend if you want to use the 'names' list effectively.
-            name = "TUONG"
+        name = id
 
         cv2.putText(img, str(name), (x+5,y-5), font, 1, (255,255,255), 2)
         cv2.putText(img, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1)

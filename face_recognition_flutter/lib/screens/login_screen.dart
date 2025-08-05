@@ -1,4 +1,5 @@
 // lib/screens/login_screen.dart
+import 'package:face_attendance/screens/admin/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../models/models.dart';
@@ -48,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await ApiService().login(request);
 
       if (response.success && response.data != null) {
-        _logger.i('Đăng nhập thành công. Token: ${response.data!.accessToken}');
+        _logger.i('Đăng nhập thành công. Token: ${response.data!.token}');
 
         // Lưu token vào AuthService
         await AuthService().saveLoginData(response.data!);
@@ -80,21 +81,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Điều hướng đến màn hình dashboard phù hợp
   void _navigateToDashboard(User user) {
-    if (user.role == 'student') {
+    if (user.role == UserRole.student) {
+      _logger.d('Navigating to Student Dashboard for user ID: ${user.id}');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-            builder: (context) => StudentDashboardScreen(userId: user.id)),
+          builder: (context) => StudentDashboardScreen(userId: user.id), // Dùng user.id! để đảm bảo không null
+        ),
       );
-    } else if (user.role == 'teacher') {
+    } else if (user.role == UserRole.teacher) {
+      _logger.d('Navigating to Teacher Dashboard for teacher ID: ${user.id}');
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-            builder: (context) => TeacherDashboardScreen(teacherId: user.id)),
+          builder: (context) => TeacherDashboardScreen(teacherId: user.id), // Dùng user.id! để đảm bảo không null
+        ),
       );
-    } else if (user.role == 'admin') {
-      // TODO: Điều hướng đến màn hình AdminDashboard
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
-      // );
+    } else if (user.role == UserRole.admin) {
+      _logger.d('Navigating to Admin Dashboard.');
+      // BỎ COMMENT DÒNG NÀY ĐỂ KÍCH HOẠT ĐIỀU HƯỚNG TỚI ADMIN DASHBOARD
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+      );
       _showSnackBar('Đăng nhập thành công với quyền Admin', Colors.green);
     }
   }
