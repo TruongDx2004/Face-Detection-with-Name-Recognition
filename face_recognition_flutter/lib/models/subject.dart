@@ -38,17 +38,18 @@ class Schedule {
   });
 
   factory Schedule.fromJson(Map<String, dynamic> json) {
-    return Schedule(
-      id: json['id'] as int,
-      classId: json['class_id'] as int,
-      subjectId: json['subject_id'] as int,
-      teacherId: json['teacher_id'] as int,
-      className: json['class_name'] as String,
-      subjectName: json['subject_name'] as String,
-      teacherName: json['teacher_name'] as String,
-      weekday: json['weekday'] as int,
-      startTime: json['start_time'] as String,
-      endTime: json['end_time'] as String,
-    );
-  }
+  return Schedule(
+    id: json['id'] ?? 0,
+    classId: json['class_id'] ?? 0,
+    subjectId: json['subject_id'] ?? 0,
+    teacherId: json['teacher_id'] ?? 0,
+    className: json['class_name'] ?? '',
+    subjectName: json['subject_name'] ?? '',
+    teacherName: json['teacher_name'] ?? '',
+    weekday: json['weekday'] ?? 0,
+    startTime: json['start_time'] ?? '',
+    endTime: json['end_time'] ?? '',
+  );
+}
+
 }

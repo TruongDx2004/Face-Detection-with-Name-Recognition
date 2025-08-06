@@ -131,14 +131,16 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
             child: FutureBuilder<List<AttendanceSession>>(
               future: _sessionsFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    _isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        Icon(Icons.error_outline,
+                            size: 64, color: Colors.red[300]),
                         const SizedBox(height: 16),
                         Text(
                           'Lỗi: ${snapshot.error}',
@@ -225,7 +227,8 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
               Expanded(
                 child: Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: DropdownButton<String>(
                       value: _selectedStatus,
                       hint: const Text('Trạng thái'),
@@ -256,12 +259,11 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
             children: [
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _refreshSessions,
-                icon: _isLoading 
+                icon: _isLoading
                     ? const SizedBox(
-                        width: 16, 
-                        height: 16, 
-                        child: CircularProgressIndicator(strokeWidth: 2)
-                      )
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.refresh),
                 label: Text(_isLoading ? 'Đang tải...' : 'Làm mới'),
               ),
@@ -272,7 +274,9 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
     );
   }
 
-  Widget _buildSessionsList(List<AttendanceSession> sessions) {
+  Widget _buildSessionsList(
+    List<AttendanceSession> sessions,
+  ) {
     if (sessions.isEmpty) {
       return const Center(
         child: Column(
@@ -281,8 +285,8 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text('Không tìm thấy phiên điểm danh nào.'),
-            Text('Thử thay đổi bộ lọc hoặc chọn ngày khác.', 
-                 style: TextStyle(color: Colors.grey)),
+            Text('Thử thay đổi bộ lọc hoặc chọn ngày khác.',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -340,7 +344,7 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
                       value: 'stop', child: Text('Kết thúc phiên')),
                 const PopupMenuItem(value: 'edit', child: Text('Chỉnh sửa')),
                 const PopupMenuItem(
-                    value: 'delete', 
+                    value: 'delete',
                     child: Text('Xóa', style: TextStyle(color: Colors.red))),
               ],
             ),
@@ -352,10 +356,14 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStatChip('Tổng', session.totalAttendances ?? 0, Colors.blue),
-                        _buildStatChip('Có mặt', 0, Colors.green), // TODO: Thêm thống kê từ API
-                        _buildStatChip('Trễ', 0, Colors.orange),
-                        _buildStatChip('Vắng', 0, Colors.red),
+                        _buildStatChip(
+                            'Tổng', session.totalStudents ?? 0, Colors.blue),
+                        _buildStatChip(
+                            'Có mặt', session.presentCount ?? 0, Colors.green),
+                        _buildStatChip(
+                            'Trễ', session.lateCount ?? 0, Colors.orange),
+                        _buildStatChip(
+                            'Vắng', session.absentCount ?? 0, Colors.red),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -471,7 +479,7 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
               try {
                 final apiService = ApiService();
                 final response = await apiService.stopSession(session.id);
-                
+
                 if (response.success) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -536,7 +544,7 @@ class _AttendanceSessionTabState extends State<AttendanceSessionTab> {
               try {
                 final apiService = ApiService();
                 final response = await apiService.deleteSession(session.id);
-                
+
                 if (response.success) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -610,7 +618,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
       final response = await apiService.getAttendanceHistory(
         startDate: _startDate,
         endDate: _endDate,
-        classId: _selectedClass == 'all' ? null : 1, // TODO: Map class names to IDs
+        classId:
+            _selectedClass == 'all' ? null : 1, // TODO: Map class names to IDs
         status: _selectedStatus == 'all' ? null : _selectedStatus,
       );
 
@@ -675,14 +684,16 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
             child: FutureBuilder<List<Attendance>>(
               future: _attendancesFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    _isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        Icon(Icons.error_outline,
+                            size: 64, color: Colors.red[300]),
                         const SizedBox(height: 16),
                         Text(
                           'Lỗi: ${snapshot.error}',
@@ -699,6 +710,10 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                   );
                 } else if (snapshot.hasData) {
                   final attendances = snapshot.data!;
+                  for (var attendance in attendances) {
+                    _logger.i(
+                        'Attendance record: ${attendance.studentName}, Status: ${attendance.status}');
+                  }
                   return _buildAttendancesList(attendances);
                 } else {
                   return const Center(
@@ -741,16 +756,20 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
               Expanded(
                 child: Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: DropdownButton<String>(
                       value: _selectedClass,
                       hint: const Text('Chọn lớp'),
                       isExpanded: true,
                       underline: const SizedBox(),
                       items: const [
-                        DropdownMenuItem(value: 'all', child: Text('Tất cả lớp')),
-                        DropdownMenuItem(value: 'CNTT K47', child: Text('CNTT K47')),
-                        DropdownMenuItem(value: 'KTPM K46', child: Text('KTPM K46')),
+                        DropdownMenuItem(
+                            value: 'all', child: Text('Tất cả lớp')),
+                        DropdownMenuItem(
+                            value: 'CNTT K47', child: Text('CNTT K47')),
+                        DropdownMenuItem(
+                            value: 'KTPM K46', child: Text('KTPM K46')),
                       ],
                       onChanged: (value) {
                         setState(() {
@@ -766,7 +785,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
               Expanded(
                 child: Card(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: DropdownButton<String>(
                       value: _selectedStatus,
                       hint: const Text('Trạng thái'),
@@ -774,7 +794,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                       underline: const SizedBox(),
                       items: const [
                         DropdownMenuItem(value: 'all', child: Text('Tất cả')),
-                        DropdownMenuItem(value: 'present', child: Text('Có mặt')),
+                        DropdownMenuItem(
+                            value: 'present', child: Text('Có mặt')),
                         DropdownMenuItem(value: 'late', child: Text('Trễ')),
                         DropdownMenuItem(value: 'absent', child: Text('Vắng')),
                       ],
@@ -797,7 +818,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                 child: Card(
                   child: ListTile(
                     dense: true,
-                    title: const Text('Từ ngày', style: TextStyle(fontSize: 14)),
+                    title:
+                        const Text('Từ ngày', style: TextStyle(fontSize: 14)),
                     subtitle: Text(
                         '${_startDate.day}/${_startDate.month}/${_startDate.year}'),
                     trailing: const Icon(Icons.calendar_today, size: 20),
@@ -805,7 +827,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                       final date = await showDatePicker(
                         context: context,
                         initialDate: _startDate,
-                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        firstDate:
+                            DateTime.now().subtract(const Duration(days: 365)),
                         lastDate: DateTime.now(),
                       );
                       if (date != null) {
@@ -823,7 +846,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                 child: Card(
                   child: ListTile(
                     dense: true,
-                    title: const Text('Đến ngày', style: TextStyle(fontSize: 14)),
+                    title:
+                        const Text('Đến ngày', style: TextStyle(fontSize: 14)),
                     subtitle: Text(
                         '${_endDate.day}/${_endDate.month}/${_endDate.year}'),
                     trailing: const Icon(Icons.calendar_today, size: 20),
@@ -860,8 +884,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text('Không tìm thấy bản ghi điểm danh nào.'),
-            Text('Thử thay đổi bộ lọc hoặc khoảng thời gian.', 
-                 style: TextStyle(color: Colors.grey)),
+            Text('Thử thay đổi bộ lọc hoặc khoảng thời gian.',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -872,6 +896,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
       itemCount: attendances.length,
       itemBuilder: (context, index) {
         final attendance = attendances[index];
+        _logger.i(
+            'Attendance record: ${attendance.studentName}, Status: ${attendance.status}');
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           elevation: 2,
@@ -893,9 +919,10 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${attendance.studentCode ?? ''} - ${attendance.className ?? ''}'),
-                if (attendance.subject != null)
-                  Text('Môn: ${attendance.subject}'),
+                Text(
+                    '${attendance.studentCode ?? ''} - ${attendance.className ?? ''}'),
+                if (attendance.subjectName != null)
+                  Text('Môn: ${attendance.subjectName}'),
                 Text(
                     '${attendance.attendanceTime.day}/${attendance.attendanceTime.month}/${attendance.attendanceTime.year} ${attendance.attendanceTime.hour}:${attendance.attendanceTime.minute.toString().padLeft(2, '0')}'),
                 if (attendance.confidenceScore != null)
@@ -911,7 +938,8 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                     _getStatusDisplayName(attendance.status.toString()),
                     style: const TextStyle(fontSize: 12, color: Colors.white),
                   ),
-                  backgroundColor: _getStatusColor(attendance.status.toString()),
+                  backgroundColor:
+                      _getStatusColor(attendance.status.toString()),
                 ),
                 PopupMenuButton<String>(
                   onSelected: (value) =>
@@ -920,8 +948,9 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
                     const PopupMenuItem(
                         value: 'edit', child: Text('Chỉnh sửa')),
                     const PopupMenuItem(
-                        value: 'delete', 
-                        child: Text('Xóa', style: TextStyle(color: Colors.red))),
+                        value: 'delete',
+                        child:
+                            Text('Xóa', style: TextStyle(color: Colors.red))),
                   ],
                 ),
               ],
@@ -1053,11 +1082,13 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : () {
-              setState(() {
-                _sessionDetailsFuture = _fetchSessionDetails();
-              });
-            },
+            onPressed: _isLoading
+                ? null
+                : () {
+                    setState(() {
+                      _sessionDetailsFuture = _fetchSessionDetails();
+                    });
+                  },
           ),
         ],
       ),
@@ -1068,14 +1099,16 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             child: FutureBuilder<Map<String, dynamic>>(
               future: _sessionDetailsFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    _isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        Icon(Icons.error_outline,
+                            size: 64, color: Colors.red[300]),
                         const SizedBox(height: 16),
                         Text(
                           'Lỗi: ${snapshot.error}',
@@ -1095,9 +1128,15 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                     ),
                   );
                 } else if (snapshot.hasData) {
-                  final data = snapshot.data!;
-                  final attendances = data['attendances'] as List<Attendance>? ?? [];
-                  final statistics = data['statistics'] as Map<String, dynamic>? ?? {};
+                  final responseData = snapshot.data!;
+                  _logger.i('Session detailsss: $responseData');
+
+                  final attendances =
+                      responseData['attendances'] as List<Attendance>? ?? [];
+
+                  final statistics =
+                      responseData['statistics'] as Map<String, dynamic>? ?? {};
+
                   return _buildAttendancesList(attendances, statistics);
                 } else {
                   return const Center(
@@ -1143,7 +1182,9 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: widget.session.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                color: widget.session.isActive
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: widget.session.isActive ? Colors.green : Colors.red,
@@ -1153,14 +1194,17 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    widget.session.isActive ? Icons.play_circle : Icons.stop_circle,
+                    widget.session.isActive
+                        ? Icons.play_circle
+                        : Icons.stop_circle,
                     color: widget.session.isActive ? Colors.green : Colors.red,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     widget.session.isActive ? 'Đang hoạt động' : 'Đã kết thúc',
                     style: TextStyle(
-                      color: widget.session.isActive ? Colors.green : Colors.red,
+                      color:
+                          widget.session.isActive ? Colors.green : Colors.red,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1173,7 +1217,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
     );
   }
 
-  Widget _buildAttendancesList(List<Attendance> attendances, Map<String, dynamic> statistics) {
+  Widget _buildAttendancesList(
+      List<Attendance> attendances, Map<String, dynamic> statistics) {
     return Column(
       children: [
         // Statistics Row
@@ -1185,15 +1230,19 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStatColumn('Tổng', statistics['total_students'] ?? 0, Colors.blue),
-                  _buildStatColumn('Có mặt', statistics['present'] ?? 0, Colors.green),
-                  _buildStatColumn('Trễ', statistics['late'] ?? 0, Colors.orange),
-                  _buildStatColumn('Vắng', statistics['absent'] ?? 0, Colors.red),
+                  _buildStatColumn(
+                      'Tổng', statistics['total_students'] ?? 0, Colors.blue),
+                  _buildStatColumn(
+                      'Có mặt', statistics['present'] ?? 0, Colors.green),
+                  _buildStatColumn(
+                      'Trễ', statistics['late'] ?? 0, Colors.orange),
+                  _buildStatColumn(
+                      'Vắng', statistics['absent'] ?? 0, Colors.red),
                 ],
               ),
             ),
           ),
-        
+
         // Attendances List
         Expanded(
           child: attendances.isEmpty
@@ -1216,12 +1265,15 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: _getStatusColor(attendance.status.toString()),
+                          backgroundColor:
+                              _getStatusColor(attendance.status.toString()),
                           child: Text(
                             attendance.studentName?.isNotEmpty == true
                                 ? attendance.studentName![0].toUpperCase()
                                 : 'S',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         title: Text(
@@ -1239,7 +1291,9 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                               Text(
                                 'Độ tin cậy: ${(attendance.confidenceScore! * 100).toStringAsFixed(1)}%',
                                 style: TextStyle(
-                                  color: attendance.confidenceScore! > 0.8 ? Colors.green : Colors.orange,
+                                  color: attendance.confidenceScore! > 0.8
+                                      ? Colors.green
+                                      : Colors.orange,
                                   fontSize: 12,
                                 ),
                               ),
@@ -1248,9 +1302,11 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                         trailing: Chip(
                           label: Text(
                             _getStatusDisplayName(attendance.status.toString()),
-                            style: const TextStyle(fontSize: 12, color: Colors.white),
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.white),
                           ),
-                          backgroundColor: _getStatusColor(attendance.status.toString()),
+                          backgroundColor:
+                              _getStatusColor(attendance.status.toString()),
                         ),
                       ),
                     );
@@ -1347,7 +1403,7 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
       // TODO: Implement API call to get students with their current attendance status
       // For now, using mock data
       await Future.delayed(const Duration(seconds: 1));
-      
+
       final mockStudents = [
         StudentAttendanceStatus(
           studentId: 1,
@@ -1415,7 +1471,8 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
             child: Text(
               'Lưu',
               style: TextStyle(
-                color: _hasChanges ? Colors.white : Colors.white.withOpacity(0.5),
+                color:
+                    _hasChanges ? Colors.white : Colors.white.withOpacity(0.5),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1430,14 +1487,16 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
             child: FutureBuilder<List<StudentAttendanceStatus>>(
               future: _studentsFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
+                if (snapshot.connectionState == ConnectionState.waiting ||
+                    _isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        Icon(Icons.error_outline,
+                            size: 64, color: Colors.red[300]),
                         const SizedBox(height: 16),
                         Text(
                           'Lỗi: ${snapshot.error}',
@@ -1463,7 +1522,8 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                        Icon(Icons.people_outline,
+                            size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text('Không có dữ liệu sinh viên.'),
                       ],
@@ -1506,9 +1566,11 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
   Widget _buildStatusSummary() {
     if (_students.isEmpty) return const SizedBox();
 
-    final presentCount = _students.where((s) => s.currentStatus == 'present').length;
+    final presentCount =
+        _students.where((s) => s.currentStatus == 'present').length;
     final lateCount = _students.where((s) => s.currentStatus == 'late').length;
-    final absentCount = _students.where((s) => s.currentStatus == 'absent').length;
+    final absentCount =
+        _students.where((s) => s.currentStatus == 'absent').length;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1558,7 +1620,8 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
               backgroundColor: _getStatusColor(student.currentStatus),
               child: Text(
                 student.studentName[0].toUpperCase(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
             title: Text(
@@ -1678,11 +1741,11 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
 
     try {
       _logger.i('Saving manual attendances for session: ${widget.session.id}');
-      
+
       // TODO: Implement API call to save attendances
       // For now, simulate API call
       await Future.delayed(const Duration(seconds: 1));
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1690,11 +1753,11 @@ class _ManualAttendanceScreenState extends State<ManualAttendanceScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         setState(() {
           _hasChanges = false;
         });
-        
+
         Navigator.of(context).pop();
       }
     } catch (e) {

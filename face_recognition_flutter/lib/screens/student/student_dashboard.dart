@@ -213,7 +213,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           color: attendance.status.color,
         ),
         title: Text(
-          attendance.subject ?? 'N/A',
+          attendance.subjectName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(

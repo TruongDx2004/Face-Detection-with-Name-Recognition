@@ -801,7 +801,7 @@ class ApiService {
     try {
       final response = await _makeRequest(
         'POST',
-        '/schedules',
+        '/subjects/schedules',
         body: {
           'class_id': classId,
           'subject_id': subjectId,
@@ -830,7 +830,7 @@ class ApiService {
     try {
       final response = await _makeRequest(
         'PUT',
-        '/schedules/$id',
+        '/subjects/schedules/$id',
         body: {
           'class_id': classId,
           'subject_id': subjectId,

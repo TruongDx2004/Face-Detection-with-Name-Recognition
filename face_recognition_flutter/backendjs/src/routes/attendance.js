@@ -585,10 +585,20 @@ router.get('/my-attendance', authenticateToken, authorize('student'), async (req
  *       500:
  *         description: Internal server error
  */
-router.get('/session/:session_id', authenticateToken, authorize('teacher'), async (req, res) => {
+router.get('/session/:session_id', authenticateToken, authorize('teacher', 'admin'), async (req, res) => {
     try {
         const { session_id } = req.params;
-        const teacher_id = req.user.id;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        // Xây query filter theo role
+        let teacherFilter = '';
+        let queryParams = [session_id];
+
+        if (userRole === 'teacher') {
+            teacherFilter = 'AND sch.teacher_id = ?';
+            queryParams.push(userId);
+        }
 
         // Lấy thông tin session + class_id
         const [sessions] = await db.execute(`
@@ -609,8 +619,8 @@ router.get('/session/:session_id', authenticateToken, authorize('teacher'), asyn
             INNER JOIN subjects subj ON sch.subject_id = subj.id
             INNER JOIN classes cls ON sch.class_id = cls.id
             INNER JOIN users u ON sch.teacher_id = u.id
-            WHERE s.id = ? AND sch.teacher_id = ?
-        `, [session_id, teacher_id]);
+            WHERE s.id = ? ${teacherFilter}
+        `, queryParams);
 
         if (sessions.length === 0) {
             return res.status(404).json({ error: 'Session not found or access denied' });
@@ -669,6 +679,7 @@ router.get('/session/:session_id', authenticateToken, authorize('teacher'), asyn
         res.status(500).json({ error: 'Failed to get session attendance' });
     }
 });
+
 
 
 // End session (for teachers)
@@ -918,21 +929,39 @@ router.get('/sessions', authenticateToken, async (req, res) => {
             asess.end_time, 
             asess.is_active,
             asess.created_at,
-            COUNT(DISTINCT att.id) AS total_attendances,
-            COUNT(DISTINCT cs.student_id) AS total_students,
-            SUM(CASE WHEN att.status = 'present' THEN 1 ELSE 0 END) AS present_count,
-            SUM(CASE WHEN att.status = 'late' THEN 1 ELSE 0 END) AS late_count,
-            SUM(CASE WHEN att.status = 'absent' THEN 1 ELSE 0 END) AS absent_count
+            IFNULL(att_stats.total_attendances, 0) AS total_attendances,
+            IFNULL(cs_stats.total_students, 0) AS total_students,
+            IFNULL(att_stats.present_count, 0) AS present_count,
+            IFNULL(att_stats.late_count, 0) AS late_count,
+            (IFNULL(cs_stats.total_students, 0) 
+                - IFNULL(att_stats.present_count, 0) 
+                - IFNULL(att_stats.late_count, 0)) AS absent_count
         FROM attendance_sessions asess
         JOIN schedules sch ON asess.schedule_id = sch.id
         JOIN classes c ON sch.class_id = c.id
         JOIN subjects subj ON sch.subject_id = subj.id
         JOIN users u ON sch.teacher_id = u.id
-        LEFT JOIN attendances att ON att.session_id = asess.id
-        LEFT JOIN class_students cs ON cs.class_id = c.id
+
+        -- Số học sinh
+        LEFT JOIN (
+            SELECT class_id, COUNT(student_id) AS total_students
+            FROM class_students
+            GROUP BY class_id
+        ) cs_stats ON cs_stats.class_id = c.id
+
+        -- Thống kê điểm danh
+        LEFT JOIN (
+            SELECT 
+                session_id,
+                COUNT(DISTINCT id) AS total_attendances,
+                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) AS present_count,
+                SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) AS late_count
+            FROM attendances
+            GROUP BY session_id
+        ) att_stats ON att_stats.session_id = asess.id
+
         WHERE 1=1
         `;
-
 
         const params = [];
         if (teacher_id) {
@@ -952,7 +981,7 @@ router.get('/sessions', authenticateToken, async (req, res) => {
             params.push(is_active === 'true' ? 1 : 0);
         }
 
-        query += ' GROUP BY asess.id ORDER BY asess.session_date DESC, asess.start_time DESC';
+        query += ' ORDER BY asess.session_date DESC, asess.start_time DESC';
 
         const [sessions] = await db.execute(query, params);
         res.status(200).json({ message: 'Sessions retrieved successfully', sessions });
@@ -961,6 +990,7 @@ router.get('/sessions', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Failed to retrieve sessions' });
     }
 });
+
 
 // API để lấy lịch sử điểm danh (dành cho admin)
 /**

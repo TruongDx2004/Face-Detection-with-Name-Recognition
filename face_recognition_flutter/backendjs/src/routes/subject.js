@@ -67,7 +67,7 @@ router.get('/', authenticateToken, authorize('admin'), async (req, res) => {
   try {
     const { name, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
-    
+
     let query = 'SELECT id, name FROM subjects WHERE 1=1';
     const params = [];
 
@@ -383,8 +383,7 @@ router.get('/schedules', authenticateToken, authorize('admin'), async (req, res)
       params.push(parseInt(teacher_id));
     }
 
-    query += ` ORDER BY s.weekday, s.start_time LIMIT ${limit} OFFSET ${offset}`;
-    params.push(parseInt(limit), parseInt(offset));
+    query += ` ORDER BY s.weekday, s.start_time LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
 
     const [schedules] = await db.execute(query, params);
 
@@ -490,7 +489,7 @@ router.post('/schedules', authenticateToken, authorize('admin'), async (req, res
     `, [class_id, weekday, start_time, start_time, end_time, end_time]);
 
     if (conflicts.length > 0) {
-      return res.status(400).json({ error: 'Schedule conflict detected' });
+      return res.status(400).json({ error: 'Giáo viên đã có lịch trong hôm này' });
     }
 
     const [result] = await db.execute(

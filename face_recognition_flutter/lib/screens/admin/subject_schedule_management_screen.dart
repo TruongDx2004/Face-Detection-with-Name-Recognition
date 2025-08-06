@@ -10,10 +10,12 @@ class SubjectScheduleManagementScreen extends StatefulWidget {
   const SubjectScheduleManagementScreen({super.key});
 
   @override
-  State<SubjectScheduleManagementScreen> createState() => _SubjectScheduleManagementScreenState();
+  State<SubjectScheduleManagementScreen> createState() =>
+      _SubjectScheduleManagementScreenState();
 }
 
-class _SubjectScheduleManagementScreenState extends State<SubjectScheduleManagementScreen>
+class _SubjectScheduleManagementScreenState
+    extends State<SubjectScheduleManagementScreen>
     with TickerProviderStateMixin {
   final Logger _logger = Logger();
   late TabController _tabController;
@@ -225,7 +227,8 @@ class _SubjectManagementTabState extends State<SubjectManagementTab> {
             onPressed: () async {
               if (controller.text.isNotEmpty) {
                 try {
-                  final response = await _apiService.createSubject(controller.text);
+                  final response =
+                      await _apiService.createSubject(controller.text);
                   if (response.success) {
                     _logger.i('Subject created: ${controller.text}');
                     Navigator.of(context).pop();
@@ -269,9 +272,11 @@ class _SubjectManagementTabState extends State<SubjectManagementTab> {
             onPressed: () async {
               if (controller.text.isNotEmpty) {
                 try {
-                  final response = await _apiService.updateSubject(subject.id, controller.text);
+                  final response = await _apiService.updateSubject(
+                      subject.id, controller.text);
                   if (response.success) {
-                    _logger.i('Subject updated: ${subject.id} -> ${controller.text}');
+                    _logger.i(
+                        'Subject updated: ${subject.id} -> ${controller.text}');
                     Navigator.of(context).pop();
                     _refreshSubjects();
                   } else {
@@ -299,7 +304,8 @@ class _SubjectManagementTabState extends State<SubjectManagementTab> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa môn học'),
-        content: Text('Bạn có chắc muốn xóa môn học "${subject.name}"? Hành động này không thể hoàn tác.'),
+        content: Text(
+            'Bạn có chắc muốn xóa môn học "${subject.name}"? Hành động này không thể hoàn tác.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -346,7 +352,22 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
   late Future<List<Schedule>> _schedulesFuture;
   int? _selectedClassId;
   int? _selectedSubjectId;
+  int? _selectedTeacherId;
   final ApiService _apiService = ApiService();
+
+  // Define time slots for the timetable
+  final List<String> _timeSlots = [
+    '07:00-08:00',
+    '08:00-09:00',
+    '09:00-10:00',
+    '10:00-11:00',
+    '11:00-12:00',
+    '12:00-13:00',
+    '13:00-14:00',
+    '14:00-15:00',
+    '15:00-16:00',
+    '16:00-17:00',
+  ];
 
   @override
   void initState() {
@@ -359,11 +380,14 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
       final response = await _apiService.getSchedules(
         classId: _selectedClassId,
         subjectId: _selectedSubjectId,
+        teacherId: _selectedTeacherId,
       );
       if (response.success) {
         _logger.i('Fetched schedules: ${response.data!.length} items');
+        _logger.d('Schedules data: ${response.data}');
         return response.data!;
       } else {
+        _logger.e('Fetch schedules failed: ${response.error}');
         throw Exception(response.error);
       }
     } catch (e) {
@@ -379,8 +403,61 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
   }
 
   String _getWeekdayName(int weekday) {
-    const weekdays = ['', 'Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const weekdays = [
+      '',
+      'Chủ nhật',
+      'Thứ 2',
+      'Thứ 3',
+      'Thứ 4',
+      'Thứ 5',
+      'Thứ 6',
+      'Thứ 7'
+    ];
     return weekdays[weekday];
+  }
+
+  // Convert time string (HH:mm) to minutes for comparison
+  int _timeToMinutes(String time) {
+    final parts = time.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+
+  List<Map<String, dynamic>> _getSchedulesForSlot(
+      List<Schedule> schedules, String timeSlot, int weekday) {
+    final timeParts = timeSlot.split('-');
+    final slotStart = _timeToMinutes(timeParts[0]);
+    final slotEnd = _timeToMinutes(timeParts[1]);
+
+    return schedules.asMap().entries.where((entry) {
+      final schedule = entry.value;
+      if (schedule.weekday != weekday) return false;
+      final scheduleStart = _timeToMinutes(schedule.startTime);
+      return slotStart <= scheduleStart && scheduleStart < slotEnd;
+    }).map((entry) {
+      final schedule = entry.value;
+      final scheduleStart = _timeToMinutes(schedule.startTime);
+      final scheduleEnd = _timeToMinutes(schedule.endTime);
+
+      // Tính số ô thời gian mà lịch học kéo dài
+      int rowSpan = 0;
+      for (var slot in _timeSlots) {
+        final slotParts = slot.split('-');
+        final slotStartTime = _timeToMinutes(slotParts[0]);
+        final slotEndTime = _timeToMinutes(slotParts[1]);
+        if (slotStartTime >= scheduleStart && slotStartTime < scheduleEnd) {
+          rowSpan++;
+        }
+      }
+      rowSpan = rowSpan > 0 ? rowSpan : 1;
+      _logger.d(
+          'Schedule ${schedule.id} at $timeSlot, weekday $weekday, spans $rowSpan slots, startTime: ${schedule.startTime}, endTime: ${schedule.endTime}');
+
+      return {
+        'schedule': schedule,
+        'rowSpan': rowSpan,
+        'index': entry.key,
+      };
+    }).toList();
   }
 
   @override
@@ -392,13 +469,19 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
           child: FutureBuilder<List<Schedule>>(
             future: _schedulesFuture,
             builder: (context, snapshot) {
+              _logger.d(
+                  'Timetable FutureBuilder state: ${snapshot.connectionState}');
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
-                return Center(child: Text('Lỗi: ${snapshot.error}'));
+                _logger.e('Timetable error: ${snapshot.error}');
+                return Center(
+                    child: Text('Lỗi khi tải lịch học: ${snapshot.error}'));
               } else if (snapshot.hasData) {
-                return _buildSchedulesList(snapshot.data!);
+                _logger.d('Timetable schedules: ${snapshot.data!.length}');
+                return _buildTimetable(snapshot.data!);
               } else {
+                _logger.e('No schedule data available');
                 return const Center(child: Text('Không có dữ liệu lịch học.'));
               }
             },
@@ -412,10 +495,12 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: _apiService.getScheduleOptions(),
       builder: (context, snapshot) {
+        _logger.d('Filter FutureBuilder state: ${snapshot.connectionState}');
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text('Lỗi: ${snapshot.error}'));
+          _logger.e('Filter error: ${snapshot.error}');
+          return Center(child: Text('Lỗi khi tải tùy chọn: ${snapshot.error}'));
         } else if (snapshot.hasData && snapshot.data!.success) {
           final options = snapshot.data!.data!;
           final classes = (options['classes'] as List<dynamic>? ?? [])
@@ -424,6 +509,12 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
           final subjects = (options['subjects'] as List<dynamic>? ?? [])
               .map((item) => Subject.fromJson(item))
               .toList();
+          final teachers = (options['teachers'] as List<dynamic>? ?? [])
+              .map((item) => User.fromJson(item))
+              .toList();
+
+          _logger.d(
+              'Classes: ${classes.length}, Subjects: ${subjects.length}, Teachers: ${teachers.length}');
 
           return Container(
             padding: const EdgeInsets.all(16.0),
@@ -433,13 +524,14 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButton<int>(
+                      child: DropdownButton<int?>(
                         value: _selectedClassId,
                         hint: const Text('Chọn lớp'),
                         isExpanded: true,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('Tất cả lớp')),
-                          ...classes.map((classData) => DropdownMenuItem(
+                          const DropdownMenuItem<int?>(
+                              value: null, child: Text('Tất cả lớp')),
+                          ...classes.map((classData) => DropdownMenuItem<int?>(
                                 value: classData.id,
                                 child: Text(classData.name),
                               )),
@@ -454,13 +546,14 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: DropdownButton<int>(
+                      child: DropdownButton<int?>(
                         value: _selectedSubjectId,
                         hint: const Text('Chọn môn học'),
                         isExpanded: true,
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('Tất cả môn học')),
-                          ...subjects.map((subject) => DropdownMenuItem(
+                          const DropdownMenuItem<int?>(
+                              value: null, child: Text('Tất cả môn học')),
+                          ...subjects.map((subject) => DropdownMenuItem<int?>(
                                 value: subject.id,
                                 child: Text(subject.name),
                               )),
@@ -477,13 +570,32 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
                 ),
                 const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    Expanded(
+                        child: DropdownButton<int?>(
+                      value: _selectedTeacherId,
+                      hint: const Text('Chọn giáo viên'),
+                      isExpanded: true,
+                      items: teachers.map((teacher) {
+                        return DropdownMenuItem<int>(
+                          value: teacher.id,
+                          child: Text(teacher.fullName),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTeacherId = value;
+                          _schedulesFuture = _fetchSchedules();
+                        });
+                      },
+                    )),
+                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: () => _showAddScheduleDialog(options),
                       icon: const Icon(Icons.add),
                       label: const Text('Thêm lịch học'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent),
                     ),
                   ],
                 ),
@@ -491,43 +603,204 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
             ),
           );
         } else {
+          _logger.e('Filter data invalid or empty');
           return const Center(child: Text('Không thể tải tùy chọn lọc.'));
         }
       },
     );
   }
 
-  Widget _buildSchedulesList(List<Schedule> schedules) {
+  Widget _buildTimetable(List<Schedule> schedules) {
     if (schedules.isEmpty) {
+      _logger.i('No schedules to display');
       return const Center(child: Text('Không tìm thấy lịch học nào.'));
     }
 
-    return ListView.builder(
-      itemCount: schedules.length,
-      itemBuilder: (context, index) {
-        final schedule = schedules[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: ListTile(
-            leading: const Icon(Icons.schedule, color: Colors.blueAccent),
-            title: Text('${schedule.subjectName} - ${schedule.className}'),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Giáo viên: ${schedule.teacherName}'),
-                Text('${_getWeekdayName(schedule.weekday)}: ${schedule.startTime} - ${schedule.endTime}'),
-              ],
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) => _handleScheduleAction(value, schedule),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'edit', child: Text('Chỉnh sửa')),
-                const PopupMenuItem(value: 'delete', child: Text('Xóa')),
-              ],
-            ),
+    // Theo dõi các lịch học đã hiển thị để tránh trùng lặp
+    final displayedSchedules = <int>{};
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: 800),
+          child: Table(
+            border: TableBorder.all(color: Colors.grey),
+            columnWidths: const {
+              0: FixedColumnWidth(100), // Cột thời gian
+              1: FixedColumnWidth(150), // Chủ nhật
+              2: FixedColumnWidth(150), // Thứ 2
+              3: FixedColumnWidth(150), // Thứ 3
+              4: FixedColumnWidth(150), // Thứ 4
+              5: FixedColumnWidth(150), // Thứ 5
+              6: FixedColumnWidth(150), // Thứ 6
+              7: FixedColumnWidth(150), // Thứ 7
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: [
+              // Hàng tiêu đề
+              TableRow(
+                decoration: BoxDecoration(color: Colors.grey[300]),
+                children: [
+                  TableCell(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      child: const Text(
+                        'Thời gian',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  ...List.generate(7, (index) {
+                    return TableCell(
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          _getWeekdayName(index + 1),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              // Hàng dữ liệu
+              ..._timeSlots.asMap().entries.map((entry) {
+                final timeSlotIndex = entry.key;
+                final timeSlot = entry.value;
+                return TableRow(
+                  children: [
+                    TableCell(
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          timeSlot,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    ...List.generate(7, (weekdayIndex) {
+                      final weekday = weekdayIndex + 1;
+                      final slotSchedules =
+                          _getSchedulesForSlot(schedules, timeSlot, weekday);
+
+                      // Nếu không có lịch học, trả về ô trống
+                      if (slotSchedules.isEmpty) {
+                        return TableCell(child: Container());
+                      }
+
+                      final slotData = slotSchedules
+                          .cast<Map<String, dynamic>?>()
+                          .firstWhere(
+                            (data) =>
+                                data != null &&
+                                !displayedSchedules.contains(data['index']),
+                            orElse: () => null,
+                          );
+
+                      if (slotData == null) {
+                        return TableCell(child: Container());
+                      }
+
+                      final schedule = slotData['schedule'] as Schedule;
+                      final rowSpan = slotData['rowSpan'] as int;
+                      final scheduleIndex = slotData['index'] as int;
+
+                      // Nếu đã hiển thị, để ô trống
+                      if (displayedSchedules.contains(scheduleIndex)) {
+                        return TableCell(child: Container());
+                      }
+                      displayedSchedules.add(scheduleIndex);
+
+                      _logger.d(
+                          'Schedule ${schedule.id} at $timeSlot, weekday $weekday, spans $rowSpan slots, startTime: ${schedule.startTime}, endTime: ${schedule.endTime}');
+
+                      // Chỉ hiển thị khối lịch học nếu đây là ô bắt đầu
+                      final scheduleStart = _timeToMinutes(schedule.startTime);
+                      final slotStart = _timeToMinutes(timeSlot.split('-')[0]);
+                      if (scheduleStart != slotStart) {
+                        return TableCell(child: Container());
+                      }
+
+                      // Hiển thị khối lịch học với chiều cao tự động
+                      return TableCell(
+                        verticalAlignment: TableCellVerticalAlignment.top,
+                        child: GestureDetector(
+                          onTap: () => _handleScheduleTap(schedule),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withOpacity(0.1),
+                              border: Border.all(color: Colors.blueAccent),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  schedule.subjectName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueAccent,
+                                  ),
+                                ),
+                                Text(schedule.className),
+                                Text(schedule.teacherName),
+                                Text(
+                                    '${schedule.startTime} - ${schedule.endTime}'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              }).toList(),
+            ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  void _handleScheduleTap(Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${schedule.subjectName} - ${schedule.className}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Giáo viên: ${schedule.teacherName}'),
+            Text(
+                '${_getWeekdayName(schedule.weekday)}: ${schedule.startTime} - ${schedule.endTime}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Đóng'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showEditScheduleDialog(schedule);
+            },
+            child: const Text('Chỉnh sửa'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteSchedule(schedule);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -543,11 +816,13 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
   }
 
   void _showAddScheduleDialog(Map<String, dynamic> options) {
+    _logger.d('Opening add schedule dialog with options: $options');
     showDialog(
       context: context,
       builder: (context) => ScheduleFormDialog(
         options: options,
         onSave: (scheduleData) async {
+          _logger.d('Saving schedule: $scheduleData');
           try {
             final response = await _apiService.createSchedule(
               classId: scheduleData['class_id'],
@@ -561,6 +836,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
               _logger.i('Schedule created: $scheduleData');
               _refreshSchedules();
             } else {
+              _logger.e('Create schedule failed: ${response.error}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Lỗi: ${response.error}')),
               );
@@ -582,15 +858,19 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
       builder: (context) => FutureBuilder<ApiResponse<Map<String, dynamic>>>(
         future: _apiService.getScheduleOptions(),
         builder: (context, snapshot) {
+          _logger.d(
+              'Edit schedule FutureBuilder state: ${snapshot.connectionState}');
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            _logger.e('Edit schedule error: ${snapshot.error}');
             return Center(child: Text('Lỗi: ${snapshot.error}'));
           } else if (snapshot.hasData && snapshot.data!.success) {
             return ScheduleFormDialog(
               schedule: schedule,
               options: snapshot.data!.data!,
               onSave: (scheduleData) async {
+                _logger.d('Updating schedule: $scheduleData');
                 try {
                   final response = await _apiService.updateSchedule(
                     id: schedule.id,
@@ -605,6 +885,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
                     _logger.i('Schedule updated: $scheduleData');
                     _refreshSchedules();
                   } else {
+                    _logger.e('Update schedule failed: ${response.error}');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Lỗi: ${response.error}')),
                     );
@@ -618,6 +899,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
               },
             );
           } else {
+            _logger.e('Edit schedule data invalid or empty');
             return const Center(child: Text('Không thể tải tùy chọn.'));
           }
         },
@@ -630,7 +912,8 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa lịch học'),
-        content: Text('Bạn có chắc muốn xóa lịch học "${schedule.subjectName} - ${schedule.className}"?'),
+        content: Text(
+            'Bạn có chắc muốn xóa lịch học "${schedule.subjectName} - ${schedule.className}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -645,6 +928,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
                   Navigator.of(context).pop();
                   _refreshSchedules();
                 } else {
+                  _logger.e('Delete schedule failed: ${response.error}');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Lỗi: ${response.error}')),
                   );
@@ -704,23 +988,31 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           .map((item) => User.fromJson(item))
           .toList();
 
-      _selectedClassId = classes.firstWhere(
-        (c) => c.name == widget.schedule!.className,
-        orElse: () => classes.first,
-      ).id;
-      _selectedSubjectId = subjects.firstWhere(
-        (s) => s.name == widget.schedule!.subjectName,
-        orElse: () => subjects.first,
-      ).id;
-      _selectedTeacherId = teachers.firstWhere(
-        (t) => t.fullName == widget.schedule!.teacherName,
-        orElse: () => teachers.first,
-      ).id;
+      _selectedClassId = classes
+          .firstWhere(
+            (c) => c.name == widget.schedule!.className,
+            orElse: () => classes.first,
+          )
+          .id;
+      _selectedSubjectId = subjects
+          .firstWhere(
+            (s) => s.name == widget.schedule!.subjectName,
+            orElse: () => subjects.first,
+          )
+          .id;
+      _selectedTeacherId = teachers
+          .firstWhere(
+            (t) => t.fullName == widget.schedule!.teacherName,
+            orElse: () => teachers.first,
+          )
+          .id;
       _selectedWeekday = widget.schedule!.weekday;
       final startParts = widget.schedule!.startTime.split(':');
-      _startTime = TimeOfDay(hour: int.parse(startParts[0]), minute: int.parse(startParts[1]));
+      _startTime = TimeOfDay(
+          hour: int.parse(startParts[0]), minute: int.parse(startParts[1]));
       final endParts = widget.schedule!.endTime.split(':');
-      _endTime = TimeOfDay(hour: int.parse(endParts[0]), minute: int.parse(endParts[1]));
+      _endTime = TimeOfDay(
+          hour: int.parse(endParts[0]), minute: int.parse(endParts[1]));
     } else {
       final classes = (widget.options['classes'] as List<dynamic>? ?? [])
           .map((item) => ClassData.fromJson(item))
@@ -754,7 +1046,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
         .toList();
 
     return AlertDialog(
-      title: Text(widget.schedule == null ? 'Thêm lịch học' : 'Chỉnh sửa lịch học'),
+      title: Text(
+          widget.schedule == null ? 'Thêm lịch học' : 'Chỉnh sửa lịch học'),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -775,7 +1068,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     _selectedClassId = value;
                   });
                 },
-                validator: (value) => value == null ? 'Vui lòng chọn lớp học' : null,
+                validator: (value) =>
+                    value == null ? 'Vui lòng chọn lớp học' : null,
               ),
               DropdownButtonFormField<int>(
                 value: _selectedSubjectId,
@@ -791,7 +1085,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     _selectedSubjectId = value;
                   });
                 },
-                validator: (value) => value == null ? 'Vui lòng chọn môn học' : null,
+                validator: (value) =>
+                    value == null ? 'Vui lòng chọn môn học' : null,
               ),
               DropdownButtonFormField<int>(
                 value: _selectedTeacherId,
@@ -807,7 +1102,8 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
                     _selectedTeacherId = value;
                   });
                 },
-                validator: (value) => value == null ? 'Vui lòng chọn giáo viên' : null,
+                validator: (value) =>
+                    value == null ? 'Vui lòng chọn giáo viên' : null,
               ),
               DropdownButtonFormField<int>(
                 value: _selectedWeekday,
