@@ -15,6 +15,7 @@ class SessionAttendanceManagementScreen extends StatefulWidget {
 class _SessionAttendanceManagementScreenState
     extends State<SessionAttendanceManagementScreen>
     with TickerProviderStateMixin {
+  // ignore: unused_field
   final Logger _logger = Logger();
   late TabController _tabController;
 
@@ -905,22 +906,23 @@ class _AttendanceHistoryTabState extends State<AttendanceHistoryTab> {
             leading: CircleAvatar(
               backgroundColor: _getStatusColor(attendance.status.toString()),
               child: Text(
-                attendance.studentName?.isNotEmpty == true
-                    ? attendance.studentName![0].toUpperCase()
+                attendance.studentName.isNotEmpty == true
+                    ? attendance.studentName[0].toUpperCase()
                     : 'S',
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
             title: Text(
-              attendance.studentName ?? 'Không xác định',
+              attendance.studentName,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${attendance.studentCode ?? ''} - ${attendance.className ?? ''}'),
+                    '${attendance.studentCode} - ${attendance.className}'),
+                // ignore: unnecessary_null_comparison
                 if (attendance.subjectName != null)
                   Text('Môn: ${attendance.subjectName}'),
                 Text(
@@ -1268,8 +1270,8 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                           backgroundColor:
                               _getStatusColor(attendance.status.toString()),
                           child: Text(
-                            attendance.studentName?.isNotEmpty == true
-                                ? attendance.studentName![0].toUpperCase()
+                            attendance.studentName.isNotEmpty == true
+                                ? attendance.studentName[0].toUpperCase()
                                 : 'S',
                             style: const TextStyle(
                                 color: Colors.white,
@@ -1277,13 +1279,13 @@ class _SessionDetailsScreenState extends State<SessionDetailsScreen> {
                           ),
                         ),
                         title: Text(
-                          attendance.studentName ?? 'Không xác định',
+                          attendance.studentName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(attendance.studentCode ?? ''),
+                            Text(attendance.studentCode),
                             Text(
                               'Điểm danh: ${attendance.attendanceTime.hour}:${attendance.attendanceTime.minute.toString().padLeft(2, '0')}',
                             ),

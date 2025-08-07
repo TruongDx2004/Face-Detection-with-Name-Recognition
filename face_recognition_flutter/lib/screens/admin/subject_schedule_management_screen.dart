@@ -17,6 +17,7 @@ class SubjectScheduleManagementScreen extends StatefulWidget {
 class _SubjectScheduleManagementScreenState
     extends State<SubjectScheduleManagementScreen>
     with TickerProviderStateMixin {
+  // ignore: unused_field
   final Logger _logger = Logger();
   late TabController _tabController;
 
@@ -443,6 +444,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
       for (var slot in _timeSlots) {
         final slotParts = slot.split('-');
         final slotStartTime = _timeToMinutes(slotParts[0]);
+        // ignore: unused_local_variable
         final slotEndTime = _timeToMinutes(slotParts[1]);
         if (slotStartTime >= scheduleStart && slotStartTime < scheduleEnd) {
           rowSpan++;
@@ -667,6 +669,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
               ),
               // Hàng dữ liệu
               ..._timeSlots.asMap().entries.map((entry) {
+                // ignore: unused_local_variable
                 final timeSlotIndex = entry.key;
                 final timeSlot = entry.value;
                 return TableRow(
@@ -804,6 +807,7 @@ class _ScheduleManagementTabState extends State<ScheduleManagementTab> {
     );
   }
 
+  // ignore: unused_element
   void _handleScheduleAction(String action, Schedule schedule) {
     switch (action) {
       case 'edit':

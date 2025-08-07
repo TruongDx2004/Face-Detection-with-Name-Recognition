@@ -323,6 +323,7 @@ class _ClassManagementScreenState extends State<ClassManagementScreen> {
     );
   }
 
+  // ignore: unused_element
   void _removeStudentFromClass(ClassData classData, Student student) {
     showDialog(
       context: context,

@@ -86,50 +86,64 @@ const upload = multer({
  */
 router.post('/create-session', authenticateToken, authorize('teacher'), async (req, res) => {
     try {
-        const { class_id, subject_id, start_time } = req.body;
+        const { schedule_id, session_date } = req.body;
+        let start_time = req.body.start_time || new Date().toTimeString().split(' ')[0]; // 'HH:MM:SS'
         const teacher_id = req.user.id;
-        const session_date = new Date().toISOString().split('T')[0];
-        const todayWeekday = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
-        // Kiểm tra dữ liệu đầu vào
-        console.log(`Creating session for class_id: ${class_id}, subject_id: ${subject_id}, start_time: ${start_time}`);
+        if (!schedule_id || !session_date || !start_time) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
 
-        // Tìm schedule_id từ bảng schedules
+
+        // Lấy thông tin từ schedule
         const [schedules] = await db.execute(
-            `SELECT id FROM schedules 
-             WHERE class_id = ? AND subject_id = ? AND teacher_id = ? AND weekday = ?`,
-            [class_id, subject_id, teacher_id, todayWeekday]
+            `SELECT class_id, subject_id, teacher_id, weekday FROM schedules WHERE id = ?`,
+            [schedule_id]
         );
 
         if (schedules.length === 0) {
-            return res.status(404).json({ error: 'No matching schedule found for today' });
+            return res.status(404).json({ error: 'Schedule not found' });
         }
 
-        const schedule_id = schedules[0].id;
+        const schedule = schedules[0];
 
-        // Kiểm tra xem giáo viên này đã có session hôm nay chưa
+        // Kiểm tra giáo viên có đúng quyền không
+        if (schedule.teacher_id !== teacher_id) {
+            return res.status(403).json({ error: 'You are not authorized to start this session' });
+        }
+
+        // Kiểm tra ngày hôm nay có khớp với lịch không (tuỳ bạn muốn enforce hay không)
+        const actualWeekday = new Date(session_date).getDay();
+        if (schedule.weekday !== (actualWeekday + 1)) { // weekday in DB is 1-7, JS Date.getDay() is 0-6
+            return res.status(400).json({
+                error: `Schedule is set for weekday ${schedule.weekday}, but today is ${actualWeekday}`
+            });
+        }
+
+        // Kiểm tra session đã tồn tại chưa
         const [existing] = await db.execute(
             `SELECT asess.id FROM attendance_sessions asess
-             JOIN schedules s ON asess.schedule_id = s.id
-             WHERE s.teacher_id = ? AND asess.session_date = ? AND asess.is_active = TRUE`,
-            [teacher_id, session_date]
+             WHERE asess.schedule_id = ? AND asess.session_date = ? AND asess.is_active = TRUE`,
+            [schedule_id, session_date]
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'You already have an active session today' });
+            return res.status(400).json({ error: 'Session already exists for today' });
         }
 
-        // Tạo attendance session mới
+        // Tạo session
         const [result] = await db.execute(
             `INSERT INTO attendance_sessions (schedule_id, session_date, start_time)
              VALUES (?, ?, ?)`,
             [schedule_id, session_date, start_time]
         );
 
-        res.status(201).json({
+        res.status(200).json({
             message: 'Attendance session created successfully',
             session_id: result.insertId,
             schedule_id,
+            class_id: schedule.class_id,
+            subject_id: schedule.subject_id,
             session_date,
             start_time
         });
@@ -139,6 +153,8 @@ router.post('/create-session', authenticateToken, authorize('teacher'), async (r
         res.status(500).json({ error: 'Failed to create attendance session' });
     }
 });
+
+
 
 
 // Mark attendance with face recognition

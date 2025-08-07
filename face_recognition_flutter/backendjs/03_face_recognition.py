@@ -131,13 +131,30 @@ for result in results:
     if label_id not in final_results or confidence > final_results[label_id]["confidence"]:
         final_results[label_id] = result
 
+# ======== XÓA ẢNH SAU KHI HOÀN THÀNH ========
+def safe_delete_file(path):
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except Exception as e:
+        print(f"⚠️ Failed to delete {path}: {e}")
+
+# Xóa tất cả ảnh trong debug_images và các ảnh khuôn mặt
+for img_path in debug_images:
+    safe_delete_file(img_path)
+
+# Xóa các ảnh khuôn mặt trong thư mục debug_dir
+for file_name in os.listdir(args.debug_dir):
+    if file_name.startswith("face_") or file_name.startswith("flipped_face_"):
+        safe_delete_file(os.path.join(args.debug_dir, file_name))
+
 # ======== OUTPUT =========
 print(json.dumps({
     "success": True,
     "detected_faces": len(final_results),
     "results": list(final_results.values()),
     "debug_images": {
-        "saved_images": debug_images,
-        "faces": [f for f in os.listdir(args.debug_dir) if f.startswith("face_") or f.startswith("flipped_face_")]
+        "saved_images": [],  # Không trả về đường dẫn vì ảnh đã bị xóa
+        "faces": []          # Không trả về danh sách khuôn mặt vì ảnh đã bị xóa
     }
 }, indent=2))

@@ -5,9 +5,14 @@ import '../../services/api_service.dart';
 import '../../models/models.dart'; // Giả sử các class model được định nghĩa trong file models.dart
 
 class AttendanceSessionScreen extends StatefulWidget {
-  final AttendanceSession session;
+  final int sessionId;
+  final String subject;
 
-  const AttendanceSessionScreen({super.key, required this.session});
+  const AttendanceSessionScreen({
+    Key? key,
+    required this.sessionId,
+    required this.subject, // ✅ Và thêm vào constructor
+  }) : super(key: key);
 
   @override
   State<AttendanceSessionScreen> createState() => _AttendanceSessionScreenState();
@@ -26,7 +31,7 @@ class _AttendanceSessionScreenState extends State<AttendanceSessionScreen> {
   /// Phương thức gọi API để lấy danh sách điểm danh của một phiên
   Future<Map<String, dynamic>> _fetchSessionAttendance() async {
     try {
-      final response = await ApiService().getSessionAttendance(widget.session.id);
+      final response = await ApiService().getSessionAttendance(widget.sessionId);
       if (response.success) {
         return response.data!;
       } else {
@@ -42,7 +47,7 @@ class _AttendanceSessionScreenState extends State<AttendanceSessionScreen> {
   /// Phương thức gọi API để đóng phiên điểm danh
   Future<void> _closeSession() async {
     try {
-      final response = await ApiService().closeSession(widget.session.id);
+      final response = await ApiService().closeSession(widget.sessionId);
       if (response.success) {
         _showSnackBar('Phiên điểm danh đã được đóng thành công.', Colors.green);
         if (mounted) {
@@ -69,7 +74,7 @@ class _AttendanceSessionScreenState extends State<AttendanceSessionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.session.subject),
+        title: Text(widget.subject),
         backgroundColor: Colors.blueAccent,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -177,11 +182,11 @@ class _AttendanceSessionScreenState extends State<AttendanceSessionScreen> {
           ),
         ),
         title: Text(
-          attendance.studentName ?? 'Sinh viên chưa biết',
+          attendance.studentName ,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          'Mã số: ${attendance.studentCode ?? 'N/A'}\nThời gian: ${attendance.attendanceTime.toLocal().toString().substring(11, 16)}',
+          'Mã số: ${attendance.studentCode}\nThời gian: ${attendance.attendanceTime.toLocal().toString().substring(11, 16)}',
         ),
         trailing: Text(
           attendance.status.displayName,

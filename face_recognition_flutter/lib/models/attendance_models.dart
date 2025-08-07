@@ -78,7 +78,6 @@ class AttendanceSession {
     required this.createdAt,
     this.teacherName,
     this.totalAttendances,
-
     this.totalStudents,
     this.presentCount,
     this.lateCount,
@@ -86,21 +85,17 @@ class AttendanceSession {
   });
 
   factory AttendanceSession.fromJson(Map<String, dynamic> json) {
-    // Kiểm tra các trường bắt buộc
     if (json['id'] == null ||
-        json['teacher_id'] == null ||
         json['subject'] == null ||
         json['class_name'] == null ||
         json['session_date'] == null ||
-        json['start_time'] == null ||
-        json['is_active'] == null ||
-        json['created_at'] == null) {
+        json['start_time'] == null) {
       throw ArgumentError('Missing required fields in AttendanceSession JSON');
     }
 
     return AttendanceSession(
       id: json['id'] as int,
-      teacherId: json['teacher_id'] as int,
+      teacherId: json['teacher_id'] as int? ?? 0, // fallback nếu không có
       subject: json['subject'] as String,
       className: json['class_name'] as String,
       sessionDate: DateTime.tryParse(json['session_date'] as String) ??
@@ -110,24 +105,15 @@ class AttendanceSession {
       isActive: json['is_active'] is bool
           ? json['is_active'] as bool
           : json['is_active'] == 1,
-      createdAt: DateTime.tryParse(json['created_at'] as String) ??
-          (throw ArgumentError('Invalid created_at format')),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(), // fallback nếu không có
       teacherName: json['teacher_name'] as String?,
-      totalAttendances: json['total_attendances'] is int
-          ? json['total_attendances'] as int
-          : int.tryParse(json['total_attendances']?.toString() ?? '0'),
-      totalStudents: json['total_students'] is int
-          ? json['total_students'] as int
-          : int.tryParse(json['total_students']?.toString() ?? '0'),
-      presentCount: json['present_count'] is int
-          ? json['present_count'] as int
-          : int.tryParse(json['present_count']?.toString() ?? '0'),
-      lateCount: json['late_count'] is int
-          ? json['late_count'] as int
-          : int.tryParse(json['late_count']?.toString() ?? '0') ,
-      absentCount: json['absent_count'] is int
-          ? json['absent_count'] as int
-          : int.tryParse(json['absent_count']?.toString() ?? '0'),
+      totalAttendances:
+          int.tryParse(json['total_attendances']?.toString() ?? '0'),
+      totalStudents: int.tryParse(json['total_students']?.toString() ?? '0'),
+      presentCount: int.tryParse(json['present_count']?.toString() ?? '0'),
+      lateCount: int.tryParse(json['late_count']?.toString() ?? '0'),
+      absentCount: int.tryParse(json['absent_count']?.toString() ?? '0'),
     );
   }
 

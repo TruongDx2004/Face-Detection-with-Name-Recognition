@@ -348,9 +348,9 @@ router.delete('/:id', authenticateToken, authorize('admin'), async (req, res) =>
  *       500:
  *         description: Internal server error
  */
-router.get('/schedules', authenticateToken, authorize('admin'), async (req, res) => {
+router.get('/schedules', authenticateToken, async (req, res) => {
   try {
-    const { class_id, subject_id, teacher_id, page = 1, limit = 20 } = req.query;
+    const { class_id, subject_id, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
     let query = `
@@ -370,17 +370,27 @@ router.get('/schedules', authenticateToken, authorize('admin'), async (req, res)
     `;
     const params = [];
 
+    // Nếu là giáo viên thì chỉ lấy lịch của chính họ
+    if (req.user.role === 'teacher') {
+      query += ' AND s.teacher_id = ?';
+      params.push(req.user.id);
+    } else if (req.user.role === 'admin') {
+      if (req.query.teacher_id) {
+        query += ' AND s.teacher_id = ?';
+        params.push(parseInt(req.query.teacher_id));
+      }
+    } else {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
     if (class_id) {
       query += ' AND s.class_id = ?';
       params.push(parseInt(class_id));
     }
+
     if (subject_id) {
       query += ' AND s.subject_id = ?';
       params.push(parseInt(subject_id));
-    }
-    if (teacher_id) {
-      query += ' AND s.teacher_id = ?';
-      params.push(parseInt(teacher_id));
     }
 
     query += ` ORDER BY s.weekday, s.start_time LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
@@ -396,6 +406,7 @@ router.get('/schedules', authenticateToken, authorize('admin'), async (req, res)
     res.status(500).json({ error: 'Failed to retrieve schedules' });
   }
 });
+
 
 /**
  * @swagger
@@ -710,11 +721,20 @@ router.delete('/schedules/:id', authenticateToken, authorize('admin'), async (re
  *       500:
  *         description: Internal server error
  */
-router.get('/schedules/options', authenticateToken, authorize('admin'), async (req, res) => {
+router.get('/schedules/options', authenticateToken, async (req, res) => {
   try {
     const [classes] = await db.execute('SELECT id, name FROM classes ORDER BY name');
     const [subjects] = await db.execute('SELECT id, name FROM subjects ORDER BY name');
-    const [teachers] = await db.execute('SELECT id, full_name FROM users WHERE role = "teacher" ORDER BY full_name');
+
+    let teachers = [];
+    // Giáo viên chỉ lấy thông tin của chính họ
+    if (req.user.role === 'teacher') {
+      const [result] = await db.execute('SELECT id, full_name FROM users WHERE id = ?', [req.user.id]);
+      teachers = result;
+    } else {
+      const [result] = await db.execute('SELECT id, full_name FROM users WHERE role = "teacher" ORDER BY full_name');
+      teachers = result;
+    }
 
     res.status(200).json({
       message: 'Options retrieved successfully',
@@ -727,5 +747,6 @@ router.get('/schedules/options', authenticateToken, authorize('admin'), async (r
     res.status(500).json({ error: 'Failed to retrieve options' });
   }
 });
+
 
 module.exports = router;
