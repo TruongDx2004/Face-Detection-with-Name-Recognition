@@ -366,19 +366,26 @@ router.get('/schedules', authenticateToken, async (req, res) => {
       JOIN classes c ON s.class_id = c.id
       JOIN subjects sub ON s.subject_id = sub.id
       JOIN users u ON s.teacher_id = u.id
-      WHERE 1=1
     `;
+
     const params = [];
 
-    // Nếu là giáo viên thì chỉ lấy lịch của chính họ
     if (req.user.role === 'teacher') {
-      query += ' AND s.teacher_id = ?';
+      query += ' WHERE s.teacher_id = ?';
       params.push(req.user.id);
     } else if (req.user.role === 'admin') {
+      query += ' WHERE 1=1';
       if (req.query.teacher_id) {
         query += ' AND s.teacher_id = ?';
         params.push(parseInt(req.query.teacher_id));
       }
+    } else if (req.user.role === 'student') {
+      // Join bảng class_students để lấy class_id của sinh viên hiện tại
+      query += `
+        JOIN class_students cs ON s.class_id = cs.class_id
+        WHERE cs.student_id = ?
+      `;
+      params.push(req.user.id);
     } else {
       return res.status(403).json({ error: 'Unauthorized' });
     }

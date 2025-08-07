@@ -867,6 +867,24 @@ class ApiService {
     }
   }
 
+   // ============ NEW: SCHEDULE ENDPOINTS ============
+
+  Future<ApiResponse<List<Schedule>>> getStudentSchedules() async {
+    try {
+      final response = await _makeRequest('GET', '/subjects/schedules');
+      return _handleResponse<List<Schedule>>(
+        response,
+        (data) {
+          final List<dynamic> schedulesList = data['schedules'] ?? [];
+          return schedulesList.map((item) => Schedule.fromJson(item)).toList();
+        },
+      );
+    } catch (e) {
+      _logger.e('Get student schedules error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+  
   // ============ ADMIN ENDPOINTS ============
 
   Future<ApiResponse<List<User>>> getAllUsers({

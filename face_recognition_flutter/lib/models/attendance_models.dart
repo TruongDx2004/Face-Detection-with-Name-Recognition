@@ -50,6 +50,7 @@ enum AttendanceStatus {
 /// Model cho phiên điểm danh
 class AttendanceSession {
   final int id;
+  final int scheduleId; 
   final int teacherId;
   final String subject;
   final String className;
@@ -68,6 +69,7 @@ class AttendanceSession {
 
   AttendanceSession({
     required this.id,
+    required this.scheduleId, 
     required this.teacherId,
     required this.subject,
     required this.className,
@@ -95,7 +97,8 @@ class AttendanceSession {
 
     return AttendanceSession(
       id: json['id'] as int,
-      teacherId: json['teacher_id'] as int? ?? 0, // fallback nếu không có
+      scheduleId: (json['schedule_id'] ?? 0) as int, // Cập nhật fromJson
+      teacherId: json['teacher_id'] as int? ?? 0,
       subject: json['subject'] as String,
       className: json['class_name'] as String,
       sessionDate: DateTime.tryParse(json['session_date'] as String) ??
@@ -106,7 +109,7 @@ class AttendanceSession {
           ? json['is_active'] as bool
           : json['is_active'] == 1,
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
-          DateTime.now(), // fallback nếu không có
+          DateTime.now(),
       teacherName: json['teacher_name'] as String?,
       totalAttendances:
           int.tryParse(json['total_attendances']?.toString() ?? '0'),
@@ -120,6 +123,7 @@ class AttendanceSession {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'schedule_id': scheduleId, // Cập nhật toJson
       'teacher_id': teacherId,
       'subject': subject,
       'class_name': className,
@@ -179,7 +183,7 @@ class Attendance {
       sessionId: (json['session_id'] ?? 0) as int,
       studentId: json['student_id'] != null
           ? (json['student_id'] as int)
-          : 0, // fallback nếu API không trả student_id
+          : 0,
       attendanceTime: DateTime.tryParse(json['attendance_time'] ?? '') ??
           (throw ArgumentError('Invalid attendance_time format')),
       confidenceScore: json['confidence_score'] != null

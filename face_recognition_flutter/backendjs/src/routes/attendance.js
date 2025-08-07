@@ -936,6 +936,7 @@ router.get('/sessions', authenticateToken, async (req, res) => {
         let query = `
         SELECT 
             asess.id, 
+            asess.schedule_id,
             sch.teacher_id,
             c.name AS class_name,
             subj.name AS subject,
