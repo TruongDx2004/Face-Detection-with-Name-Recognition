@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f2f5;
+        }
+
+        .login-container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-icon {
+            font-size: 6rem;
+            color: #2196f3;
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2196f3;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            padding-left: 2.5rem;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .form-group .icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 2.5rem;
+            color: #555;
+            font-size: 1.2rem;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            color: #4caf50;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background-color: #2196f3;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.125rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:disabled {
+            background-color: #90caf9;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #1976d2;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+                margin: 0 1rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+    <!-- React & Libs -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- API & Auth -->
+    <script src="services/api-service.js"></script>
+    <script src="services/auth-service.js"></script>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script>
+        console.log('Plain JavaScript running');
+    </script>
+    <script type="text/babel" data-presets="react,env">
+        console.log('Babel script running');
+        try {
+            console.log('React available:', typeof React !== 'undefined');
+            console.log('ReactDOM available:', typeof ReactDOM !== 'undefined');
+            console.log('authService available:', typeof window.authService !== 'undefined');
+            console.log('apiService available:', typeof window.apiService !== 'undefined');
+            const { useState, useEffect } = React;
+
+            function LoginScreen() {
+                //console.log('LoginScreen component defined');
+                const [credentials, setCredentials] = useState({ username: '', password: '' });
+                const [error, setError] = useState(null);
+                const [success, setSuccess] = useState(null);
+                const [loading, setLoading] = useState(false);
+
+                const handleInputChange = (e) => {
+                    const { name, value } = e.target;
+                    //console.log('Input changed:', name, value);
+                    setCredentials(prev => ({
+                        ...prev,
+                        [name]: value,
+                    }));
+                    setError(null);
+                    setSuccess(null);
+                };
+
+                const handleSubmit = async (e) => {
+                    e.preventDefault();
+                    console.log('Form submitted with credentials:', credentials);
+                    if (!credentials.username.trim() || !credentials.password.trim()) {
+                        setError('Vui lòng nhập tên đăng nhập và mật khẩu');
+                        return;
+                    }
+
+
+                    setLoading(true);
+                    try {
+                        const response = await window.authService.login({
+                            username: credentials.username,
+                            password: credentials.password,
+                        });
+                        console.log('Login response:', response);
+                        if (response.success && response.data) {
+                            await window.authService.saveLoginData(response.data);
+                            const profileResponse = await window.apiService.getProfile();
+                            console.log('Profile response:', profileResponse);
+                            if (profileResponse.success && profileResponse.data) {
+                                const user = profileResponse.data;
+                                if (user.role === 'admin') {
+                                    setSuccess('Đăng nhập thành công với quyền Admin');
+                                    setTimeout(() => {
+                                        window.location.href = 'admin/dashboard/admin_dashboard.html';
+                                    }, 2000);
+                                } else if (user.role === 'student') {
+                                    window.location.href = `student_dashboard.html?userId=${user.id}`;
+                                } else if (user.role === 'teacher') {
+                                    window.location.href = `teacher_dashboard.html?teacherId=${user.id}`;
+                                }
+                            } else {
+                                setError(profileResponse.message || 'Không thể lấy thông tin hồ sơ');
+                            }
+                        } else {
+                            setError(response.message || 'Đăng nhập thất bại');
+                        }
+                    } catch (e) {
+                        console.error('Login error:', e);
+                        setError('Lỗi mạng. Vui lòng thử lại.');
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                return (
+                    <div className="login-container">
+                        <div className="login-icon">🔒</div>
+                        <h2>Đăng nhập</h2>
+                        {error && <p className="error-message">{error}</p>}
+                        {success && <p className="success-message">{success}</p>}
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Tên đăng nhập</label>
+                                <span className="icon">👤</span>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    onChange={handleInputChange}
+                                    placeholder="Nhập tên đăng nhập"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Mật khẩu</label>
+                                <span className="icon">🔑</span>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={credentials.password}
+                                    onChange={handleInputChange}
+                                    placeholder="Nhập mật khẩu"
+                                />
+                            </div>
+                            <button type="submit" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <span className="spinner"></span>
+                                        Đang đăng nhập...
+                                    </>
+                                ) : (
+                                    'Đăng nhập'
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                );
+            }
+
+            function App() {
+                console.log('App component rendered');
+                return <LoginScreen />;
+            }
+
+            console.log('Attempting to render App');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            console.log('Root created');
+            root.render(<App />);
+            console.log('App rendered');
+        } catch (e) {
+            console.error('Error in Babel script:', e);
+        }
+    </script>
+</body>
+
+</html>

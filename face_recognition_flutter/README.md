@@ -1,22 +1,36 @@
 # face_recognition_flutter
 
-python -m pip install mysql-connector-python
+B1:
+Chạy setup_server.js 
+face_recognition_flutter\backendjs\setup_server.js
+File này khởi tạo kết nối các thứ
 
-py -m pip install requests
+Chạy: 
+cd backendjs
+node setup_server.js                                                           
 
-py -m pip install bcrypt
+B2: 
+Chạy test_api.js
+Để kiểm tra server chạy cơ bản chưa
+face_recognition_flutter\backendjs\test_api.js
 
-pip install mysql-connector-python --user
+Chạy:
+node test_api.js
 
-python -m pip install -r requirements.txt
+B3:
+Tới face_recognition_flutter\my-app để viết fontend react 
+Tới face_recognition_flutter\lib\screens để lấy màn hình, chức năng để chuyển qua react
+Tới face_recognition_flutter\my-app\src\services để thao tác với API 
 
-python setup_server.py
+B4: Chạy giao diện
+Vào face_recognition_flutter\my-app 
+Chạy: npm start
 
-pip uninstall opencv-python
-pip install opencv-contrib-python
+Tài khoản test
+admin  -  admin123
+teacher1 - teacher123
+student1 - student123
 
-python run_server.py
-python test_api.py 
 
 
 

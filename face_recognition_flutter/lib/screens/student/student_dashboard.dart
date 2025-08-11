@@ -135,7 +135,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
       'Thứ sáu',
       'Thứ bảy'
     ];
-    return weekdays[weekday % 7 - 1];
+    return weekdays[weekday % 8 - 1];
   }
 
   @override

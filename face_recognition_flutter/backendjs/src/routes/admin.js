@@ -95,7 +95,15 @@ const router = express.Router();
  */
 router.get('/users', authenticateToken, authorize('admin'), async (req, res) => {
     try {
-        const { role, page = 1, limit = 20 } = req.query;
+        const {
+            role,
+            search,
+            status,
+            face_trained,
+            page = 1,
+            limit = 20
+        } = req.query;
+
         const limitInt = parseInt(limit, 10);
         const offsetInt = (parseInt(page, 10) - 1) * limitInt;
 
@@ -103,8 +111,31 @@ router.get('/users', authenticateToken, authorize('admin'), async (req, res) => 
         const whereClauses = [];
 
         if (role) {
-            whereClauses.push('role = ?');
+            whereClauses.push('u.role = ?');
             params.push(role);
+        }
+
+        if (search) {
+            whereClauses.push(`(
+                u.full_name LIKE ? OR 
+                u.username LIKE ? OR 
+                u.email LIKE ?
+            )`);
+            const searchParam = `%${search}%`;
+            params.push(searchParam, searchParam, searchParam);
+        }
+
+        if (status !== undefined) {
+            // status có thể là 'true'/'false' hoặc '1'/'0', chuyển về số 0 hoặc 1
+            const isActive = (status === 'true' || status === '1') ? 1 : 0;
+            whereClauses.push('u.is_active = ?');
+            params.push(isActive);
+        }
+
+        if (face_trained !== undefined) {
+            const faceTrainedVal = (face_trained === 'true' || face_trained === '1') ? 1 : 0;
+            whereClauses.push('u.face_trained = ?');
+            params.push(faceTrainedVal);
         }
 
         let query = `
@@ -124,23 +155,24 @@ router.get('/users', authenticateToken, authorize('admin'), async (req, res) => 
           LEFT JOIN classes c ON cs.class_id = c.id AND u.role = 'student'
         `;
 
-        // Thêm mệnh đề WHERE nếu có
         if (whereClauses.length > 0) {
             const whereString = whereClauses.join(' AND ');
             query += ' WHERE ' + whereString;
             countQuery += ' WHERE ' + whereString;
         }
 
-        // query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        //query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
 
+        // Thêm limit và offset vào params
         const finalQueryParams = [...params, limitInt, offsetInt];
 
         const [users] = await db.execute(query, finalQueryParams);
         const [countResult] = await db.execute(countQuery, params);
 
+        res.set('Cache-Control', 'no-store');
         res.json({
             message: 'Users retrieved successfully',
-            users: users,
+            users,
             pagination: {
                 current_page: parseInt(page, 10),
                 per_page: limitInt,
@@ -154,6 +186,7 @@ router.get('/users', authenticateToken, authorize('admin'), async (req, res) => 
         res.status(500).json({ error: 'Failed to get users' });
     }
 });
+
 
 // Create user
 /**
@@ -225,7 +258,7 @@ router.post('/users', authenticateToken, authorize('admin'), async (req, res) =>
             full_name,
             email,
             role,
-            student_id, 
+            student_id,
             class_name
         });
 
@@ -251,20 +284,23 @@ router.post('/users', authenticateToken, authorize('admin'), async (req, res) =>
         // 4️⃣ Nếu là student → kiểm tra class_name + student_id hợp lệ trước khi insert
         let class_id = null;
         if (role === 'student') {
-            if (!class_name || !student_id) {
-                return res.status(400).json({ error: 'Missing class_name or student_code for student' });
+            if (class_name && student_id) {
+                const [classRows] = await db.execute('SELECT id FROM classes WHERE name = ?', [class_name]);
+                if (classRows.length > 0) {
+                    class_id = classRows[0].id;
+                } else {
+                    // class_name không tồn tại, bỏ qua việc thêm vào class_students
+                    console.warn(`Class "${class_name}" không tồn tại, bỏ qua gán class_students`);
+                }
+            } else {
+                // class_name hoặc student_id không có, bỏ qua thêm class_students
+                console.warn('Thiếu class_name hoặc student_id, bỏ qua gán class_students');
             }
-
-            const [classRows] = await db.execute('SELECT id FROM classes WHERE name = ?', [class_name]);
-            if (classRows.length === 0) {
-                return res.status(400).json({ error: 'Không tồn tại lớp' });
-            }
-            class_id = classRows[0].id;
         }
 
-        // 5️⃣ Hash password
+        // 5️⃣ Mã hóa password
         const password_hash = await bcrypt.hash(password, 10);
-
+        
         // 6️⃣ Insert user
         const [userResult] = await db.execute(
             'INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)',
@@ -272,8 +308,8 @@ router.post('/users', authenticateToken, authorize('admin'), async (req, res) =>
         );
         const newUserId = userResult.insertId;
 
-        // 7️⃣ Nếu là student → insert vào class_students
-        if (role === 'student') {
+        // 7️⃣ Nếu là student và có class_id hợp lệ → insert vào class_students
+        if (role === 'student' && class_id !== null) {
             await db.execute(
                 'INSERT INTO class_students (student_id, class_id, student_code) VALUES (?, ?, ?)',
                 [newUserId, class_id, student_id]

@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Attendance - Đăng ký khuôn mặt</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #5b21b6;
+            --secondary-color: #f8fafc;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            --transition-fast: 0.15s ease-in-out;
+            --transition-normal: 0.3s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .page-header {
+            background: var(--card-background);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+        }
+
+        .page-title i {
+            color: var(--primary-color);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-xl);
+        }
+
+        /* Student Selection Panel */
+        .student-panel {
+            background: var(--card-background);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            padding: var(--spacing-xl);
+        }
+
+        .panel-header {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .panel-title i {
+            color: var(--primary-color);
+        }
+
+        /* Search and Filters */
+        .search-section {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .select-input {
+            flex: 1;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            background: var(--card-background);
+        }
+
+        /* Student List */
+        .student-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .student-item:last-child {
+            border-bottom: none;
+        }
+
+        .student-item:hover {
+            background: var(--secondary-color);
+        }
+
+        .student-item.selected {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: var(--spacing-md);
+        }
+
+        .student-info h4 {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .student-info p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .student-status {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: var(--spacing-xs);
+        }
+
+        .status-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .face-trained {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .face-not-trained {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        /* Registration Panel */
+        .registration-panel {
+            background: var(--card-background);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            padding: var(--spacing-xl);
+        }
+
+        .selected-user {
+            background: var(--secondary-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .selected-user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .selected-user-info h3 {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .selected-user-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Method Selection */
+        .method-selection {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .method-btn {
+            flex: 1;
+            padding: var(--spacing-lg);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            background: var(--card-background);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .method-btn:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .method-btn.active {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+        .method-btn i {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            display: block;
+        }
+
+        .method-btn h4 {
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .method-btn p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Camera Section */
+        .camera-section {
+            display: none;
+        }
+
+        .camera-section.active {
+            display: block;
+        }
+
+        .camera-container {
+            position: relative;
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        #cameraPreview {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .face-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid var(--accent-color);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .recording-indicator {
+            position: absolute;
+            top: var(--spacing-md);
+            left: var(--spacing-md);
+            background: var(--error-color);
+            color: white;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        .recording-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .control-btn.record {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .control-btn.record:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .control-btn.stop {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            display: none;
+        }
+
+        .upload-section.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        #videoFileInput {
+            display: none;
+        }
+
+        /* Video Preview */
+        .video-preview {
+            display: none;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .video-preview.active {
+            display: block;
+        }
+
+        .preview-video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: var(--radius-lg);
+            background: #000;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: var(--secondary-color);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-md);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: var(--spacing-lg);
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            transition: width var(--transition-normal);
+            border-radius: var(--radius-sm);
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--card-background);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+            border-color: var(--error-color);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .instructions h4 {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .instructions ul {
+            color: var(--text-secondary);
+            padding-left: var(--spacing-lg);
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: var(--spacing-xs);
+        }
+
+        /* Loading and States */
+        .loading {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-md);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-md);
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateX(100%);
+            transition: transform var(--transition-normal);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success-color);
+        }
+
+        .notification.error {
+            background: var(--error-color);
+        }
+
+        .notification.warning {
+            background: var(--warning-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-lg);
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-lg);
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .method-selection {
+                flex-direction: column;
+            }
+
+            .camera-container {
+                height: 250px;
+            }
+
+            #cameraPreview {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-face-smile"></i>
+                Đăng ký khuôn mặt
+            </h1>
+            <p class="page-subtitle">Đăng ký dữ liệu khuôn mặt cho hệ thống điểm danh tự động</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Student Selection Panel -->
+            <div class="student-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <i class="fas fa-users"></i>
+                        Chọn sinh viên
+                    </h2>
+                </div>
+
+                <div class="search-section">
+                    <input 
+                        type="text" 
+                        id="studentSearch" 
+                        class="search-input" 
+                        placeholder="Tìm kiếm sinh viên..."
+                    >
+                    <div class="filter-row">
+                        <select id="roleFilter" class="select-input">
+                            <option value="">Tất cả vai trò</option>
+                            <option value="student">Sinh viên</option>
+                            <option value="teacher">Giáo viên</option>
+                        </select>
+                        <select id="faceTrainedFilter" class="select-input">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="true">Đã đăng ký</option>
+                            <option value="false">Chưa đăng ký</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="student-list" id="studentList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Đang tải danh sách...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registration Panel -->
+            <div class="registration-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <i class="fas fa-camera"></i>
+                        Đăng ký khuôn mặt
+                    </h2>
+                </div>
+
+                <!-- Selected User Info -->
+                <div id="selectedUserInfo" class="selected-user" style="display: none;">
+                    <div class="selected-user-avatar" id="selectedAvatar"></div>
+                    <div class="selected-user-info">
+                        <h3 id="selectedName"></h3>
+                        <p id="selectedDetails"></p>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="instructions">
+                    <h4>
+                        <i class="fas fa-info-circle"></i>
+                        Hướng dẫn đăng ký
+                    </h4>
+                    <ul>
+                        <li>Chọn phương thức đăng ký: Camera trực tiếp hoặc Upload video</li>
+                        <li>Đảm bảo khuôn mặt được chiếu sáng đều và rõ ràng</li>
+                        <li>Quay video trong 5 giây, di chuyển đầu nhẹ để ghi nhận nhiều góc độ</li>
+                        <li>Tránh che khuôn mặt bằng tay, kính đen hoặc khẩu trang</li>
+                        <li>Video nên có độ phân giải tốt và không bị mờ</li>
+                    </ul>
+                </div>
+
+                <!-- Method Selection -->
+                <div class="method-selection">
+                    <div class="method-btn active" onclick="selectMethod('camera')">
+                        <i class="fas fa-video"></i>
+                        <h4>Camera trực tiếp</h4>
+                        <p>Quay video bằng camera</p>
+                    </div>
+                    <div class="method-btn" onclick="selectMethod('upload')">
+                        <i class="fas fa-upload"></i>
+                        <h4>Upload video</h4>
+                        <p>Chọn video từ thiết bị</p>
+                    </div>
+                </div>
+
+                <!-- Camera Section -->
+                <div class="camera-section active" id="cameraSection">
+                    <div class="camera-container">
+                        <video id="cameraPreview" autoplay muted></video>
+                        <div class="face-guide"></div>
+                        <div class="recording-indicator" id="recordingIndicator">
+                            <i class="fas fa-circle"></i>
+                            Đang quay
+                        </div>
+                        <div class="camera-overlay" id="cameraOverlay">
+                            <i class="fas fa-video" style="font-size: 3rem;"></i>
+                            <p>Nhấn để bắt đầu camera</p>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls">
+                        <button class="control-btn record" id="startCameraBtn" onclick="startCamera()">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="control-btn record" id="recordBtn" onclick="startRecording()" disabled>
+                            <i class="fas fa-circle"></i>
+                        </button>
+                        <button class="control-btn stop" id="stopBtn" onclick="stopRecording()" disabled>
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload Section -->
+                <div class="upload-section" id="uploadSection">
+                    <div class="upload-area" onclick="document.getElementById('videoFileInput').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-text">
+                            <strong>Nhấn để chọn video</strong> hoặc kéo thả file vào đây
+                        </div>
+                        <div class="upload-hint">
+                            Hỗ trợ: MP4, AVI, MOV, WebM (Tối đa 10MB)
+                        </div>
+                    </div>
+                    <input type="file" id="videoFileInput" accept="video/*" onchange="handleVideoUpload(event)">
+                    
+                    <div class="video-preview" id="videoPreview">
+                        <video id="previewVideo" class="preview-video" controls></video>
+                        <div class="preview-info">
+                            <span id="videoInfo"></span>
+                            <button class="btn btn-danger" onclick="clearVideo()">
+                                <i class="fas fa-trash"></i>
+                                Xóa video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Đang xử lý...</div>
+                </div>
+
+                <!-- Submit Button -->
+                <button class="btn btn-primary btn-full" id="submitBtn" onclick="submitFaceData()" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                    Đăng ký khuôn mặt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedUser = null;
+        let allUsers = [];
+        let filteredUsers = [];
+        let currentMethod = 'camera';
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let stream = null;
+        let selectedVideoFile = null;
+        let recordingTimer = null;
+
+        // API Service
+        const apiService = {
+            baseUrl: 'http://localhost:8000',
+            token: localStorage.getItem('auth_token'),
+            
+            getHeaders() {
+                const headers = {
+                    'Accept': 'application/json',
+                };
+                if (this.token) {
+                    headers['Authorization'] = `Bearer ${this.token}`;
+                }
+                return headers;
+            },
+
+            async getAllUsers(filters = {}) {
+                try {
+                    const queryParams = new URLSearchParams({
+                        page: filters.page || 1,
+                        limit: filters.limit || 100
+                    });
+                    
+                    if (filters.role) queryParams.append('role', filters.role);
+                    if (filters.search) queryParams.append('search', filters.search);
+                    if (filters.face_trained !== undefined) queryParams.append('face_trained', filters.face_trained);
+
+                    const response = await fetch(`${this.baseUrl}/admin/users?${queryParams}`, {
+                        method: 'GET',
+                        headers: this.getHeaders()
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || data.error || 'Unknown error occurred');
+                    }
+
+                    return {
+                        success: true,
+                        data: data.data || data,
+                        message: data.message || 'Success'
+                    };
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                    throw error;
+                }
+            },
+
+            async uploadFaceVideo(videoFile, userId) {
+                try {
+                    const formData = new FormData();
+                    formData.append('video', videoFile);
+                    formData.append('userId', userId.toString());
+
+                    const response = await fetch(`${this.baseUrl}/face/upload-video`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || data.error || 'Unknown error occurred');
+                    }
+
+                    return {
+                        success: true,
+                        data: data.data || data,
+                        message: data.message || 'Success'
+                    };
+                } catch (error) {
+                    console.error('Error uploading video:', error);
+                    throw error;
+                }
+            }
+        };
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('studentSearch').addEventListener('input', filterUsers);
+            document.getElementById('roleFilter').addEventListener('change', filterUsers);
+            document.getElementById('faceTrainedFilter').addEventListener('change', filterUsers);
+            
+            // Upload area drag and drop
+            const uploadArea = document.querySelector('.upload-area');
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type.startsWith('video/')) {
+                        handleVideoFile(files[0]);
+                    }
+                });
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await apiService.getAllUsers({ limit: 100 });
+                allUsers = response.data.users || [];
+                filteredUsers = [...allUsers];
+                renderUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showError('Không thể tải danh sách người dùng: ' + error.message);
+            }
+        }
+
+        // Filter users
+        function filterUsers() {
+            const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+            const roleFilter = document.getElementById('roleFilter').value;
+            const faceTrainedFilter = document.getElementById('faceTrainedFilter').value;
+
+            filteredUsers = allUsers.filter(user => {
+                const matchesSearch = user.full_name.toLowerCase().includes(searchTerm) ||
+                                    user.username.toLowerCase().includes(searchTerm) ||
+                                    (user.email && user.email.toLowerCase().includes(searchTerm));
+                
+                const matchesRole = !roleFilter || user.role === roleFilter;
+                const matchesFaceTrained = !faceTrainedFilter || 
+                                         user.face_trained.toString() === faceTrainedFilter;
+
+                return matchesSearch && matchesRole && matchesFaceTrained;
+            });
+
+            renderUsers();
+        }
+
+        // Render users list
+        function renderUsers() {
+            const studentList = document.getElementById('studentList');
+            
+            if (filteredUsers.length === 0) {
+                studentList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>Không tìm thấy người dùng nào</p>
+                    </div>
+                `;
+                return;
+            }
+
+            studentList.innerHTML = filteredUsers.map(user => {
+                const initials = getInitials(user.full_name);
+                const faceStatus = user.face_trained ? 'face-trained' : 'face-not-trained';
+                const faceText = user.face_trained ? 'Đã đăng ký' : 'Chưa đăng ký';
+                const roleText = getRoleDisplayName(user.role);
+
+                return `
+                    <div class="student-item ${selectedUser?.id === user.id ? 'selected' : ''}" 
+                         onclick="selectUser(${user.id})">
+                        <div class="student-avatar">${initials}</div>
+                        <div class="student-info">
+                            <h4>${user.full_name}</h4>
+                            <p>${user.username} • ${roleText}</p>
+                        </div>
+                        <div class="student-status">
+                            <span class="status-badge ${faceStatus}">${faceText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select user
+        function selectUser(userId) {
+            selectedUser = allUsers.find(user => user.id === userId);
+            
+            if (selectedUser) {
+                // Update selected user info
+                document.getElementById('selectedAvatar').textContent = getInitials(selectedUser.full_name);
+                document.getElementById('selectedName').textContent = selectedUser.full_name;
+                document.getElementById('selectedDetails').textContent = 
+                    `${selectedUser.username} • ${getRoleDisplayName(selectedUser.role)}`;
+                
+                document.getElementById('selectedUserInfo').style.display = 'flex';
+                document.getElementById('submitBtn').disabled = currentMethod === 'upload' ? !selectedVideoFile : false;
+                
+                // Update selected state in list
+                renderUsers();
+            }
+        }
+
+        // Select registration method
+        function selectMethod(method) {
+            currentMethod = method;
+            
+            // Update method buttons
+            document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.method-btn').classList.add('active');
+            
+            // Update sections
+            document.getElementById('cameraSection').classList.toggle('active', method === 'camera');
+            document.getElementById('uploadSection').classList.toggle('active', method === 'upload');
+            
+            // Reset states
+            stopCamera();
+            clearVideo();
+            updateSubmitButton();
+        }
+
+        // Camera functions
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    } 
+                });
+                
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = stream;
+                
+                document.getElementById('cameraOverlay').style.display = 'none';
+                document.getElementById('startCameraBtn').disabled = true;
+                document.getElementById('recordBtn').disabled = false;
+                
+                updateSubmitButton();
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showNotification('Không thể truy cập camera: ' + error.message, 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            const video = document.getElementById('cameraPreview');
+            video.srcObject = null;
+            
+            document.getElementById('cameraOverlay').style.display = 'flex';
+            document.getElementById('startCameraBtn').disabled = false;
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('recordingIndicator').classList.remove('active');
+            
+            updateSubmitButton();
+        }
+
+        function startRecording() {
+            if (!stream) return;
+
+            try {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    selectedVideoFile = new File([blob], 'face_video.webm', { type: 'video/webm' });
+                    updateSubmitButton();
+                };
+                
+                mediaRecorder.start();
+                
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recordingIndicator').classList.add('active');
+                
+                // Auto stop after 5 seconds
+                recordingTimer = setTimeout(() => {
+                    stopRecording();
+                }, 5000);
+                
+                // Update progress
+                updateRecordingProgress();
+                
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showNotification('Không thể bắt đầu quay video: ' + error.message, 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            if (recordingTimer) {
+                clearTimeout(recordingTimer);
+                recordingTimer = null;
+            }
+            
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('recordingIndicator').classList.remove('active');
+            document.getElementById('progressContainer').classList.remove('active');
+        }
+
+        function updateRecordingProgress() {
+            document.getElementById('progressContainer').classList.add('active');
+            
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 2;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = `Đang quay video... ${Math.round(progress)}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    document.getElementById('progressText').textContent = 'Hoàn thành!';
+                    setTimeout(() => {
+                        document.getElementById('progressContainer').classList.remove('active');
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        // Upload functions
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleVideoFile(file);
+            }
+        }
+
+        function handleVideoFile(file) {
+            // Validate file
+            if (!file.type.startsWith('video/')) {
+                showNotification('Vui lòng chọn file video', 'error');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                showNotification('File video quá lớn (tối đa 10MB)', 'error');
+                return;
+            }
+            
+            selectedVideoFile = file;
+            
+            // Show preview
+            const video = document.getElementById('previewVideo');
+            const preview = document.getElementById('videoPreview');
+            
+            video.src = URL.createObjectURL(file);
+            document.getElementById('videoInfo').textContent = 
+                `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            
+            preview.classList.add('active');
+            updateSubmitButton();
+        }
+
+        function clearVideo() {
+            selectedVideoFile = null;
+            document.getElementById('videoPreview').classList.remove('active');
+            document.getElementById('videoFileInput').value = '';
+            
+            const video = document.getElementById('previewVideo');
+            if (video.src) {
+                URL.revokeObjectURL(video.src);
+                video.src = '';
+            }
+            
+            updateSubmitButton();
+        }
+
+        // Submit face data
+        async function submitFaceData() {
+            if (!selectedUser) {
+                showNotification('Vui lòng chọn người dùng', 'warning');
+                return;
+            }
+            
+            if (!selectedVideoFile) {
+                showNotification('Vui lòng quay video hoặc chọn file video', 'warning');
+                return;
+            }
+            
+            try {
+                showProgress('Đang tải video lên server...', 0);
+                
+                const response = await apiService.uploadFaceVideo(selectedVideoFile, selectedUser.id);
+                
+                if (response.success) {
+                    showProgress('Xử lý thành công!', 100);
+                    showNotification('Đăng ký khuôn mặt thành công!', 'success');
+                    
+                    // Update user status
+                    selectedUser.face_trained = true;
+                    const userIndex = allUsers.findIndex(u => u.id === selectedUser.id);
+                    if (userIndex !== -1) {
+                        allUsers[userIndex].face_trained = true;
+                    }
+                    
+                    // Reset form
+                    resetForm();
+                    renderUsers();
+                    
+                    setTimeout(() => {
+                        hideProgress();
+                    }, 2000);
+                    
+                } else {
+                    throw new Error(response.message || 'Upload failed');
+                }
+                
+            } catch (error) {
+                console.error('Error submitting face data:', error);
+                showNotification('Lỗi: ' + error.message, 'error');
+                hideProgress();
+            }
+        }
+
+        // UI Helper functions
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            const hasUser = selectedUser !== null;
+            const hasVideo = selectedVideoFile !== null;
+            
+            submitBtn.disabled = !(hasUser && hasVideo);
+        }
+
+        function resetForm() {
+            selectedUser = null;
+            selectedVideoFile = null;
+            
+            document.getElementById('selectedUserInfo').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+            
+            // Reset camera
+            stopCamera();
+            
+            // Reset upload
+            clearVideo();
+            
+            // Reset method to camera
+            selectMethod('camera');
+            document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.method-btn')[0].classList.add('active');
+        }
+
+        function showProgress(text, percentage) {
+            document.getElementById('progressContainer').classList.add('active');
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function hideProgress() {
+            document.getElementById('progressContainer').classList.remove('active');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                   type === 'error' ? 'exclamation-circle' : 
+                                   type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Hide notification
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        function showError(message) {
+            const studentList = document.getElementById('studentList');
+            studentList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p style="color: var(--error-color);">${message}</p>
+                    <button class="btn btn-primary" onclick="loadUsers()" style="margin-top: var(--spacing-md);">
+                        <i class="fas fa-refresh"></i>
+                        Thử lại
+                    </button>
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function getRoleDisplayName(role) {
+            const roleNames = {
+                admin: 'Quản trị viên',
+                teacher: 'Giáo viên',
+                student: 'Sinh viên'
+            };
+            return roleNames[role] || role;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Auto-refresh users every 30 seconds
+        setInterval(() => {
+            if (!selectedUser) {
+                loadUsers();
+            }
+        }, 30000);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            if (selectedVideoFile && selectedVideoFile instanceof File) {
+                const video = document.getElementById('previewVideo');
+                if (video.src) {
+                    URL.revokeObjectURL(video.src);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -67,27 +67,26 @@ const router = express.Router();
  */
 router.get('/', authenticateToken, authorize('admin'), async (req, res) => {
   try {
-    // Ép kiểu và kiểm tra giá trị
-    let page = parseInt(req.query.page, 10);
-    if (isNaN(page) || page < 1) page = 1;
-
-    let limit = parseInt(req.query.limit, 10);
-    if (isNaN(limit) || limit < 1) limit = 20;
-
+    let page = parseInt(req.query.page, 10) || 1;
+    let limit = parseInt(req.query.limit, 10) || 20;
     const offset = (page - 1) * limit;
-
-    const name = (typeof req.query.name === 'string' && req.query.name.trim()) || '';
+    const name = (req.query.name || '').trim();
 
     let query = `
       SELECT 
         c.id,
         c.name,
-        COUNT(cs.student_id) AS student_count
+        c.code,
+        c.year,
+        c.description,
+        c.status,
+        COUNT(DISTINCT cs.student_id) AS studentCount,
+        SUM(CASE WHEN u.face_trained = TRUE THEN 1 ELSE 0 END) AS studentsWithFace
       FROM classes c
       LEFT JOIN class_students cs ON c.id = cs.class_id
+      LEFT JOIN users u ON cs.student_id = u.id
       WHERE 1=1
     `;
-
     const params = [];
 
     if (name) {
@@ -95,19 +94,34 @@ router.get('/', authenticateToken, authorize('admin'), async (req, res) => {
       params.push(`%${name}%`);
     }
 
-    query += ` GROUP BY c.id ORDER BY c.name LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
-    params.push(limit, offset); // ✅ luôn là số
-
-    console.log('Executing query:', query, params);
+    query += `
+      GROUP BY c.id, c.name, c.code, c.year, c.description, c.status
+      ORDER BY c.name
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     const [classes] = await db.execute(query, params);
 
-    res.status(200).json({
-      message: 'Classes retrieved successfully',
-      classes
-    });
-  } catch (error) {
-    console.error('Get classes error:', error);
+    // Lấy danh sách sinh viên cho từng lớp
+    for (const cls of classes) {
+      const [students] = await db.execute(
+        `SELECT 
+           u.id, 
+           u.full_name AS name, 
+           cs.student_code AS code, 
+           u.email, 
+           u.face_trained AS hasFace
+         FROM class_students cs
+         JOIN users u ON cs.student_id = u.id
+         WHERE cs.class_id = ?`,
+        [cls.id]
+      );
+      cls.students = students;
+    }
+
+    res.json({ message: 'Classes retrieved successfully', classes });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to retrieve classes' });
   }
 });
@@ -508,22 +522,16 @@ router.delete('/:id/students/:student_id', authenticateToken, authorize('admin')
 
 /**
  * @swagger
- * /classes/available-students:
+ * /available-students:
  *   get:
- *     summary: Get students not in a specific class
- *     tags: [Classes]
+ *     summary: Lấy danh sách sinh viên chưa thuộc lớp nào
+ *     description: Trả về danh sách tất cả sinh viên có role là 'student', đang active, và chưa được thêm vào bất kỳ lớp học nào.
+ *     tags: [Students]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: class_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Class ID to check against
  *     responses:
  *       200:
- *         description: Available students retrieved successfully
+ *         description: Danh sách sinh viên chưa thuộc lớp nào.
  *         content:
  *           application/json:
  *             schema:
@@ -531,6 +539,7 @@ router.delete('/:id/students/:student_id', authenticateToken, authorize('admin')
  *               properties:
  *                 message:
  *                   type: string
+ *                   example: Available students retrieved successfully
  *                 students:
  *                   type: array
  *                   items:
@@ -538,35 +547,36 @@ router.delete('/:id/students/:student_id', authenticateToken, authorize('admin')
  *                     properties:
  *                       id:
  *                         type: integer
- *                       full_name:
+ *                         example: 4
+ *                       name:
  *                         type: string
- *                       student_code:
+ *                         example: Nguyễn Thị D
+ *                       email:
  *                         type: string
+ *                         example: d@example.com
  *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (admin role required)
+ *         description: Không có quyền truy cập hoặc chưa đăng nhập.
  *       500:
- *         description: Internal server error
+ *         description: Lỗi khi truy xuất dữ liệu từ server.
  */
 router.get('/available-students', authenticateToken, authorize('admin'), async (req, res) => {
   try {
-    const { class_id } = req.query;
-
-    const [students] = await db.execute(`
-      SELECT 
-        u.id,
-        u.full_name,
-        u.code as student_code
+    const [students] = await db.execute(
+      
+      `SELECT 
+          u.id, 
+          u.full_name AS name, 
+          u.email
       FROM users u
       WHERE u.role = 'student'
+        AND u.is_active = 1
         AND u.id NOT IN (
-          SELECT student_id FROM class_students WHERE class_id = ?
+            SELECT cs.student_id FROM class_students cs
         )
-      ORDER BY u.full_name
-    `, [class_id]);
-
-    res.status(200).json({
+      ORDER BY u.full_name`
+          );
+          
+    res.json({
       message: 'Available students retrieved successfully',
       students
     });
@@ -575,5 +585,6 @@ router.get('/available-students', authenticateToken, authorize('admin'), async (
     res.status(500).json({ error: 'Failed to retrieve available students' });
   }
 });
+
 
 module.exports = router;

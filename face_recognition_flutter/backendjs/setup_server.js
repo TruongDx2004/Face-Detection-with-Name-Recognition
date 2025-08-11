@@ -59,7 +59,7 @@ function printInfo(message) {
 
 async function createDirectories() {
     printStep("CREATING DIRECTORIES");
-    
+
     const directories = [
         'dataset',
         'trainer',
@@ -74,7 +74,7 @@ async function createDirectories() {
         'src/config',
         'public'
     ];
-    
+
     for (const directory of directories) {
         try {
             await fs.mkdir(directory, { recursive: true });
@@ -87,12 +87,12 @@ async function createDirectories() {
 
 async function checkMySQLConnection() {
     printStep("CHECKING MYSQL CONNECTION");
-    
+
     try {
         // Test connection without database first
         const config = { ...DB_CONFIG };
         delete config.database;
-        
+
         const connection = await mysql.createConnection(config);
         await connection.ping();
         printSuccess("MySQL connection successful");
@@ -132,7 +132,7 @@ async function setupDatabase() {
 
         // Tạo bảng (dùng execute vì có thể dùng prepared-style an toàn)
         const sqlStatements = [
-            `CREATE TABLE IF NOT EXISTS users (
+                    `CREATE TABLE IF NOT EXISTS users (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
@@ -145,12 +145,16 @@ async function setupDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )`,
 
-            `CREATE TABLE IF NOT EXISTS classes (
+                    `CREATE TABLE IF NOT EXISTS classes (
                 id INT PRIMARY KEY AUTO_INCREMENT,
-                name VARCHAR(50) UNIQUE NOT NULL
+                name VARCHAR(50) UNIQUE NOT NULL,
+                code VARCHAR(20) UNIQUE NOT NULL,
+                year VARCHAR(4) NOT NULL,
+                description TEXT,
+                status ENUM('active', 'inactive') DEFAULT 'active'
             )`,
 
-            `CREATE TABLE IF NOT EXISTS class_students (
+                    `CREATE TABLE IF NOT EXISTS class_students (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 student_id INT NOT NULL,
                 class_id INT NOT NULL,
@@ -159,12 +163,12 @@ async function setupDatabase() {
                 FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
             )`,
 
-            `CREATE TABLE IF NOT EXISTS subjects (
+                    `CREATE TABLE IF NOT EXISTS subjects (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(100) NOT NULL
             )`,
 
-            `CREATE TABLE IF NOT EXISTS schedules (
+                    `CREATE TABLE IF NOT EXISTS schedules (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 class_id INT NOT NULL,
                 subject_id INT NOT NULL,
@@ -177,7 +181,7 @@ async function setupDatabase() {
                 FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
-            `CREATE TABLE IF NOT EXISTS attendance_sessions (
+                    `CREATE TABLE IF NOT EXISTS attendance_sessions (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 schedule_id INT NOT NULL,
                 session_date DATE NOT NULL,
@@ -188,7 +192,7 @@ async function setupDatabase() {
                 FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
             )`,
 
-            `CREATE TABLE IF NOT EXISTS attendances (
+                    `CREATE TABLE IF NOT EXISTS attendances (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 session_id INT NOT NULL,
                 student_id INT NOT NULL,
@@ -201,14 +205,15 @@ async function setupDatabase() {
                 FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
-            `CREATE TABLE IF NOT EXISTS face_images (
+                    `CREATE TABLE IF NOT EXISTS face_images (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 user_id INT NOT NULL,
                 image_path VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )`
-            ];
+        ];
+
 
 
         for (const statement of sqlStatements) {
@@ -254,7 +259,7 @@ async function setupDatabase() {
                 await dbConnection.execute(
                     `INSERT INTO class_students (student_id, class_id, student_code) VALUES (?, ?, ?)`,
                     [student_id, class_id, user.student_id]
-                );         
+                );
                 // 4. Thêm môm học
                 const [subjectResult] = await dbConnection.execute(
                     'INSERT INTO subjects (name) VALUES (?)',
@@ -268,18 +273,18 @@ async function setupDatabase() {
                     [class_id, subject_id, 2, 2, '09:00:00', '11:00:00']
                 );
 
-                 // 6. Thêm buổi học (attendance session)
+                // 6. Thêm buổi học (attendance session)
                 await dbConnection.execute(
                     `INSERT INTO attendance_sessions (schedule_id, session_date, start_time) VALUES (?, CURDATE(), ?)`,
                     [1, '09:00:00']
-                ); 
+                );
 
             } else {
                 await dbConnection.execute(
                     `INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)`,
                     [user.username, hashedPassword, user.full_name, user.email, user.role]
                 );
-                
+
             }
         }
 
@@ -320,7 +325,7 @@ function runCommand(command, args) {
 
 async function checkDependencies() {
     printStep("CHECKING DEPENDENCIES");
-    
+
     const requiredPackages = [
         'express@4.18.2',
         'mysql2@3.6.3',
@@ -338,9 +343,9 @@ async function checkDependencies() {
         'swagger-ui-express@4.6.3',
         'swagger-jsdoc@6.2.8'
     ];
-    
+
     printInfo("Installing required packages...");
-    
+
     try {
         // Initialize package.json if it doesn't exist
         try {
@@ -349,23 +354,23 @@ async function checkDependencies() {
             await runCommand('npm', ['init', '-y']);
         }
         printSuccess("package.json found or created successfully");
-        
+
         // Install packages
         await runCommand('npm', ['install', ...requiredPackages]);
         printSuccess("Required packages installed successfully");
-        
+
         // Install dev dependencies
         const devPackages = [
             'nodemon@3.0.1',
             'jest@29.7.0',
             'supertest@6.3.3'
         ];
-        
+
         await runCommand('npm', ['install', '--save-dev', ...devPackages]);
-        
+
         printSuccess("All packages installed successfully");
         return true;
-        
+
     } catch (error) {
         printError(`Failed to install dependencies: ${error.message}`);
         return false;
@@ -374,13 +379,13 @@ async function checkDependencies() {
 
 async function downloadCascadeFile() {
     printStep("DOWNLOADING HAAR CASCADE FILE");
-    
+
     const cascadeUrl = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml";
     const cascadePath = "models/haarcascade_frontalface_default.xml";
-    
+
     try {
         await fs.mkdir("models", { recursive: true });
-        
+
         try {
             await fs.access(cascadePath);
             printSuccess("Haar cascade file already exists");
@@ -392,7 +397,7 @@ async function downloadCascadeFile() {
             printSuccess("Haar cascade file downloaded");
             return true;
         }
-        
+
     } catch (error) {
         printError(`Failed to download cascade file: ${error.message}`);
         return false;
@@ -401,7 +406,7 @@ async function downloadCascadeFile() {
 
 async function createEnvFile() {
     printStep("CREATING ENVIRONMENT FILE");
-    
+
     const envContent = `# Database Configuration
 DB_HOST=${DB_CONFIG.host}
 DB_PORT=${DB_CONFIG.port}
@@ -429,17 +434,17 @@ CONFIDENCE_THRESHOLD=50
 # CORS
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 `;
-    
-    await fs.writeFile('.env', envContent, 'utf-8');
+
+    //await fs.writeFile('.env', envContent, 'utf-8');
     printSuccess("Environment file created: .env");
 }
 
 async function createPackageJsonScripts() {
     printStep("UPDATING PACKAGE.JSON SCRIPTS");
-    
+
     try {
         const packageJson = JSON.parse(await fs.readFile('package.json', 'utf-8'));
-        
+
         packageJson.scripts = {
             ...packageJson.scripts,
             "start": "node src/server.js",
@@ -447,12 +452,12 @@ async function createPackageJsonScripts() {
             "test": "jest",
             "setup": "node setup_server.js"
         };
-        
+
         packageJson.type = "commonjs";
-        
-        await fs.writeFile('package.json', JSON.stringify(packageJson, null, 2));
+
+        //await fs.writeFile('package.json', JSON.stringify(packageJson, null, 2));
         printSuccess("Package.json scripts updated");
-        
+
     } catch (error) {
         printError(`Failed to update package.json: ${error.message}`);
     }
@@ -460,7 +465,7 @@ async function createPackageJsonScripts() {
 
 async function createExpressApp() {
     printStep("CREATING EXPRESS APPLICATION FILES");
-    
+
     // Server.js
     const serverJs = `const express = require('express');
 const cors = require('cors');
@@ -470,10 +475,14 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+
 const authRoutes = require('./routes/auth');
 const faceRoutes = require('./routes/face');
+const classRoutes = require('./routes/class');
+const subjectRoutes = require('./routes/subject');
 const attendanceRoutes = require('./routes/attendance');
 const adminRoutes = require('./routes/admin');
+
 const { swaggerUi, swaggerSpec } = require('./swagger');
 
 
@@ -492,11 +501,22 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+        if (
+            !origin ||
+            origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1')
+        ) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
+
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -525,6 +545,9 @@ app.use('/auth', authRoutes);
 app.use('/face', faceRoutes);
 app.use('/attendance', attendanceRoutes);
 app.use('/admin', adminRoutes);
+app.use('/classes', classRoutes);
+app.use('/subjects', subjectRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -536,18 +559,12 @@ app.use((err, req, res, next) => {
 });
 
 
-
-app.use(cors({
-  origin: 'http://localhost:50383',
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
+
+
 
 app.listen(PORT, () => {
     console.log(\`🚀 Server is running on http://localhost:\${PORT}\`);
@@ -557,7 +574,7 @@ app.listen(PORT, () => {
 module.exports = app;
 `;
 
-    await fs.writeFile('src/server.js', serverJs);
+    //await fs.writeFile('src/server.js', serverJs);
     printSuccess("Created src/server.js");
 
     // Database config
@@ -579,13 +596,13 @@ const pool = mysql.createPool(dbConfig);
 module.exports = pool;
 `;
 
-    await fs.writeFile('src/config/database.js', dbConfigJs);
+    //await fs.writeFile('src/config/database.js', dbConfigJs);
     printSuccess("Created src/config/database.js");
 }
 
 async function createTestScript() {
     printStep("CREATING TEST SCRIPT");
-    
+
     const testScript = `#!/usr/bin/env node
     /**
      * Test script for Face Attendance API
@@ -713,8 +730,8 @@ async function createTestScript() {
     
     module.exports = { testLogin, testProfile, testCreateSession };
 `;
-    
-    await fs.writeFile('test_api.js', testScript);
+
+    //await fs.writeFile('test_api.js', testScript);
     await fs.chmod('test_api.js', 0o755);
     printSuccess("Test script created: test_api.js");
 }
@@ -724,45 +741,45 @@ async function main() {
     console.log("=".repeat(60));
     console.log("This script will setup the complete backend system with Express.js");
     console.log("=".repeat(60));
-    
+
     try {
         // Step 1: Check MySQL connection
         if (!(await checkMySQLConnection())) {
             printError("Please install and configure MySQL first");
             return false;
         }
-        
+
         // Step 2: Create directories
         await createDirectories();
-        
+
         // Step 3: Check and install dependencies
         if (!(await checkDependencies())) {
             printError("Failed to install dependencies");
             return false;
         }
-        
+
         // Step 4: Download required files
         if (!(await downloadCascadeFile())) {
             printError("Failed to download required files");
             return false;
         }
-        
+
         // Step 5: Setup database
         if (!(await setupDatabase())) {
             printError("Failed to setup database");
             return false;
         }
-        
+
         // Step 6: Create configuration files
         await createEnvFile();
         await createPackageJsonScripts();
         await createExpressApp();
         await createTestScript();
-        
+
         // Final message
         printStep("SETUP COMPLETED SUCCESSFULLY! 🎉");
         printSuccess("Express.js backend system is ready to use");
-        
+
         console.log("\\n" + "=".repeat(60));
         console.log("📋 NEXT STEPS:");
         console.log("=".repeat(60));
@@ -785,9 +802,9 @@ async function main() {
         console.log("");
         console.log("📱 Ready to build React frontend!");
         console.log("=".repeat(60));
-        
+
         return true;
-        
+
     } catch (error) {
         printError(`Setup failed: ${error.message}`);
         return false;
