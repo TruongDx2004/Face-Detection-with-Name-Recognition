@@ -245,10 +245,17 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
   const fetchClassStudents = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getClassStudents(classData.id);
+      const response = await apiService.getClasses();
       if (response.success) {
-        setStudents(response.data.students || []);
+        console.log('Fetch class students response:', response);
+
+        const targetClass = response.data.classes.find(
+          cls => cls.id === classData.id
+        );
+
+        setStudents(targetClass?.students || []);
       }
+
     } catch (error) {
       console.error('Fetch class students error:', error);
       showNotification('Lỗi khi tải danh sách sinh viên', 'error');
@@ -384,11 +391,11 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
                 <tr key={student.id} style={{
                   borderBottom: index < students.length - 1 ? '1px solid #e2e8f0' : 'none'
                 }}>
-                  <td style={{ padding: '0.75rem' }}>{student.student_code || 'N/A'}</td>
+                  <td style={{ padding: '0.75rem' }}>{student.code || 'N/A'}</td>
                   <td style={{ padding: '0.75rem', fontWeight: '500' }}>{student.name}</td>
                   <td style={{ padding: '0.75rem', color: '#64748b' }}>{student.email}</td>
                   <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                    {student.face_trained ? (
+                    {student.hasFace ? (
                       <span style={{ color: '#10b981' }}>
                         <i className="fas fa-check-circle"></i>
                       </span>

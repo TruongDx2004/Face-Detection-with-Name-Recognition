@@ -422,10 +422,15 @@ router.get('/:id/students', authenticateToken, authorize('admin'), async (req, r
 router.post('/:id/students', authenticateToken, authorize('admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { student_id, student_code } = req.body;
+    let { student_id, student_code } = req.body;
 
-    if (!student_id || !student_code) {
-      return res.status(400).json({ error: 'Student ID and student code are required' });
+    if (!student_id) {
+      return res.status(400).json({ error: 'Student ID is required' });
+    }
+
+    // Nếu không có student_code thì tự tạo
+    if (!student_code || student_code.trim() === '') {
+      student_code = `SV${id}${student_id}`;
     }
 
     // Check if class exists
