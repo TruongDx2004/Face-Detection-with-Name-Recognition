@@ -53,21 +53,13 @@ class CameraService {
   // Request camera permission
   async #requestCameraPermission() {
     try {
-      const permissionStatus = await navigator.permissions.query({ name: 'camera' });
-      if (permissionStatus.state === 'granted') {
-        return true;
-      }
-      if (permissionStatus.state === 'prompt') {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        return true;
-      }
-      if (permissionStatus.state === 'denied') {
-        alert('Camera access is required. Please enable it in your browser settings.');
-        return false;
-      }
-      return false;
+      // Đơn giản hóa việc xin quyền
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop()); // Dừng stream test
+      return true;
     } catch (e) {
       console.error('Error requesting camera permission:', e);
+      alert('Camera access is required. Please enable it in your browser settings.');
       return false;
     }
   }
@@ -85,7 +77,7 @@ class CameraService {
 
       // Stop current stream
       this.#stream.getTracks().forEach(track => track.stop());
-      
+
       // Start new stream
       this.#stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: newFacingMode },

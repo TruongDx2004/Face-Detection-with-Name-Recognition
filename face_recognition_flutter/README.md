@@ -7,9 +7,13 @@ File này khởi tạo kết nối các thứ
 
 Chạy: 
 cd backendjs
-node setup_server.js                                                           
+node setup_server.js 
+face_recognition_flutter\backendjs\src\server.js                                   
 
 B2: 
+Chạy server:
+node server.js 
+
 Chạy test_api.js
 Để kiểm tra server chạy cơ bản chưa
 face_recognition_flutter\backendjs\test_api.js

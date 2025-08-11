@@ -90,8 +90,6 @@ class ApiService {
         return await this.makeRequest('POST', '/auth/login', credentials);
     }
 
-
-
     async register(userData) {
         return await this.makeRequest('POST', '/auth/register', userData);
     }
