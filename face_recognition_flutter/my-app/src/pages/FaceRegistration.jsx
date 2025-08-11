@@ -497,8 +497,10 @@ const FaceRegistration = () => {
                 (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase()));
 
             const matchesRole = !roleFilter || user.role === roleFilter;
+            
             const matchesFaceTrained = !faceTrainedFilter ||
                 user.face_trained.toString() === faceTrainedFilter;
+
 
             return matchesSearch && matchesRole && matchesFaceTrained;
         });
@@ -908,8 +910,8 @@ const FaceRegistration = () => {
                                         onChange={(e) => setFaceTrainedFilter(e.target.value)}
                                     >
                                         <option value="">Tất cả trạng thái</option>
-                                        <option value="true">Đã đăng ký</option>
-                                        <option value="false">Chưa đăng ký</option>
+                                        <option value="1">Đã đăng ký</option>
+                                        <option value="0">Chưa đăng ký</option>
                                     </select>
                                 </div>
                             </div>
