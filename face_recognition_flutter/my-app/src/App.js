@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import AdminDashboard from './pages/AdminDashboard'; 
 import ClassManagement from './pages/ClassManagement';
+import UserManagement from './pages/UserManagement';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -19,6 +20,8 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/classes" element={<ClassManagement />} />
+        <Route path="/users" element={<UserManagement />} />
+        {/* Thêm các route khác nếu cần */}
       </Routes>
     </BrowserRouter>
   );
