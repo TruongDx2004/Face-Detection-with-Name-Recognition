@@ -19,7 +19,7 @@ const DB_CONFIG = {
     host: 'localhost',
     port: 3306,
     user: 'root',
-    password: '12345678', // Change to your password
+    password: '25251325cz', // Change to your password
     database: 'face_attendance'
 };
 
@@ -132,7 +132,7 @@ async function setupDatabase() {
 
         // Tạo bảng (dùng execute vì có thể dùng prepared-style an toàn)
         const sqlStatements = [
-                    `CREATE TABLE IF NOT EXISTS users (
+            `CREATE TABLE IF NOT EXISTS users (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
@@ -145,7 +145,7 @@ async function setupDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS classes (
+            `CREATE TABLE IF NOT EXISTS classes (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(50) UNIQUE NOT NULL,
                 code VARCHAR(20) UNIQUE NOT NULL,
@@ -154,7 +154,7 @@ async function setupDatabase() {
                 status ENUM('active', 'inactive') DEFAULT 'active'
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS class_students (
+            `CREATE TABLE IF NOT EXISTS class_students (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 student_id INT NOT NULL,
                 class_id INT NOT NULL,
@@ -163,12 +163,12 @@ async function setupDatabase() {
                 FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS subjects (
+            `CREATE TABLE IF NOT EXISTS subjects (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(100) NOT NULL
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS schedules (
+            `CREATE TABLE IF NOT EXISTS schedules (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 class_id INT NOT NULL,
                 subject_id INT NOT NULL,
@@ -181,7 +181,7 @@ async function setupDatabase() {
                 FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS attendance_sessions (
+            `CREATE TABLE IF NOT EXISTS attendance_sessions (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 schedule_id INT NOT NULL,
                 session_date DATE NOT NULL,
@@ -192,7 +192,7 @@ async function setupDatabase() {
                 FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS attendances (
+            `CREATE TABLE IF NOT EXISTS attendances (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 session_id INT NOT NULL,
                 student_id INT NOT NULL,
@@ -205,7 +205,7 @@ async function setupDatabase() {
                 FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
-                    `CREATE TABLE IF NOT EXISTS face_images (
+            `CREATE TABLE IF NOT EXISTS face_images (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 user_id INT NOT NULL,
                 image_path VARCHAR(255) NOT NULL,
@@ -241,9 +241,11 @@ async function setupDatabase() {
                 if (classRows.length > 0) {
                     class_id = classRows[0].id;
                 } else {
+                    const classCode = user.class_name.replace(/\s+/g, '').toUpperCase();
+                    const classYear = new Date().getFullYear().toString();
                     const [classResult] = await dbConnection.execute(
-                        'INSERT INTO classes (name) VALUES (?)',
-                        [user.class_name]
+                        'INSERT INTO classes (name, code, year) VALUES (?, ?, ?)',
+                        [user.class_name, classCode, classYear]
                     );
                     class_id = classResult.insertId;
                 }
@@ -502,18 +504,8 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-    origin: function (origin, callback) {
-        if (
-            !origin ||
-            origin.startsWith('http://localhost') ||
-            origin.startsWith('http://127.0.0.1')
-        ) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
 }));
 
 
