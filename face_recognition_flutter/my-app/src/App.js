@@ -7,6 +7,7 @@ import ClassManagement from './pages/ClassManagement';
 import UserManagement from './pages/UserManagement';
 import FaceRegistration from './pages/FaceRegistration';
 import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
+import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -25,6 +26,7 @@ function App() {
         <Route path="/users" element={<UserManagement />} />
         <Route path="/face-recognition" element={<FaceRegistration />} />
         <Route path="/subjects" element={<SubjectScheduleManagement />} />
+        <Route path="/sessions" element={<AttendanceSessionManagement />} />
 
         {/* Thêm các route khác nếu cần */}
       </Routes>
