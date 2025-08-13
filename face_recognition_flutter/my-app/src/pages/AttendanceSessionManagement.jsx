@@ -767,7 +767,7 @@ const AttendanceSessionManagement = () => {
         <Sidebar
           isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          activePage="attendance-sessions"
+          activePage="sessions"
         />
         <main style={mainContentStyle}>
           <div style={{
@@ -805,7 +805,7 @@ const AttendanceSessionManagement = () => {
       <Sidebar
         isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activePage="attendance-sessions"
+        activePage="sessions"
       />
 
       {/* Main Content */}
