@@ -20,17 +20,6 @@ const { swaggerUi, swaggerSpec } = require('./swagger');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Security middleware
-app.use(helmet());
-app.use(compression());
-
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
-
 // CORS
 app.use(cors({
     origin: function (origin, callback) {
@@ -47,6 +36,16 @@ app.use(cors({
     credentials: true
 }));
 
+// Security middleware
+app.use(helmet());
+app.use(compression());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 
 // Body parsing middleware

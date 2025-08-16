@@ -35,6 +35,7 @@ const Sidebar = ({ isCollapsed, onToggle, activePage }) => {
   };
 
   const handleNavigation = (page) => {
+    console.log(`Navigating to ${page.id}`);
     setActiveNav(page.id); // set item đang click là active
     if (page.path) {
       navigate(page.path);

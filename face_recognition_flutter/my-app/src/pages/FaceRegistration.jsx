@@ -821,7 +821,7 @@ const FaceRegistration = () => {
                 <Sidebar
                     isCollapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    activePage="face-registration"
+                    activePage="face-recognition"
                 />
                 <main style={mainContentStyle}>
                     <div style={{
@@ -859,7 +859,7 @@ const FaceRegistration = () => {
             <Sidebar
                 isCollapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                activePage="face-registration"
+                activePage="face-recognition"
             />
 
             {/* Main Content */}

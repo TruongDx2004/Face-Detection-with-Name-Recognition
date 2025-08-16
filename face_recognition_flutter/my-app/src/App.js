@@ -8,11 +8,12 @@ import UserManagement from './pages/UserManagement';
 import FaceRegistration from './pages/FaceRegistration';
 import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
 import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
+import TeacherDashboard from './pages/teacher/TeacherDashboard'; 
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
 
-window.apiService = apiService;   // <-- This is missing
+window.apiService = apiService;   
 window.authService = authService;
 
 function App() {
@@ -27,8 +28,7 @@ function App() {
         <Route path="/face-recognition" element={<FaceRegistration />} />
         <Route path="/subjects" element={<SubjectScheduleManagement />} />
         <Route path="/sessions" element={<AttendanceSessionManagement />} />
-
-        {/* Thêm các route khác nếu cần */}
+        <Route path="/teacher-dashboard" element={<TeacherDashboard />} /> 
       </Routes>
     </BrowserRouter>
   );

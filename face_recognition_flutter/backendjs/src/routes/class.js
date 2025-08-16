@@ -349,7 +349,7 @@ router.delete('/:id', authenticateToken, authorize('admin'), async (req, res) =>
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/students', authenticateToken, authorize('admin'), async (req, res) => {
+router.get('/:id/students', authenticateToken, authorize('admin', 'teacher'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -419,7 +419,7 @@ router.get('/:id/students', authenticateToken, authorize('admin'), async (req, r
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/students', authenticateToken, authorize('admin'), async (req, res) => {
+router.post('/:id/students', authenticateToken, authorize('admin', 'teacher'), async (req, res) => {
   try {
     const { id } = req.params;
     let { student_id, student_code } = req.body;
