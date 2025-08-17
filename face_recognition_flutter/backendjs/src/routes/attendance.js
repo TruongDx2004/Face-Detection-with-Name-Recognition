@@ -114,7 +114,7 @@ router.post('/create-session', authenticateToken, authorize('teacher'), async (r
 
         // Kiểm tra ngày hôm nay có khớp với lịch không (tuỳ bạn muốn enforce hay không)
         const actualWeekday = new Date(session_date).getDay();
-        if (schedule.weekday !== (actualWeekday)) { // weekday in DB is 1-7, JS Date.getDay() is 0-6
+        if (schedule.weekday !== (actualWeekday + 1)) { // weekday in DB is 1-7, JS Date.getDay() is 0-6
             return res.status(400).json({
                 error: `Schedule is set for weekday ${schedule.weekday}, but today is ${actualWeekday}`
             });
