@@ -12,7 +12,8 @@ class FaceRecognitionService {
     async runPythonScript(scriptName, args = []) {
         return new Promise((resolve, reject) => {
             const scriptPath = path.join(this.scriptsPath, scriptName);
-            const child = spawn(this.pythonPath, [scriptPath, ...args]);
+            const child = spawn(this.pythonPath, ['-X', 'utf8', scriptPath, ...args]);
+
             
             let stdout = '';
             let stderr = '';

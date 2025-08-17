@@ -148,8 +148,8 @@ async function setupDatabase() {
                     `CREATE TABLE IF NOT EXISTS classes (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 name VARCHAR(50) UNIQUE NOT NULL,
-                code VARCHAR(20) UNIQUE NOT NULL,
-                year VARCHAR(4) NOT NULL,
+                code VARCHAR(20) NULL,
+                year VARCHAR(4)  NULL,
                 description TEXT,
                 status ENUM('active', 'inactive') DEFAULT 'active'
             )`,
