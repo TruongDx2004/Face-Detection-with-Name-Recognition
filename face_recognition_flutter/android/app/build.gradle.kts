@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.face_recognition_flutter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -42,3 +42,13 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+
+    // Thêm MediaPipe dependencies ở đây
+    //implementation("com.google.mediapipe:tasks-vision:0.10.8")
+    
+    // existing dependencies...
+}
+
+

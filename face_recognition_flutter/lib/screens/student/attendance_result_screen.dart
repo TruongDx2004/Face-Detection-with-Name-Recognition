@@ -2,7 +2,6 @@
 // Màn hình tùy chọn để hiển thị kết quả điểm danh chi tiết
 
 import 'package:flutter/material.dart';
-import '../../models/attendance_models.dart';
 
 class AttendanceResultScreen extends StatelessWidget {
   final Map<String, dynamic> attendanceData;
