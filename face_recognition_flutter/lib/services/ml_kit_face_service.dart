@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'dart:math';
-import 'dart:isolate';
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -18,7 +17,9 @@ class MLKitFaceService {
   bool _isInitialized = false;
 
   // Optimized performance tracking
+  // ignore: unused_field
   int _frameProcessedCount = 0;
+  // ignore: unused_field
   int _frameDroppedCount = 0;
 
   // Processing control with reduced queue size
@@ -285,6 +286,7 @@ class MLKitFaceService {
         return _analyzeHeadTurn(face, challengeType);
       case LivenessChallengeType.lookStraight:
         return _analyzeLookStraight(face);
+      // ignore: unreachable_switch_default
       default:
         return LivenessAnalysis(
           challengeType: challengeType,

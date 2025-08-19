@@ -147,6 +147,13 @@ class ApiService {
         return await this.makeMultipartRequest('POST', '/attendance/mark-attendance', formData);
     }
 
+    async markAttendanceManual(sessionId, studentId) {
+        return await this.makeRequest('POST', '/attendance/mark-attendance-manual', {
+            session_id: sessionId,
+            student_id: studentId
+        });
+    }
+
     async getActiveSessions() {
         return await this.makeRequest('GET', '/attendance/active-sessions');
     }
@@ -251,6 +258,10 @@ class ApiService {
     }
 
     // ============ SCHEDULE MANAGEMENT ENDPOINTS ============
+    async getSessionAttendanceForClass(sessionId) {
+        return await this.makeRequest('GET', `/attendance/session/${sessionId}`);
+    }
+    
     async getSchedules(filters = {}) {
         const queryParams = {
             page: filters.page || 1,
@@ -297,7 +308,6 @@ class ApiService {
 
         return await this.makeRequest('GET', '/admin/users', null, queryParams);
     }
-
 
     async createUser(userData) {
         return await this.makeRequest('POST', '/admin/users', userData);
@@ -354,4 +364,4 @@ class ApiService {
     }
 }
 
-export default new ApiService(); 
+export default new ApiService();

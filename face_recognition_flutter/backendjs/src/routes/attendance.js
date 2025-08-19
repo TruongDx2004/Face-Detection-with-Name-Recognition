@@ -309,6 +309,127 @@ router.post('/mark-attendance', authenticateToken, authorize('student'), upload.
     }
 });
 
+
+/**
+ * @swagger
+ * /attendance/mark-attendance-manual:
+ *   post:
+ *     summary: Mark attendance manually by teacher
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - session_id
+ *               - student_id
+ *             properties:
+ *               session_id:
+ *                 type: integer
+ *                 description: ID of the attendance session
+ *               student_id:
+ *                 type: integer
+ *                 description: ID of the student to mark attendance for
+ *               status:
+ *                 type: string
+ *                 enum: [present, late]
+ *                 default: present
+ *                 description: Attendance status
+ *     responses:
+ *       200:
+ *         description: Attendance marked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                 attendance_id:
+ *                   type: integer
+ *       400:
+ *         description: Bad request (student already marked, invalid session)
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (teacher role required)
+ *       404:
+ *         description: Session or student not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/mark-attendance-manual', authenticateToken, authorize('teacher'), async (req, res) => {
+    try {
+        const { session_id, student_id, status = 'present' } = req.body;
+        const teacher_id = req.user.id;
+
+        if (!session_id || !student_id) {
+            return res.status(400).json({ error: 'Session ID and Student ID are required' });
+        }
+
+        // Verify session exists and belongs to this teacher
+        const [sessions] = await db.execute(`
+            SELECT s.*, sch.class_id, sch.teacher_id
+            FROM attendance_sessions s
+            JOIN schedules sch ON s.schedule_id = sch.id
+            WHERE s.id = ? AND sch.teacher_id = ? AND s.is_active = TRUE
+        `, [session_id, teacher_id]);
+
+        if (sessions.length === 0) {
+            return res.status(404).json({ error: 'Active session not found or access denied' });
+        }
+
+        const session = sessions[0];
+
+        // Verify student belongs to this class
+        const [classStudents] = await db.execute(
+            'SELECT student_id FROM class_students WHERE class_id = ? AND student_id = ?',
+            [session.class_id, student_id]
+        );
+
+        if (classStudents.length === 0) {
+            return res.status(400).json({ error: 'Student does not belong to this class' });
+        }
+
+        // Check if student already marked attendance for this session
+        const [existing] = await db.execute(
+            'SELECT id FROM attendances WHERE session_id = ? AND student_id = ?',
+            [session_id, student_id]
+        );
+
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'Student already marked attendance for this session' });
+        }
+
+        // Validate status
+        if (!['present', 'late'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid attendance status' });
+        }
+
+        // Mark attendance manually
+        const [result] = await db.execute(
+            'INSERT INTO attendances (session_id, student_id, status, confidence_score, image_path) VALUES (?, ?, ?, ?, ?)',
+            [session_id, student_id, status, 100, 'manual'] // 100% confidence for manual attendance
+        );
+
+        res.json({
+            message: 'Manual attendance marked successfully',
+            status: status,
+            attendance_id: result.insertId
+        });
+
+    } catch (error) {
+        console.error('Mark manual attendance error:', error);
+        res.status(500).json({ error: 'Failed to mark manual attendance' });
+    }
+});
+
 // Get active sessions (for students)
 /**
  * @swagger
@@ -846,6 +967,7 @@ router.get('/my-sessions', authenticateToken, authorize('teacher'), async (req, 
                 sch.teacher_id,
                 subj.name AS subject,
                 cls.name AS class_name,
+                s.schedule_id,
                 s.session_date,
                 s.start_time,
                 s.end_time,

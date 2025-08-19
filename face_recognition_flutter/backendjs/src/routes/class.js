@@ -65,7 +65,7 @@ const router = express.Router();
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateToken, authorize('admin'), async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     let page = parseInt(req.query.page, 10) || 1;
     let limit = parseInt(req.query.limit, 10) || 20;

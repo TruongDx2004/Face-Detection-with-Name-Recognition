@@ -357,6 +357,7 @@ router.get('/schedules', authenticateToken, async (req, res) => {
       SELECT 
         s.id,
         c.name as class_name,
+        c.id as class_id,
         sub.name as subject_name,
         u.full_name as teacher_name,
         s.weekday,

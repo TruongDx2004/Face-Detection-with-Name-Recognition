@@ -2,7 +2,6 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:face_attendance/services/ml_kit_face_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import '../../services/api_service.dart';
-import '../../models/attendance_models.dart';
 import '../../utils/camera_helper.dart';
 
 class FaceCaptureScreen extends StatefulWidget {
@@ -43,6 +39,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   bool _isFlashOn = false;
   int _selectedCameraIndex = 0;
 
+  // ignore: unused_field
   String? _lastCapturedImagePath;
   String _statusMessage = 'Đang khởi tạo ML Kit...';
   Color _statusColor = Colors.blue;
@@ -50,10 +47,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   // ML Kit Service
   final MLKitFaceService _faceService = MLKitFaceService();
   StreamSubscription<CameraImage>? _imageStreamSubscription;
-
-  // Performance monitoring (simplified)
-  int _totalFramesProcessed = 0;
-  int _totalFramesDropped = 0;
 
   // Liveness Detection Variables
   bool _livenessCheckActive = false;
@@ -70,7 +63,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   FaceDetectionResult? _currentFaceResult;
 
   // Challenge Tracking (simplified)
-  bool _isSmiling = false;
   Timer? _challengeTimer;
 
   // Enhanced anti-fraud parameters
@@ -246,6 +238,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
         return 'Quay đầu sang phải';
       case LivenessChallengeType.lookStraight:
         return 'Nhìn thẳng vào camera';
+      // ignore: unreachable_switch_default
       default:
         return 'Thực hiện động tác';
     }
@@ -291,13 +284,11 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       final now = DateTime.now();
       if (_lastProcessTime != null &&
           now.difference(_lastProcessTime!) < _minProcessInterval) {
-        _totalFramesDropped++;
         return;
       }
       _lastProcessTime = now;
 
       if (!_livenessCheckActive || _isProcessing) {
-        _totalFramesDropped++;
         return;
       }
 
@@ -314,7 +305,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       final result = await _faceService.processCameraImage(image);
 
       if (result != null && mounted) {
-        _totalFramesProcessed++;
 
         setState(() {
           _currentFaceResult = result;
@@ -327,10 +317,8 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           _resetConsecutiveDetections(_challenges[_currentChallengeIndex].type);
         }
       } else {
-        _totalFramesDropped++;
       }
     } catch (e) {
-      _totalFramesDropped++;
     } finally {
       if (mounted) {
         setState(() {
@@ -384,12 +372,14 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           _consecutiveLookStraightDetections = 0;
         }
         break;
+      // ignore: unreachable_switch_default
       default:
         break;
     }
   }
 
   // New method to analyze looking straight
+  // ignore: unused_element
   LivenessAnalysis _analyzeLookStraight(Face? face) {
     if (face == null) {
       return LivenessAnalysis(
@@ -509,6 +499,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           _consecutiveLookStraightDetections = 0;
         }
         break;
+      // ignore: unreachable_switch_default
       default:
         break;
     }
@@ -853,6 +844,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
         return _consecutiveHeadTurnDetections;
       case LivenessChallengeType.lookStraight:
         return _consecutiveLookStraightDetections;
+      // ignore: unreachable_switch_default
       default:
         return 0;
     }
@@ -868,6 +860,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
         return Icons.arrow_forward;
       case LivenessChallengeType.lookStraight:
         return Icons.center_focus_strong;
+      // ignore: unreachable_switch_default
       default:
         return Icons.face;
     }
