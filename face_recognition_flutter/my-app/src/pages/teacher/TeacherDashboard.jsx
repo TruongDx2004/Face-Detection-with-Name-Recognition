@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../../services/api-service';
 import authService from '../../services/auth-service';
+import useNotification from '../../hooks/useNotification';
+import Notification from '../../components/Notification';
 
 
 // CSS-in-JS styles similar to AdminDashboard
@@ -408,7 +410,7 @@ const StatsCard = ({ title, value, icon, color, onClick }) => {
 };
 
 // Session Detail Modal Component
-const SessionDetailModal = ({ session, onClose, onCreateSession, onManualAttendance, onExportExcel }) => {
+const SessionDetailModal = ({ session, onClose, onCreateSession, onManualAttendance, onExportExcel, showNotification }) => {
   const [attendanceData, setAttendanceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -448,21 +450,21 @@ const SessionDetailModal = ({ session, onClose, onCreateSession, onManualAttenda
 
   const handleManualAttendance = async () => {
     if (!manualStudentId) {
-      alert('Vui lòng chọn sinh viên');
+      showNotification('Vui lòng chọn sinh viên', 'warning');
       return;
     }
 
     try {
       const response = await ApiService.markAttendanceManual(session.id, manualStudentId);
       if (response.success) {
-        alert('Điểm danh thủ công thành công!');
+        showNotification('Điểm danh thủ công thành công!', 'success');
         setManualStudentId('');
         loadSessionData(); // Reload data
       } else {
-        alert('Lỗi: ' + response.error);
+        showNotification('Lỗi: ' + response.error, 'error');
       }
     } catch (err) {
-      alert('Lỗi: ' + err.message);
+      showNotification('Lỗi: ' + err.message, 'error');
     }
   };
 
@@ -592,8 +594,10 @@ const SessionDetailModal = ({ session, onClose, onCreateSession, onManualAttenda
                   onClick={() => {
                     if (window.confirm('Bạn có chắc muốn kết thúc phiên điểm danh này?')) {
                       ApiService.endSession(session.id).then(() => {
-                        window.alert('Đã kết thúc phiên điểm danh');
+                        showNotification('Đã kết thúc phiên điểm danh', 'success');
                         onClose();
+                      }).catch(err => {
+                        showNotification('Lỗi khi kết thúc phiên: ' + err.message, 'error');
                       });
                     }
                   }}
@@ -720,10 +724,14 @@ const TeacherDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  
   const navigate = useNavigate();
 
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { notifications, showNotification, removeNotification } = useNotification();
 
+
+  
   // Time slots for timetable
   const timeSlots = [
     '07:00-08:00', '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
@@ -831,11 +839,12 @@ const TeacherDashboard = () => {
         });
         setShowSessionModal(true);
         loadDashboardData(); // Refresh data
+        showNotification('Tạo phiên điểm danh thành công!', 'success');
       } else {
-        alert('Lỗi tạo phiên điểm danh: ' + response.error);
+        showNotification('Lỗi tạo phiên điểm danh: ' + response.error, 'error');
       }
     } catch (err) {
-      alert('Lỗi: ' + err.message);
+      showNotification('Lỗi: ' + err.message, 'error');
     }
   };
 
@@ -877,6 +886,17 @@ const TeacherDashboard = () => {
 
   return (
     <div style={styles.appContainer}>
+      {/* Notifications */}
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000 }}>
+        {notifications.map((notification) => (
+          <Notification
+            key={notification.id}
+            notification={notification}
+            onRemove={removeNotification}
+          />
+        ))}
+      </div>
+
       <div style={styles.mainContent}>
 
         {/* Header */}
@@ -927,33 +947,39 @@ const TeacherDashboard = () => {
               borderRadius: '0.5rem',
               textAlign: 'center',
               maxWidth: '300px',
-              color: '#fff'
+              color: 'white'
             }}>
-              <p>Bạn có chắc chắn muốn đăng xuất?</p>
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+              <h3 style={{ margin: '0 0 1rem 0' }}>Xác nhận đăng xuất</h3>
+              <p style={{ margin: '0 0 1.5rem 0', color: '#d1d5db' }}>
+                Bạn có chắc muốn đăng xuất khỏi hệ thống?
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                 <button
-                  onClick={handleLogout}
                   style={{
-                    background: '#d9534f',
-                    color: '#fff',
-                    border: 'none',
                     padding: '0.5rem 1rem',
-                    borderRadius: '0.3rem',
+                    background: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.25rem',
                     cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    setShowConfirm(false);
+                    handleLogout();
                   }}
                 >
                   Đăng xuất
                 </button>
                 <button
-                  onClick={() => setShowConfirm(false)}
                   style={{
-                    background: '#6c757d',
-                    color: '#fff',
-                    border: 'none',
                     padding: '0.5rem 1rem',
-                    borderRadius: '0.3rem',
+                    background: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.25rem',
                     cursor: 'pointer'
                   }}
+                  onClick={() => setShowConfirm(false)}
                 >
                   Hủy
                 </button>
@@ -1177,6 +1203,7 @@ const TeacherDashboard = () => {
               console.log('Exporting Excel for session:', selectedSession);
               // Handle Excel export
             }}
+            showNotification={showNotification}
           />
         )}
       </div>
