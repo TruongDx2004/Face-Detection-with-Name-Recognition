@@ -417,7 +417,7 @@ DB_PASSWORD=${DB_CONFIG.password}
 DB_NAME=${DB_CONFIG.database}
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-key-change-in-production
+JWT_SECRET=your-super-secret-key-change-in-prodML Kit Face Service initializeduction
 JWT_EXPIRE=24h
 
 # Server Configuration

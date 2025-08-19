@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--video', required=True, help='Path to video file')
     parser.add_argument('--user-id', required=True, type=int, help='User ID for face dataset')
     parser.add_argument('--output-dir', default='dataset', help='Output directory for dataset')
-    parser.add_argument('--max-samples', default=30, type=int, help='Maximum number of face samples')
+    parser.add_argument('--max-samples', default=100, type=int, help='Maximum number of face samples')
     
     args = parser.parse_args()
     

@@ -116,7 +116,7 @@ router.post('/create-session', authenticateToken, authorize('teacher'), async (r
         const actualWeekday = new Date(session_date).getDay();
         if (schedule.weekday !== (actualWeekday + 1)) { // weekday in DB is 1-7, JS Date.getDay() is 0-6
             return res.status(400).json({
-                error: `Schedule is set for weekday ${schedule.weekday}, but today is ${actualWeekday}`
+                message: `Hôm nay không phải là ngày ${['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][schedule.weekday - 1]} của lịch học`
             });
         }
 
