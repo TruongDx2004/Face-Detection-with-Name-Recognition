@@ -646,7 +646,9 @@ const ClassDetail = () => {
       });
 
       if (schedulesResponse.success) {
-        setSchedules(schedulesResponse.data.schedules || []);
+        // Chỉ lấy các lịch học thuộc class hiện tại
+        const allSchedules = schedulesResponse.data.schedules || [];
+        setSchedules(allSchedules.filter(sch => sch.class_id === parseInt(classId)));
       }
 
       // Load sessions for this class
@@ -691,7 +693,10 @@ const ClassDetail = () => {
   };
 
   const getScheduleSessionStats = (scheduleId) => {
-    const scheduleSessions = sessions.filter(s => s.schedule_id === scheduleId);
+    const scheduleSessions = sessions.filter(
+      s => s.schedule_id === scheduleId && s.class_id === classData.id
+    );
+    console.log('Schedule sessions:', scheduleSessions);
     return {
       total: scheduleSessions.length,
       active: scheduleSessions.filter(s => s.is_active).length,

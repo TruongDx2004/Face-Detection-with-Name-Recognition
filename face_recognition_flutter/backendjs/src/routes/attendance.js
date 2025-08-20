@@ -1060,6 +1060,7 @@ router.get('/sessions', authenticateToken, async (req, res) => {
         SELECT 
             asess.id, 
             asess.schedule_id,
+            c.id AS class_id,
             sch.teacher_id,
             c.name AS class_name,
             subj.name AS subject,
