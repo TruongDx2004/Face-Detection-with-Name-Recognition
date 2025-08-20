@@ -9,6 +9,7 @@ import FaceRegistration from './pages/FaceRegistration';
 import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
 import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
 import TeacherDashboard from './pages/teacher/TeacherDashboard'; 
+import ClassDetail from './pages/teacher/ClassDetail';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -29,6 +30,7 @@ function App() {
         <Route path="/subjects" element={<SubjectScheduleManagement />} />
         <Route path="/sessions" element={<AttendanceSessionManagement />} />
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} /> 
+        <Route path="/teacher/classes/:classId" element={<ClassDetail />} />
       </Routes>
     </BrowserRouter>
   );
