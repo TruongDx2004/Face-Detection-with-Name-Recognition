@@ -26,7 +26,7 @@ const Sidebar = ({ isCollapsed, onToggle, activePage }) => {
     { id: 'sessions', icon: 'fas fa-calendar-check', text: 'Phiên điểm danh', path: '/sessions' },
     { id: 'subjects', icon: 'fas fa-book', text: 'Môn học & Lịch', path: '/subjects' },
     { id: 'face-recognition', icon: 'fas fa-face-smile', text: 'Nhận diện khuôn mặt', path: '/face-recognition' },
-    { id: 'reports', icon: 'fas fa-chart-bar', text: 'Báo cáo', path: '/reports' },
+    
   ];
 
   const sidebarStyle = {

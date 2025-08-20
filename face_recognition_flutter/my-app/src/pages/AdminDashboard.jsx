@@ -7,7 +7,7 @@ import useNotification from '../hooks/useNotification';
 import useTime from '../hooks/useTime';
 import styles from '../components/styles';
 import { useNavigate } from 'react-router-dom';
-
+import api from '../services/api-service';  
 
 // Add keyframes for spinner animation
 const spinnerKeyframes = `
@@ -161,67 +161,56 @@ const AdminDashboard = () => {
   // Load dashboard data
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
-      
-      // Simulate API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStatistics({
-        total_users: 150,
-        total_students: 120,
-        total_teachers: 25,
-        total_classes: 15,
-        total_sessions: 500,
-        total_attendances: 15000,
-        active_sessions: 3,
-        model_accuracy: 98.5
-      });
-      
-      setActivities([
-        {
-          id: 1,
-          type: 'attendance',
-          title: 'Phiên điểm danh mới được tạo',
-          description: 'Lớp CNTT K47 - Môn Lập trình Web',
-          time: '5 phút trước',
-          icon: 'fas fa-calendar-check',
-          color: '#10b981'
-        },
-        {
-          id: 2,
-          type: 'user',
-          title: 'Người dùng mới đăng ký',
-          description: 'Nguyễn Văn A - Sinh viên',
-          time: '15 phút trước',
-          icon: 'fas fa-user-plus',
-          color: '#3b82f6'
-        },
-        {
-          id: 3,
-          type: 'training',
-          title: 'Huấn luyện mô hình AI hoàn tất',
-          description: 'Độ chính xác: 98.5%',
-          time: '1 giờ trước',
-          icon: 'fas fa-brain',
-          color: '#8b5cf6'
-        },
-        {
-          id: 4,
-          type: 'report',
-          title: 'Báo cáo tuần được tạo',
-          description: 'Báo cáo điểm danh tuần 10',
-          time: '2 giờ trước',
-          icon: 'fas fa-chart-bar',
-          color: '#f59e0b'
-        }
-      ]);
-      
-      setLoading(false);
+      try {
+        setLoading(true);
+
+        const [statsRes, activeSessionsRes, classesRes] = await Promise.all([
+          api.getStatistics(),                         // /admin/statistics
+          api.getSessions({ is_active: true }),        // /attendance/sessions?is_active=true
+          api.getClasses()                              // /classes (paginated, default limit)
+        ]);
+
+        const stats = statsRes.data || {};
+        const userStats = stats.user_statistics || [];
+        const attendanceStats = stats.attendance_statistics || [];
+        const faceTrain = stats.face_training_statistics || { total_students: 0, trained_students: 0 };
+
+        const totalUsers = userStats.reduce((sum, r) => sum + (r.count || 0), 0);
+        const totalStudents = (userStats.find(r => r.role === 'student')?.count) || 0;
+        const totalTeachers = (userStats.find(r => r.role === 'teacher')?.count) || 0;
+
+        const totalSessions = attendanceStats.reduce((sum, d) => sum + (d.total_sessions || 0), 0);
+        const totalAttendances = attendanceStats.reduce((sum, d) => sum + (d.total_attendances || 0), 0);
+
+        const activeSessions = (activeSessionsRes.data?.sessions || []).length;
+
+        const totalClasses = (classesRes.data?.classes || []).length;
+
+        const modelAccuracy = faceTrain.total_students > 0
+          ? Number(((faceTrain.trained_students / faceTrain.total_students) * 100).toFixed(1))
+          : 0;
+
+        setStatistics({
+          total_users: totalUsers,
+          total_students: totalStudents,
+          total_teachers: totalTeachers,
+          total_classes: totalClasses,
+          total_sessions: totalSessions,
+          total_attendances: totalAttendances,
+          active_sessions: activeSessions,
+          model_accuracy: modelAccuracy
+        });
+
+        // Optional: populate activities later from your own endpoints
+        setActivities(prev => prev.length ? prev : []);
+      } catch (err) {
+        showNotification(`Tải dữ liệu dashboard thất bại: ${err.message}`, 'error');
+      } finally {
+        setLoading(false);
+      }
     };
-    
+
     loadData();
-    
-    // Refresh data every 5 minutes
     const interval = setInterval(loadData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);

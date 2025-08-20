@@ -300,7 +300,7 @@ router.post('/users', authenticateToken, authorize('admin'), async (req, res) =>
 
         // 5️⃣ Mã hóa password
         const password_hash = await bcrypt.hash(password, 10);
-        
+
         // 6️⃣ Insert user
         const [userResult] = await db.execute(
             'INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)',
@@ -583,11 +583,15 @@ router.get('/statistics', authenticateToken, authorize('admin'), async (req, res
         // Class statistics
         const [classStats] = await db.execute(`
             SELECT 
-                class_name,
-                COUNT(*) as student_count
-            FROM users 
-            WHERE role = 'student' AND is_active = TRUE
-            GROUP BY class_name
+                c.name AS class_name,
+                COUNT(u.id) AS student_count
+            FROM classes c
+            LEFT JOIN class_students cs ON cs.class_id = c.id
+            LEFT JOIN users u 
+                ON u.id = cs.student_id 
+               AND u.role = 'student' 
+               AND u.is_active = TRUE
+            GROUP BY c.id, c.name
             ORDER BY student_count DESC
         `);
 
