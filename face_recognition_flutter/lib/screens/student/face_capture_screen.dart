@@ -78,7 +78,10 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       Duration(milliseconds: 150); // Reduced from 100ms
 
   final LocationService _locationService = LocationService();
+  
+  // ignore: unused_field
   bool _locationChecked = false;
+   // ignore: unused_field
   Map<String, dynamic>? _locationInfo;
 
   @override

@@ -12,6 +12,7 @@ import '../models/models.dart';
 import '../utils/constants.dart';
 import 'auth_service.dart';
 import 'package:http_parser/http_parser.dart';
+// ignore: unused_import
 import 'location_service.dart';
 
 class ApiService {

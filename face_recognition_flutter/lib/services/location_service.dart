@@ -135,7 +135,7 @@ class LocationService {
         'latitude': position.latitude,
         'longitude': position.longitude,
         'accuracy': position.accuracy,
-        'timestamp': position.timestamp?.toIso8601String(),
+        'timestamp': position.timestamp.toIso8601String(),
         'isMock': isMock,
         'isAllowed': isAllowed,
         'distanceFromSchool': Geolocator.distanceBetween(

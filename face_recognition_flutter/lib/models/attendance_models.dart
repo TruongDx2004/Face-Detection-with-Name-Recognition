@@ -1,7 +1,10 @@
 // lib/models/attendance_models.dart
 import 'package:flutter/material.dart';
+// ignore: unused_import
 import 'package:geolocator/geolocator.dart';
+// ignore: unused_import
 import 'package:location/location.dart' as loc;
+// ignore: unused_import
 import 'package:logger/logger.dart';
 
 /// Enum cho trạng thái điểm danh

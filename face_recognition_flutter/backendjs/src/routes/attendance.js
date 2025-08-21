@@ -227,7 +227,7 @@ router.post('/mark-attendance', authenticateToken, authorize('student'), upload.
         );
 
         if (sessions.length === 0) {
-            return res.status(404).json({ error: 'Active session not found' });
+            return res.status(404).json({ error: 'Không có buổi học nào đang hoạt động' });
         }
 
         const session = sessions[0];
@@ -239,13 +239,13 @@ router.post('/mark-attendance', authenticateToken, authorize('student'), upload.
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'Bạn đã điểm danh cho buổi học này' });
+            return res.status(400).json({ error: 'Bạn đã điểm danh' });
         }
 
         // Check if face recognition model is trained
         const isModelTrained = await faceService.isModelTrained();
         if (!isModelTrained) {
-            return res.status(400).json({ error: 'Face recognition model is not available' });
+            return res.status(400).json({ error: 'Người dùng chưa được đăng ký nhận diện khuôn mặt' });
         }
 
         try {
@@ -267,7 +267,7 @@ router.post('/mark-attendance', authenticateToken, authorize('student'), upload.
 
             if (labelId !== student_id || confidence_score < 60) {
                 return res.status(400).json({
-                    error: 'Face recognition failed or confidence too low',
+                    error: '',
                     confidence: confidence_score
                 });
             }
@@ -383,7 +383,7 @@ router.post('/mark-attendance-manual', authenticateToken, authorize('teacher'), 
         `, [session_id, teacher_id]);
 
         if (sessions.length === 0) {
-            return res.status(404).json({ error: 'Active session not found or access denied' });
+            return res.status(404).json({ error: 'Hiện tại không có buổi học nào đang hoạt động' });
         }
 
         const session = sessions[0];
@@ -395,7 +395,7 @@ router.post('/mark-attendance-manual', authenticateToken, authorize('teacher'), 
         );
 
         if (classStudents.length === 0) {
-            return res.status(400).json({ error: 'Student does not belong to this class' });
+            return res.status(400).json({ error: 'Sinh viên không thuộc lớp này' });
         }
 
         // Check if student already marked attendance for this session
@@ -405,12 +405,12 @@ router.post('/mark-attendance-manual', authenticateToken, authorize('teacher'), 
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'Student already marked attendance for this session' });
+            return res.status(400).json({ error: 'Sinh viên đã điểm danh cho buổi học này' });
         }
 
         // Validate status
         if (!['present', 'late'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid attendance status' });
+            return res.status(400).json({ error: 'Trạng thái điểm danh không hợp lệ' });
         }
 
         // Mark attendance manually
@@ -420,14 +420,14 @@ router.post('/mark-attendance-manual', authenticateToken, authorize('teacher'), 
         );
 
         res.json({
-            message: 'Manual attendance marked successfully',
+            message: 'Điểm danh thủ công thành công',
             status: status,
             attendance_id: result.insertId
         });
 
     } catch (error) {
         console.error('Mark manual attendance error:', error);
-        res.status(500).json({ error: 'Failed to mark manual attendance' });
+        res.status(500).json({ error: 'Lỗi khi điểm danh thủ công' });
     }
 });
 
@@ -483,7 +483,7 @@ router.get('/active-sessions', authenticateToken, authorize('student'), async (r
             'SELECT class_id FROM class_students WHERE student_id = ? LIMIT 1',
             [student_id]
         );
-        if (classStudentRows.length === 0) return res.status(400).json({ error: 'Student not assigned to any class' });
+        if (classStudentRows.length === 0) return res.status(400).json({ error: 'Sinh viên không thuộc lớp nào' });
         const class_id = classStudentRows[0].class_id;
 
         const [sessions] = await db.execute(`
@@ -508,7 +508,7 @@ router.get('/active-sessions', authenticateToken, authorize('student'), async (r
         console.log('Active sessions:', sessions);
 
         return res.status(200).json({
-            message: 'Active sessions retrieved successfully',
+            message: 'Lấy danh sách buổi học thành công',
             sessions
         });
 
