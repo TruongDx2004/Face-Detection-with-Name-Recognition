@@ -134,6 +134,11 @@ class ApiService {
         return await this.makeRequest('GET', '/face/model-status');
     }
 
+    // ============ USER IMPORT ENDPOINT ============
+    async importUsers(usersData) {
+        return await this.makeRequest('POST', '/admin/users/import', usersData);
+    }
+    
     // ============ ATTENDANCE ENDPOINTS ============
     async createAttendanceSession(sessionData) {
         return await this.makeRequest('POST', '/attendance/create-session', sessionData);

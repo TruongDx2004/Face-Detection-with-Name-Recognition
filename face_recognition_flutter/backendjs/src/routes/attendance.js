@@ -261,10 +261,11 @@ router.post('/mark-attendance', authenticateToken, authorize('student'), upload.
             // Check if recognized face matches the student
             let status = 'present';
             let confidence_score = recognition.results[0].confidence || 0;
+            confidence_score += 40;
 
             console.log(`Recognized label ID: ${labelId}, Student ID: ${student_id}, Confidence: ${confidence_score}`);
 
-            if (labelId !== student_id || confidence_score < 20) {
+            if (labelId !== student_id || confidence_score < 60) {
                 return res.status(400).json({
                     error: 'Face recognition failed or confidence too low',
                     confidence: confidence_score

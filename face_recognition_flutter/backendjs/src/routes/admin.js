@@ -830,4 +830,89 @@ router.get('/reports/attendance', authenticateToken, authorize('admin'), async (
     }
 });
 
+router.post('/users/import', authenticateToken, authorize('admin'), async (req, res) => {
+    const usersToImport = req.body;
+    const importResults = [];
+
+    if (!Array.isArray(usersToImport)) {
+        return res.status(400).json({ error: 'Request body must be an array of users.' });
+    }
+
+    // Use a transaction for atomicity
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        for (const [index, user] of usersToImport.entries()) {
+            const result = { row: index + 2, status: 'success', message: 'User created successfully' }; // row 2 in excel file
+            const { username, full_name, email, role, password, student_code, class_name } = user;
+
+            // 1️⃣ Validate required fields
+            if (!username || !full_name || !email || !role) {
+                result.status = 'failure';
+                result.message = 'Missing required fields: username, full_name, email, or role';
+                importResults.push(result);
+                continue;
+            }
+
+            // 2️⃣ Check for existing user
+            const [existing] = await connection.execute(
+                'SELECT id FROM users WHERE username = ? OR email = ?',
+                [username, email]
+            );
+            if (existing.length > 0) {
+                result.status = 'failure';
+                result.message = 'Username or email already exists';
+                importResults.push(result);
+                continue;
+            }
+
+            // 3️⃣ Get class_id if role is 'student'
+            let class_id = null;
+            if (role === 'student' && class_name) {
+                const [classRows] = await connection.execute('SELECT id FROM classes WHERE name = ?', [class_name]);
+                if (classRows.length > 0) {
+                    class_id = classRows[0].id;
+                }
+            }
+
+            // 4️⃣ Hash password
+            const password_hash = await bcrypt.hash(password || '123456', 10);
+
+            // 5️⃣ Insert user
+            const [userResult] = await connection.execute(
+                'INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)',
+                [username, password_hash, full_name, email, role]
+            );
+            const newUserId = userResult.insertId;
+
+            // 6️⃣ If student and class exists, insert into class_students
+            if (role === 'student' && class_id) {
+                const codeToInsert = student_code || null; 
+                await connection.execute(
+                    'INSERT INTO class_students (student_id, class_id, student_code) VALUES (?, ?, ?)',
+                    [newUserId, class_id, codeToInsert]
+                );
+            }
+
+            importResults.push(result);
+        }
+
+        await connection.commit();
+        res.json({
+            message: 'Import process completed',
+            results: importResults
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Bulk import error:', error);
+        res.status(500).json({ error: 'Failed to import users. Transaction rolled back.' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;
+
+

@@ -18,7 +18,7 @@ const styles = {
     sidebarBg: '#1e293b',
     sidebarHover: '#334155'
   },
-  
+
   // App container
   appContainer: {
     display: 'flex',
@@ -29,7 +29,7 @@ const styles = {
     color: '#1e293b',
     backgroundColor: '#f8fafc'
   },
-  
+
   // Sidebar styles
   sidebar: {
     width: '280px',
@@ -45,11 +45,11 @@ const styles = {
     flexDirection: 'column',
     overflow: 'hidden'
   },
-  
+
   sidebarCollapsed: {
     width: '70px'
   },
-  
+
   sidebarHeader: {
     padding: '2rem',
     borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -58,7 +58,7 @@ const styles = {
     justifyContent: 'space-between',
     position: 'relative'
   },
-  
+
   logo: {
     display: 'flex',
     alignItems: 'center',
@@ -66,22 +66,22 @@ const styles = {
     fontSize: '1.25rem',
     fontWeight: '700'
   },
-  
+
   logoIcon: {
     fontSize: '2rem',
     color: '#6366f1'
   },
-  
+
   logoText: {
     whiteSpace: 'nowrap',
     opacity: 1,
     transition: 'opacity 0.3s ease-in-out'
   },
-  
+
   logoTextHidden: {
     opacity: 0
   },
-  
+
   sidebarToggle: {
     position: 'absolute',
     right: '-16px',
@@ -99,19 +99,128 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.15s ease-in-out'
   },
-  
+
   sidebarToggleHover: {
     background: '#5b21b6',
     transform: 'translateY(-50%) scale(1.1)'
   },
-  
+
+  modal: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10000
+  },
+  modalContent: {
+    background: '#fff',
+    borderRadius: '1rem',
+    width: '90%',
+    maxWidth: '500px',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+  },
+  modalHeader: {
+    padding: '1.5rem',
+    borderBottom: '1px solid #e2e8f0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  modalTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '600',
+    color: '#1e293b',
+    margin: 0
+  },
+  modalClose: {
+    background: 'none',
+    border: 'none',
+    fontSize: '1.5rem',
+    color: '#64748b',
+    cursor: 'pointer',
+    padding: '0.25rem',
+    borderRadius: '0.25rem',
+    '&:hover': {
+      background: '#f1f5f9'
+    }
+  },
+  modalBody: {
+    padding: '1.5rem',
+    maxHeight: '60vh',
+    overflowY: 'auto'
+  },
+  modalFooter: {
+    padding: '1.5rem',
+    borderTop: '1px solid #e2e8f0',
+    display: 'flex',
+    gap: '1rem',
+    justifyContent: 'flex-end'
+  },
+  formGroup: {
+    marginBottom: '1.5rem'
+  },
+  formLabel: {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#374151'
+  },
+  formInput: {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: '1px solid #d1d5db',
+    borderRadius: '0.5rem',
+    fontSize: '0.875rem',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    '&:focus': {
+      borderColor: '#6366f1',
+      boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)'
+    }
+  },
+  btn: {
+    padding: '0.75rem 1.5rem',
+    border: 'none',
+    borderRadius: '0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+  btnPrimary: {
+    background: '#6366f1',
+    color: '#fff',
+    '&:hover': {
+      background: '#5b21b6'
+    }
+  },
+  btnOutline: {
+    background: '#fff',
+    color: '#374151',
+    border: '1px solid #d1d5db',
+    '&:hover': {
+      background: '#f9fafb'
+    }
+  },
+
   // Navigation styles
   sidebarNav: {
     flex: 1,
     padding: '1.5rem 0',
     overflowY: 'auto'
   },
-  
+
   navItem: {
     display: 'flex',
     alignItems: 'center',
@@ -124,34 +233,34 @@ const styles = {
     borderRadius: '0.5rem',
     cursor: 'pointer'
   },
-  
+
   navItemHover: {
     backgroundColor: '#334155',
     color: 'white',
     transform: 'translateX(4px)'
   },
-  
+
   navItemActive: {
     backgroundColor: '#6366f1',
     color: 'white'
   },
-  
+
   navIcon: {
     width: '20px',
     marginRight: '1rem',
     textAlign: 'center'
   },
-  
+
   navText: {
     whiteSpace: 'nowrap',
     opacity: 1,
     transition: 'opacity 0.3s ease-in-out'
   },
-  
+
   navTextHidden: {
     opacity: 0
   },
-  
+
   // Main content
   mainContent: {
     flex: 1,
@@ -161,11 +270,11 @@ const styles = {
     flexDirection: 'column',
     minHeight: '100vh'
   },
-  
+
   mainContentCollapsed: {
     marginLeft: '70px'
   },
-  
+
   // Header styles
   header: {
     backgroundColor: '#ffffff',
@@ -179,7 +288,7 @@ const styles = {
     top: 0,
     zIndex: 100
   },
-  
+
   headerTitle: {
     fontSize: '1.75rem',
     fontWeight: '700',
@@ -189,27 +298,27 @@ const styles = {
     alignItems: 'center',
     gap: '1rem'
   },
-  
+
   headerIcon: {
     color: '#6366f1'
   },
-  
+
   headerSubtitle: {
     color: '#64748b',
     fontSize: '0.9rem'
   },
-  
+
   headerRight: {
     display: 'flex',
     alignItems: 'center',
     gap: '1.5rem'
   },
-  
+
   headerActions: {
     display: 'flex',
     gap: '0.5rem'
   },
-  
+
   actionBtn: {
     width: '40px',
     height: '40px',
@@ -223,13 +332,13 @@ const styles = {
     transition: 'all 0.15s ease-in-out',
     position: 'relative'
   },
-  
+
   actionBtnHover: {
     background: '#6366f1',
     color: 'white',
     borderColor: '#6366f1'
   },
-  
+
   badge: {
     position: 'absolute',
     top: '-4px',
@@ -242,7 +351,7 @@ const styles = {
     minWidth: '18px',
     textAlign: 'center'
   },
-  
+
   currentTime: {
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: '0.9rem',
@@ -252,14 +361,14 @@ const styles = {
     borderRadius: '0.5rem',
     border: '1px solid #e2e8f0'
   },
-  
+
   // Dashboard content
   dashboardContent: {
     flex: 1,
     padding: '2rem',
     position: 'relative'
   },
-  
+
   // Loading overlay
   loadingOverlay: {
     position: 'absolute',
@@ -276,12 +385,12 @@ const styles = {
     visibility: 'hidden',
     transition: 'all 0.3s ease-in-out'
   },
-  
+
   loadingOverlayActive: {
     opacity: 1,
     visibility: 'visible'
   },
-  
+
   spinner: {
     width: '40px',
     height: '40px',
@@ -291,7 +400,7 @@ const styles = {
     animation: 'spin 1s linear infinite',
     margin: '0 auto 1rem'
   },
-  
+
   // Section styles
   sectionHeader: {
     display: 'flex',
@@ -299,7 +408,7 @@ const styles = {
     alignItems: 'center',
     marginBottom: '2rem'
   },
-  
+
   sectionTitle: {
     fontSize: '1.25rem',
     fontWeight: '600',
@@ -308,11 +417,11 @@ const styles = {
     alignItems: 'center',
     gap: '1rem'
   },
-  
+
   sectionIcon: {
     color: '#6366f1'
   },
-  
+
   viewAllBtn: {
     background: 'transparent',
     border: '1px solid #6366f1',
@@ -323,12 +432,12 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.15s ease-in-out'
   },
-  
+
   viewAllBtnHover: {
     background: '#6366f1',
     color: 'white'
   },
-  
+
   // Grid layouts
   statsGrid: {
     display: 'grid',
@@ -336,21 +445,21 @@ const styles = {
     gap: '1.5rem',
     marginBottom: '3rem'
   },
-  
+
   quickActionsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: '1.5rem',
     marginBottom: '3rem'
   },
-  
+
   managementGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
     gap: '1.5rem',
     marginBottom: '3rem'
   },
-  
+
   // Card styles
   statCard: {
     background: '#ffffff',
@@ -363,12 +472,12 @@ const styles = {
     overflow: 'hidden',
     cursor: 'pointer'
   },
-  
+
   statCardHover: {
     transform: 'translateY(-2px)',
     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
   },
-  
+
   statCardBorder: {
     position: 'absolute',
     top: 0,
@@ -377,14 +486,14 @@ const styles = {
     height: '4px',
     background: 'linear-gradient(90deg, #6366f1, #06b6d4)'
   },
-  
+
   statHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: '1.5rem'
   },
-  
+
   statIcon: {
     width: '48px',
     height: '48px',
@@ -395,19 +504,19 @@ const styles = {
     fontSize: '1.25rem',
     color: 'white'
   },
-  
+
   statValue: {
     fontSize: '2rem',
     fontWeight: '700',
     color: '#1e293b',
     marginBottom: '0.25rem'
   },
-  
+
   statLabel: {
     color: '#64748b',
     fontSize: '0.9rem'
   },
-  
+
   statChange: {
     fontSize: '0.8rem',
     fontWeight: '500',
@@ -416,7 +525,7 @@ const styles = {
     gap: '0.25rem',
     color: '#10b981'
   },
-  
+
   // Quick action styles
   quickActionCard: {
     background: '#ffffff',
@@ -429,13 +538,13 @@ const styles = {
     alignItems: 'center',
     gap: '1.5rem'
   },
-  
+
   quickActionCardHover: {
     transform: 'translateY(-2px)',
     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
     borderColor: '#6366f1'
   },
-  
+
   actionIcon: {
     width: '60px',
     height: '60px',
@@ -447,23 +556,23 @@ const styles = {
     fontSize: '1.5rem',
     color: 'white'
   },
-  
+
   actionContent: {
     flex: 1
   },
-  
+
   actionTitle: {
     fontSize: '1rem',
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: '0.25rem'
   },
-  
+
   actionDescription: {
     fontSize: '0.85rem',
     color: '#64748b'
   },
-  
+
   // Management card styles
   managementCard: {
     background: '#ffffff',
@@ -473,19 +582,19 @@ const styles = {
     transition: 'all 0.3s ease-in-out',
     cursor: 'pointer'
   },
-  
+
   managementCardHover: {
     transform: 'translateY(-2px)',
     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
   },
-  
+
   cardHeader: {
     padding: '2rem',
     display: 'flex',
     alignItems: 'center',
     gap: '1.5rem'
   },
-  
+
   cardIcon: {
     width: '60px',
     height: '60px',
@@ -496,24 +605,24 @@ const styles = {
     fontSize: '1.5rem',
     color: 'white'
   },
-  
+
   cardTitle: {
     fontSize: '1.1rem',
     fontWeight: '600',
     color: '#1e293b',
     marginBottom: '0.25rem'
   },
-  
+
   cardDescription: {
     fontSize: '0.85rem',
     color: '#64748b',
     lineHeight: '1.4'
   },
-  
+
   cardStats: {
     padding: '0 2rem 2rem'
   },
-  
+
   statRow: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -521,22 +630,22 @@ const styles = {
     padding: '0.5rem 0',
     borderTop: '1px solid #e2e8f0'
   },
-  
+
   statRowFirst: {
     borderTop: 'none',
     paddingTop: 0
   },
-  
+
   statRowLabel: {
     color: '#64748b',
     fontSize: '0.85rem'
   },
-  
+
   statRowValue: {
     fontWeight: '600',
     color: '#1e293b'
   },
-  
+
   // Activity styles
   activitiesList: {
     background: '#ffffff',
@@ -544,7 +653,7 @@ const styles = {
     border: '1px solid #e2e8f0',
     overflow: 'hidden'
   },
-  
+
   activityItem: {
     display: 'flex',
     alignItems: 'center',
@@ -552,15 +661,15 @@ const styles = {
     borderBottom: '1px solid #e2e8f0',
     transition: 'background-color 0.15s ease-in-out'
   },
-  
+
   activityItemLast: {
     borderBottom: 'none'
   },
-  
+
   activityItemHover: {
     backgroundColor: '#f8fafc'
   },
-  
+
   activityIcon: {
     width: '40px',
     height: '40px',
@@ -572,27 +681,27 @@ const styles = {
     fontSize: '0.9rem',
     color: 'white'
   },
-  
+
   activityContent: {
     flex: 1
   },
-  
+
   activityTitle: {
     fontWeight: '500',
     color: '#1e293b',
     marginBottom: '0.25rem'
   },
-  
+
   activityDescription: {
     fontSize: '0.85rem',
     color: '#64748b'
   },
-  
+
   activityTime: {
     fontSize: '0.8rem',
     color: '#94a3b8'
   },
-  
+
   // Notification styles
   notification: {
     position: 'fixed',
@@ -609,17 +718,17 @@ const styles = {
     transform: 'translateX(100%)',
     transition: 'transform 0.3s ease-in-out'
   },
-  
+
   notificationShow: {
     transform: 'translateX(0)'
   },
-  
+
   notificationContent: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px'
   },
-  
+
   notificationClose: {
     position: 'absolute',
     top: '8px',
@@ -630,7 +739,7 @@ const styles = {
     padding: '4px',
     color: '#64748b'
   },
-  
+
   notificationCloseHover: {
     color: '#334155'
   }
