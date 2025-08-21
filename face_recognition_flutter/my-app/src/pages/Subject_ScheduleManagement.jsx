@@ -1019,7 +1019,7 @@ const SubjectScheduleManagement = () => {
                         {[
                             { id: 'subjects', label: 'Môn học', icon: 'fas fa-book' },
                             { id: 'schedules', label: 'Lịch học', icon: 'fas fa-calendar-alt' },
-                            { id: 'weekly', label: 'Lịch tuần', icon: 'fas fa-calendar-week' }
+                            //{ id: 'weekly', label: 'Lịch tuần', icon: 'fas fa-calendar-week' }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -1338,7 +1338,7 @@ const SubjectScheduleManagement = () => {
                         </>
                     )}
 
-                    {/* Weekly Schedule Tab */}
+                    {/* Weekly Schedule Tab
                     {currentTab === 'weekly' && (
                         <section>
                             <div style={styles.sectionHeader}>
@@ -1349,7 +1349,7 @@ const SubjectScheduleManagement = () => {
                             </div>
                             <WeeklyScheduleView schedules={schedules} />
                         </section>
-                    )}
+                    )} */}
                 </div>
             </main>
 

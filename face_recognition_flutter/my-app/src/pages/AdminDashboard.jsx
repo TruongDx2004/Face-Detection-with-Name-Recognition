@@ -7,7 +7,7 @@ import useNotification from '../hooks/useNotification';
 import useTime from '../hooks/useTime';
 import styles from '../components/styles';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api-service';  
+import api from '../services/api-service';
 
 // Add keyframes for spinner animation
 const spinnerKeyframes = `
@@ -27,14 +27,14 @@ const StatsCard = ({ title, value, icon, color, change }) => {
   };
 
   return (
-    <div 
+    <div
       style={cardStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div style={styles.statCardBorder}></div>
       <div style={styles.statHeader}>
-        <div style={{...styles.statIcon, background: color}}>
+        <div style={{ ...styles.statIcon, background: color }}>
           <i className={icon}></i>
         </div>
         <div style={styles.statChange}>
@@ -58,7 +58,7 @@ const QuickActionCard = ({ icon, title, description, onClick }) => {
   };
 
   return (
-    <div 
+    <div
       style={cardStyle}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -85,14 +85,14 @@ const ManagementCard = ({ title, description, icon, color, stats, onClick }) => 
   };
 
   return (
-    <div 
+    <div
       style={cardStyle}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div style={styles.cardHeader}>
-        <div style={{...styles.cardIcon, background: color}}>
+        <div style={{ ...styles.cardIcon, background: color }}>
           <i className={icon}></i>
         </div>
         <div>
@@ -102,7 +102,7 @@ const ManagementCard = ({ title, description, icon, color, stats, onClick }) => 
       </div>
       <div style={styles.cardStats}>
         {Object.entries(stats).map(([key, value], index) => (
-          <div 
+          <div
             key={key}
             style={{
               ...styles.statRow,
@@ -129,12 +129,12 @@ const ActivityItem = ({ activity, isLast }) => {
   };
 
   return (
-    <div 
+    <div
       style={itemStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div style={{...styles.activityIcon, background: activity.color}}>
+      <div style={{ ...styles.activityIcon, background: activity.color }}>
         <i className={activity.icon}></i>
       </div>
       <div style={styles.activityContent}>
@@ -149,11 +149,11 @@ const ActivityItem = ({ activity, isLast }) => {
 // Main Dashboard Component
 const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   const [loading, setLoading] = useState(true);
   const [statistics, setStatistics] = useState(null);
   const [activities, setActivities] = useState([]);
-  
+
   const currentTime = useTime();
   const navigate = useNavigate();
   const { notifications, showNotification, removeNotification } = useNotification();
@@ -218,27 +218,23 @@ const AdminDashboard = () => {
   const handleQuickAction = async (action) => {
     switch (action) {
       case 'new-session':
-        showNotification('Chuyển đến trang tạo phiên điểm danh mới', 'info');
+        navigate('/subjects');
         break;
       case 'add-user':
-        showNotification('Chuyển đến trang thêm người dùng', 'info');
+        navigate('/users');
         break;
       case 'train-model':
-        showNotification('Bắt đầu huấn luyện mô hình AI...', 'info');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        showNotification('Huấn luyện mô hình thành công! Độ chính xác: 98.7%', 'success');
-        setStatistics(prev => prev ? {...prev, model_accuracy: 98.7} : null);
+        navigate('/face-recognition');
         break;
       case 'export-report':
-        showNotification('Đang chuẩn bị báo cáo...', 'info');
-        setTimeout(() => showNotification('Báo cáo đã được tải xuống', 'success'), 2000);
+        navigate('/classes');
         break;
       default:
         showNotification('Tính năng đang được phát triển', 'warning');
     }
   };
 
-    const statsConfig = statistics ? [
+  const statsConfig = statistics ? [
     { title: 'Tổng người dùng', value: statistics.total_users, icon: 'fas fa-users', color: '#3b82f6', change: '+5.2%' },
     { title: 'Sinh viên', value: statistics.total_students, icon: 'fas fa-user-graduate', color: '#10b981', change: '+2.1%' },
     { title: 'Giáo viên', value: statistics.total_teachers, icon: 'fas fa-chalkboard-teacher', color: '#f59e0b', change: '+1' },
@@ -248,10 +244,10 @@ const AdminDashboard = () => {
   ] : [];
 
   const quickActions = [
-    { icon: 'fas fa-plus-circle', title: 'Tạo phiên điểm danh', description: 'Khởi tạo phiên điểm danh mới', action: 'new-session' },
+    { icon: 'fas fa-plus-circle', title: 'Tạo lịch học mới', description: 'Khởi tạo lịch học mới', action: 'new-session' },
     { icon: 'fas fa-user-plus', title: 'Thêm người dùng', description: 'Đăng ký người dùng mới', action: 'add-user' },
     { icon: 'fas fa-brain', title: 'Huấn luyện AI', description: 'Cập nhật mô hình nhận diện', action: 'train-model' },
-    { icon: 'fas fa-download', title: 'Xuất báo cáo', description: 'Tải báo cáo điểm danh', action: 'export-report' },
+    { icon: 'fas fa-download', title: 'Thêm lớp học', description: 'Quản lý các lớp học', action: 'export-report' },
   ];
 
   const managementCards = statistics ? [
@@ -260,43 +256,41 @@ const AdminDashboard = () => {
       description: 'Thêm, sửa, xóa người dùng và phân quyền hệ thống',
       icon: 'fas fa-users',
       color: '#3b82f6',
-      stats: { 'Tổng người dùng': statistics.total_users, 'Hoạt động': '45', 'Chờ duyệt': '3' }
+      stats: {},
+      route: '/users'
     },
     {
       title: 'Quản lý lớp học',
       description: 'Tạo lớp học mới và quản lý danh sách sinh viên',
       icon: 'fas fa-school',
       color: '#10b981',
-      stats: { 'Tổng lớp học': statistics.total_classes, 'Sinh viên': statistics.total_students, 'Đang học': '12' }
+      stats: {},
+      route: '/classes'
     },
     {
       title: 'Phiên điểm danh',
       description: 'Theo dõi và quản lý tất cả các phiên điểm danh',
       icon: 'fas fa-calendar-check',
       color: '#f59e0b',
-      stats: { 'Tổng phiên': statistics.total_sessions, 'Đang diễn ra': statistics.active_sessions, 'Hôm nay': '8' }
+      stats: {},
+      route: '/sessions'
     },
     {
       title: 'Môn học & Lịch học',
       description: 'Quản lý môn học và lập thời khóa biểu',
       icon: 'fas fa-book',
       color: '#8b5cf6',
-      stats: { 'Môn học': '25', 'Lịch học': '150', 'Tuần này': '35' }
+      stats: {},
+      route: '/subjects'
     },
     {
       title: 'Nhận diện khuôn mặt',
       description: 'Quản lý và huấn luyện mô hình AI nhận diện',
       icon: 'fas fa-face-smile',
       color: '#ef4444',
-      stats: { 'Mẫu huấn luyện': '2.5K', 'Độ chính xác': `${statistics.model_accuracy}%`, 'Cập nhật': '2 giờ trước' }
+      stats: {},
+      route: '/face-recognition'
     },
-    {
-      title: 'Báo cáo & Thống kê',
-      description: 'Xem báo cáo chi tiết và phân tích dữ liệu',
-      icon: 'fas fa-chart-bar',
-      color: '#06b6d4',
-      stats: { 'Báo cáo': '50', 'Xuất tháng này': '12', 'Tự động': '8' }
-    }
   ] : [];
 
   const mainContentStyle = {
@@ -308,7 +302,7 @@ const AdminDashboard = () => {
     <>
       {/* Add spinner keyframes to head */}
       <style>{spinnerKeyframes}</style>
-      
+
       <div style={styles.appContainer}>
         {/* Notifications */}
         <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000 }}>
@@ -322,7 +316,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Sidebar */}
-        <Sidebar 
+        <Sidebar
           isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
@@ -330,10 +324,10 @@ const AdminDashboard = () => {
         {/* Main Content */}
         <main style={mainContentStyle}>
           <Header currentTime={currentTime} />
-          
+
           <div style={styles.dashboardContent}>
             <LoadingOverlay isLoading={loading} />
-            
+
             {/* Statistics */}
             <section style={{ marginBottom: '3rem' }}>
               <div style={styles.statsGrid}>
@@ -343,7 +337,7 @@ const AdminDashboard = () => {
               </div>
             </section>
 
-            {/* Quick Actions */}
+            {/* Quick Actions
             <section style={{ marginBottom: '3rem' }}>
               <div style={styles.sectionHeader}>
                 <h2 style={styles.sectionTitle}>
@@ -360,7 +354,7 @@ const AdminDashboard = () => {
                   />
                 ))}
               </div>
-            </section>
+            </section> */}
 
             {/* Management Cards */}
             <section style={{ marginBottom: '3rem' }}>
@@ -372,10 +366,10 @@ const AdminDashboard = () => {
               </div>
               <div style={styles.managementGrid}>
                 {managementCards.map((card, index) => (
-                  <ManagementCard 
-                    key={index} 
-                    {...card} 
-                    onClick={() => showNotification(`Chuyển đến ${card.title}`, 'info')}
+                  <ManagementCard
+                    key={index}
+                    {...card}
+                    onClick={() => navigate(card.route)}
                   />
                 ))}
               </div>
@@ -388,7 +382,7 @@ const AdminDashboard = () => {
                   <i className="fas fa-history" style={styles.sectionIcon}></i>
                   Hoạt động gần đây
                 </h2>
-                <button 
+                <button
                   style={styles.viewAllBtn}
                   onMouseEnter={(e) => Object.assign(e.target.style, styles.viewAllBtnHover)}
                   onMouseLeave={(e) => Object.assign(e.target.style, styles.viewAllBtn)}
@@ -398,9 +392,9 @@ const AdminDashboard = () => {
               </div>
               <div style={styles.activitiesList}>
                 {activities.map((activity, index) => (
-                  <ActivityItem 
-                    key={activity.id} 
-                    activity={activity} 
+                  <ActivityItem
+                    key={activity.id}
+                    activity={activity}
                     isLast={index === activities.length - 1}
                   />
                 ))}
