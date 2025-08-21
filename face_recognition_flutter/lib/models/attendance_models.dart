@@ -1,5 +1,8 @@
 // lib/models/attendance_models.dart
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as loc;
+import 'package:logger/logger.dart';
 
 /// Enum cho trạng thái điểm danh
 enum AttendanceStatus {
@@ -50,7 +53,7 @@ enum AttendanceStatus {
 /// Model cho phiên điểm danh
 class AttendanceSession {
   final int id;
-  final int scheduleId; 
+  final int scheduleId;
   final int teacherId;
   final String subject;
   final String className;
@@ -69,7 +72,7 @@ class AttendanceSession {
 
   AttendanceSession({
     required this.id,
-    required this.scheduleId, 
+    required this.scheduleId,
     required this.teacherId,
     required this.subject,
     required this.className,
@@ -181,9 +184,7 @@ class Attendance {
     return Attendance(
       id: (json['id'] ?? 0) as int,
       sessionId: (json['session_id'] ?? 0) as int,
-      studentId: json['student_id'] != null
-          ? (json['student_id'] as int)
-          : 0,
+      studentId: json['student_id'] != null ? (json['student_id'] as int) : 0,
       attendanceTime: DateTime.tryParse(json['attendance_time'] ?? '') ??
           (throw ArgumentError('Invalid attendance_time format')),
       confidenceScore: json['confidence_score'] != null
@@ -215,20 +216,23 @@ class Attendance {
   }
 }
 
-/// Model cho yêu cầu điểm danh
+/// Model cho yêu cầu điểm danh với vị trí
 class AttendanceRequest {
   final int sessionId;
   final String imageData;
+  final Map<String, dynamic>? locationData; // Thêm thông tin vị trí
 
   AttendanceRequest({
     required this.sessionId,
     required this.imageData,
+    this.locationData,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'session_id': sessionId,
       'image_data': imageData,
+      'location_data': locationData, // Gửi thông tin vị trí lên server
     };
   }
 }
@@ -237,7 +241,7 @@ class AttendanceResult {
   final bool success;
   final String message;
   final Map<String, dynamic>? data;
-  
+
   AttendanceResult({
     required this.success,
     required this.message,

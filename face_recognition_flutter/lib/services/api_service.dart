@@ -12,6 +12,7 @@ import '../models/models.dart';
 import '../utils/constants.dart';
 import 'auth_service.dart';
 import 'package:http_parser/http_parser.dart';
+import 'location_service.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -323,6 +324,7 @@ class ApiService {
   Future<ApiResponse<Map<String, dynamic>>> markAttendance({
     required int sessionId,
     required File imageFile,
+    Map<String, dynamic>? locationData, // Thêm tham số vị trí
   }) async {
     try {
       final multipartFile = await http.MultipartFile.fromPath(
@@ -331,10 +333,19 @@ class ApiService {
         contentType: MediaType('image', 'jpeg'),
       );
 
+      final fields = <String, String>{
+        'session_id': sessionId.toString(),
+      };
+
+      // Thêm thông tin vị trí nếu có
+      if (locationData != null) {
+        fields['location_data'] = jsonEncode(locationData);
+      }
+
       final response = await _makeMultipartRequest(
         'POST',
         '/attendance/mark-attendance',
-        fields: {'session_id': sessionId.toString()},
+        fields: fields,
         files: [multipartFile],
       );
 
@@ -867,7 +878,7 @@ class ApiService {
     }
   }
 
-   // ============ NEW: SCHEDULE ENDPOINTS ============
+  // ============ NEW: SCHEDULE ENDPOINTS ============
 
   Future<ApiResponse<List<Schedule>>> getStudentSchedules() async {
     try {
@@ -884,7 +895,7 @@ class ApiService {
       return ApiResponse.error('Network error: $e');
     }
   }
-  
+
   // ============ ADMIN ENDPOINTS ============
 
   Future<ApiResponse<List<User>>> getAllUsers({

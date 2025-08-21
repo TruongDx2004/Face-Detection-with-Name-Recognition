@@ -11,6 +11,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:logger/logger.dart';
 import '../../services/api_service.dart';
 import '../../utils/camera_helper.dart';
+import '../../services/location_service.dart';
 
 class FaceCaptureScreen extends StatefulWidget {
   final int userId;
@@ -75,6 +76,10 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   DateTime? _lastProcessTime;
   static const Duration _minProcessInterval =
       Duration(milliseconds: 150); // Reduced from 100ms
+
+  final LocationService _locationService = LocationService();
+  bool _locationChecked = false;
+  Map<String, dynamic>? _locationInfo;
 
   @override
   void initState() {
@@ -305,7 +310,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       final result = await _faceService.processCameraImage(image);
 
       if (result != null && mounted) {
-
         setState(() {
           _currentFaceResult = result;
           _faceDetected = result.hasFace;
@@ -316,8 +320,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
         } else {
           _resetConsecutiveDetections(_challenges[_currentChallengeIndex].type);
         }
-      } else {
-      }
+      } else {}
     } catch (e) {
     } finally {
       if (mounted) {
@@ -418,10 +421,10 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   }
 
   Future<void> _autoMarkAttendance() async {
-
     if (!_isInitialized || _cameraController == null) {
       //Debugging message
-      _logger.w('isInitialized: $_isInitialized, isProcessing: $_isProcessing, cameraController: $_cameraController');
+      _logger.w(
+          'isInitialized: $_isInitialized, isProcessing: $_isProcessing, cameraController: $_cameraController');
       _setStatus('Hệ thống chưa sẵn sàng', Colors.red);
       return;
     }
@@ -432,9 +435,39 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       _isProcessing = true;
     });
 
-    try { 
+    try {
       _imageStreamSubscription?.cancel();
-      _setStatus('Tự động chụp ảnh...', Colors.blue);
+      _setStatus('Kiểm tra vị trí...', Colors.blue);
+
+      // Kiểm tra vị trí trước khi điểm danh
+      final locationInfo = await _locationService.getLocationInfo();
+      _locationInfo = locationInfo;
+      _logger.i('[LocationCheck] lat=${locationInfo?['latitude']}, '
+          'lng=${locationInfo?['longitude']}, '
+          'acc=${locationInfo?['accuracy']}m, '
+          'distance=${(locationInfo?['distanceFromSchool'] as num?)?.toStringAsFixed(1)}m, '
+          'allowed=${locationInfo?['isAllowed']}, '
+          'mock=${locationInfo?['isMock']}');
+
+      if (locationInfo == null) {
+        _setStatus('Không thể xác định vị trí', Colors.red);
+        _showLocationErrorDialog();
+        return;
+      }
+
+      if (locationInfo['isMock'] == true) {
+        _setStatus('Phát hiện Fake GPS!', Colors.red);
+        _showMockLocationErrorDialog();
+        return;
+      }
+
+      if (locationInfo['isAllowed'] != true) {
+        _setStatus('Vị trí không trong phạm vi cho phép', Colors.red);
+        _showLocationOutOfRangeDialog(locationInfo);
+        return;
+      }
+
+      _setStatus('Vị trí hợp lệ, đang chụp ảnh...', Colors.green);
 
       // Capture image
       final XFile imageFile = await _cameraController!.takePicture();
@@ -442,10 +475,11 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
       _setStatus('Đang xử lý nhận diện...', Colors.blue);
 
-      // Send for face recognition and attendance marking
+      // Send for face recognition and attendance marking with location
       final result = await ApiService().markAttendance(
         sessionId: widget.sessionId,
         imageFile: File(imageFile.path),
+        locationData: locationInfo, // Gửi thông tin vị trí
       );
 
       if (result.success) {
@@ -1029,6 +1063,69 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
             _buildControlButtons(),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLocationErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lỗi vị trí'),
+        content: const Text(
+            'Không thể xác định vị trí. Vui lòng bật GPS và thử lại.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _resetLivenessCheck();
+            },
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMockLocationErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Phát hiện Fake GPS'),
+        content:
+            const Text('Bạn đang dùng vị trí giả mạo. Không thể điểm danh.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _resetLivenessCheck();
+            },
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationOutOfRangeDialog(Map<String, dynamic> locationInfo) {
+    final distance =
+        (locationInfo['distanceFromSchool'] as num?)?.toStringAsFixed(0) ??
+            'Unknown';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ngoài phạm vi cho phép'),
+        content: Text(
+            'Bạn đang cách điểm cho phép ${distance}m. Vui lòng đến gần hơn.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _resetLivenessCheck();
+            },
+            child: const Text('Đóng'),
+          ),
+        ],
       ),
     );
   }
