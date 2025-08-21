@@ -591,5 +591,62 @@ router.get('/available-students', authenticateToken, authorize('admin'), async (
   }
 });
 
+router.post('/import', authenticateToken, authorize('admin'), async (req, res) => {
+    const classesToImport = req.body;
+    const importResults = [];
+
+    if (!Array.isArray(classesToImport)) {
+        return res.status(400).json({ error: 'Request body must be an array of classes.' });
+    }
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        for (const [index, cls] of classesToImport.entries()) {
+            const result = { row: index + 2, status: 'success', message: 'Class created successfully' }; // row 2 in excel file
+            const { name } = cls;
+
+            // 1️⃣ Validate required fields
+            if (!name) {
+                result.status = 'failure';
+                result.message = 'Missing required field: name';
+                importResults.push(result);
+                continue;
+            }
+
+            // 2️⃣ Check for existing class
+            const [existing] = await connection.execute(
+                'SELECT id FROM classes WHERE name = ?',
+                [name]
+            );
+            if (existing.length > 0) {
+                result.status = 'failure';
+                result.message = `Class name '${name}' already exists`;
+                importResults.push(result);
+                continue;
+            }
+
+            // 3️⃣ Insert class
+            await connection.execute('INSERT INTO classes (name) VALUES (?)', [name]);
+
+            importResults.push(result);
+        }
+
+        await connection.commit();
+        res.json({
+            message: 'Import process completed',
+            results: importResults
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Bulk import error:', error);
+        res.status(500).json({ error: 'Failed to import classes. Transaction rolled back.' });
+    } finally {
+        connection.release();
+    }
+});
+
 
 module.exports = router;
