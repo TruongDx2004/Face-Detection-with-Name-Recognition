@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Notification from '../components/Notification';
+import ImportModal from '../components/ImportModal';
 import Sidebar from '../components/Sidebar';
 import LoadingOverlay from '../components/LoadingOverlay';
 import useNotification from '../hooks/useNotification';
@@ -590,6 +591,7 @@ const ClassManagement = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const currentTime = useTime();
   const { notifications, showNotification, removeNotification } = useNotification();
@@ -691,6 +693,26 @@ const ClassManagement = () => {
     } catch (error) {
       console.error('Save class error:', error);
       showNotification('Có lỗi xảy ra khi lưu lớp học: ' + error.message, 'error');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleImportClasses = async (classesData) => {
+    setModalLoading(true);
+    try {
+      const response = await apiService.importClasses(classesData);
+      if (response.success) {
+        // Hiển thị kết quả nhập khẩu chi tiết cho người dùng
+        showNotification(`Hoàn tất import lớp học`, 'success');
+        console.log(response.data);
+        // Refresh danh sách lớp
+        fetchClasses();
+        setShowImportModal(false);
+      }
+    } catch (error) {
+      console.error("Import classes error:", error);
+      showNotification(`Lỗi: ${error.message}`, 'error');
     } finally {
       setModalLoading(false);
     }
@@ -817,7 +839,7 @@ const ClassManagement = () => {
               </button>
               <button
                 style={styles.actionBtn}
-                onClick={() => showNotification('Tính năng nhập Excel đang phát triển', 'info')}
+                onClick={() => setShowImportModal(true)}
                 title="Nhập từ Excel"
               >
                 <i className="fas fa-file-import"></i>
@@ -1069,6 +1091,13 @@ const ClassManagement = () => {
           </button>
         </div>
       </Modal>
+      {/* Import User Modal */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => !modalLoading && setShowImportModal(false)}
+        onImport={handleImportClasses}
+        isLoading={modalLoading}
+      />
     </div>
   );
 };

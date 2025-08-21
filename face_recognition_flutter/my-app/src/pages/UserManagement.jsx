@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Notification from '../components/Notification';
+import ImportModal from '../components/ImportModal';
 import Sidebar from '../components/Sidebar';
 import LoadingOverlay from '../components/LoadingOverlay';
 import useNotification from '../hooks/useNotification';
@@ -948,6 +949,7 @@ const UserManagement = () => {
     const [modalLoading, setModalLoading] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
     const [newPassword, setNewPassword] = useState('');
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const currentTime = useTime();
     const { notifications, showNotification, removeNotification } = useNotification();
@@ -1031,6 +1033,39 @@ const UserManagement = () => {
         { title: 'Giáo viên', value: statistics.teacherCount, icon: 'fas fa-chalkboard-teacher', color: '#f59e0b', change: '+1' },
         { title: 'Đã huấn luyện', value: statistics.usersWithFace, icon: 'fas fa-face-smile', color: '#8b5cf6', change: '+3' }
     ];
+
+    const handleImportUsers = async (usersData) => {
+        setModalLoading(true);
+        try {
+            // Chuyển đổi định dạng dữ liệu nếu cần
+            const formattedUsers = usersData.map(user => ({
+                full_name: user.full_name,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                password: user.password || '123456', // Mật khẩu mặc định nếu không có
+                is_active: user.is_active === 'TRUE' || user.is_active === '1', // Xử lý giá trị boolean
+                student_code: user.student_code,
+                class_name: user.class_name
+            }));
+
+            // Gửi dữ liệu tới API import
+            const response = await apiService.importUsers(formattedUsers);
+
+            if (response.success) {
+                showNotification('Nhập người dùng thành công!', 'success');
+                setShowImportModal(false);
+                fetchUsers();
+            } else {
+                showNotification(response.message || 'Có lỗi xảy ra khi nhập dữ liệu', 'error');
+            }
+        } catch (error) {
+            console.error('Import users error:', error);
+            showNotification('Có lỗi xảy ra khi nhập dữ liệu: ' + error.message, 'error');
+        } finally {
+            setModalLoading(false);
+        }
+    };
 
     // Handle actions
     const handleSaveUser = async (formData) => {
@@ -1216,7 +1251,7 @@ const UserManagement = () => {
                             </button>
                             <button
                                 style={styles.actionBtn}
-                                onClick={() => showNotification('Tính năng nhập Excel đang phát triển', 'info')}
+                                onClick={() => setShowImportModal(true)}
                                 title="Nhập từ Excel"
                             >
                                 <i className="fas fa-file-import"></i>
@@ -1486,6 +1521,8 @@ const UserManagement = () => {
                 </div>
             </Modal>
 
+            
+
             {/* Reset Password Modal */}
             <Modal
                 isOpen={showResetPasswordModal}
@@ -1543,6 +1580,14 @@ const UserManagement = () => {
                     </button>
                 </div>
             </Modal>
+
+            {/* Import User Modal */}
+            <ImportModal
+                isOpen={showImportModal}
+                onClose={() => !modalLoading && setShowImportModal(false)}
+                onImport={handleImportUsers}
+                isLoading={modalLoading}
+            />
         </div>
     );
 };
