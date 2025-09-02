@@ -128,7 +128,7 @@ router.post('/create-session', authenticateToken, authorize('teacher'), async (r
         );
 
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'Session already exists for today' });
+            return res.status(400).json({ message: 'Đã có phiên điểm danh đang hoạt động cho ngày này' });
         }
 
         // Tạo session
@@ -508,7 +508,7 @@ router.get('/active-sessions', authenticateToken, authorize('student'), async (r
         console.log('Active sessions:', sessions);
 
         return res.status(200).json({
-            message: 'Lấy danh sách buổi học thành công',
+            message: 'Điểm danh hiện tại đã được lấy thành công',
             sessions
         });
 

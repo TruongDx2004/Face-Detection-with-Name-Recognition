@@ -4,9 +4,18 @@
   "main": "setup_server.js",
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "setup": "node setup_server.js"
+    "dev:debug": "nodemon --inspect src/server.js",
+    "setup": "node setup_server.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "docs": "swagger-autogen src/swagger.js",
+    "clean": "rm -rf logs/* uploads/* dataset/* trainer/*",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js"
   },
   "keywords": [],
   "author": "",

@@ -272,7 +272,7 @@ const SessionDetailModal = ({ session, onClose, showNotification, onSessionEnd }
         showNotification(`Lỗi: ${response.message || 'Không thể điểm danh'}`, 'error');
       }
     } catch (err) {
-      showNotification(`Lỗi hệ thống: ${err.message}`, 'error');
+      showNotification(`${err.message}`, 'error');
     }
   };
 
@@ -504,7 +504,7 @@ const TeacherDashboard = () => {
         showNotification(`Lỗi: ${response.message || 'Không thể tạo phiên điểm danh'}`, 'error');
       }
     } catch (err) {
-      showNotification(`Lỗi hệ thống: ${err.message}`, 'error');
+      showNotification(`${err.message}`, 'error');
     }
   };
 

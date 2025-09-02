@@ -646,8 +646,8 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sinh viên: ${attendanceData['student_name'] ?? 'N/A'}'),
-            Text('Mã SV: ${attendanceData['student_code'] ?? 'N/A'}'),
+            // Text('Sinh viên: ${attendanceData['student_name'] ?? 'N/A'}'),
+            // Text('Mã SV: ${attendanceData['student_code'] ?? 'N/A'}'),
             Text('Thời gian: ${DateTime.now().toString().substring(0, 19)}'),
             if (attendanceData['confidence_score'] != null)
               Text(
