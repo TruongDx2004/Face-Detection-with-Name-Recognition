@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const FaceController = require('../controllers/FaceController');
 const { authenticateToken, authorize } = require('../middleware/auth');
 const { USER_ROLES } = require('../config/constants');
@@ -10,11 +11,48 @@ router.use(authenticateToken);
 
 /**
  * @swagger
+ * /face/upload-video:
+ *   post:
+ *     summary: Upload video to create face recognition dataset
+ *     tags: [Face Recognition]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - video
+ *             properties:
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *                 description: Video file for face dataset creation (max 50MB)
+ *               userId:
+ *                 type: integer
+ *                 description: User ID for dataset creation
+ *     responses:
+ *       200:
+ *         description: Video uploaded and dataset created successfully
+ *       400:
+ *         description: Video file is required
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Video upload failed
+ */
+router.post('/upload-video', multer({ dest: 'uploads/videos/' }).single('video'), FaceController.uploadVideo);
+
+/**
+ * @swagger
  * /face/register-video:
  *   post:
  *     summary: Register face from video
  *     tags: [Face Recognition]
  *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -74,6 +112,28 @@ router.post('/register-image', FaceController.uploadMiddleware, FaceController.r
  *         description: Insufficient permissions
  */
 router.post('/train', authorize(USER_ROLES.ADMIN, USER_ROLES.TEACHER), FaceController.trainModel);
+
+/**
+ * @swagger
+ * /face/train-model:
+ *   post:
+ *     summary: Train the face recognition model (Admin/Teacher only)
+ *     tags: [Face Recognition]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Face recognition model trained successfully
+ *       400:
+ *         description: No dataset found. Please upload videos first.
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin or teacher role required)
+ *       500:
+ *         description: Model training failed
+ */
+router.post('/train-model', authorize(USER_ROLES.ADMIN, USER_ROLES.TEACHER), FaceController.trainModel);
 
 /**
  * @swagger

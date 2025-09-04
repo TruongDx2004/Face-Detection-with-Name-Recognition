@@ -6,34 +6,90 @@ const db = require('../config/database');
 
 // Cấu hình multer cho upload file
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+    destination: (req, file, cb) => {
+        const uploadDir = file.fieldname === 'video' ? 'uploads/videos' : 'uploads/images';
+        cb(null, uploadDir);
     },
-    filename: function (req, file, cb) {
+    filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 50 * 1024 * 1024 // 50MB limit
     },
-    fileFilter: function (req, file, cb) {
-        const allowedTypes = /jpeg|jpg|png|mp4|avi|mov/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-
-        if (mimetype && extname) {
-            return cb(null, true);
+    fileFilter: (req, file, cb) => {
+        if (file.fieldname === 'video') {
+            if (file.mimetype.startsWith('video/')) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only video files are allowed for video field'));
+            }
+        } else if (file.fieldname === 'image' || file.fieldname === 'file') {
+            if (file.mimetype.startsWith('image/')) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only image files are allowed for image field'));
+            }
         } else {
-            cb(new Error('Only image and video files are allowed'));
+            cb(new Error('Unknown field'));
         }
     }
 });
 
 class FaceController {
+
+    // Upload video để tạo dataset (từ face.js)
+    async uploadVideo(req, res) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'Video file is required' });
+            }
+
+            const userId = parseInt(req.body.userId) || req.user.id;
+            const videoPath = req.file.path;
+
+            // Create dataset from video
+            const result = await faceService.createDatasetFromVideo(videoPath, userId);
+
+            // Update user's face_trained status
+            await db.execute(
+                'UPDATE users SET face_trained = FALSE WHERE id = ?',
+                [userId]
+            );
+
+            // Save face images record
+            await db.execute(
+                'INSERT INTO face_images (user_id, image_path) VALUES (?, ?)',
+                [userId, videoPath]
+            );
+
+            // Train model ngay sau khi tạo dataset
+            const trainResult = await faceService.trainFaceModel();
+
+            // Cập nhật lại trạng thái face_trained sau khi train
+            const stats = await faceService.getDatasetStats();
+            for (const uid of Object.keys(stats)) {
+                await db.execute(
+                    'UPDATE users SET face_trained = TRUE WHERE id = ?',
+                    [parseInt(uid)]
+                );
+            }
+
+            res.json({
+                message: 'Video uploaded, dataset created and model trained successfully',
+                dataset_result: result,
+                train_result: trainResult
+            });
+            
+        } catch (error) {
+            console.error('Video upload error:', error);
+            res.status(500).json({ error: 'Video upload failed: ' + error.message });
+        }
+    }
 
     // Đăng ký khuôn mặt từ video
     async registerFaceFromVideo(req, res) {
@@ -124,21 +180,35 @@ class FaceController {
         }
     }
 
-    // Huấn luyện model
+    // Huấn luyện model (cập nhật từ face.js)
     async trainModel(req, res) {
         try {
+            // Check if dataset exists
+            const stats = await faceService.getDatasetStats();
+            if (Object.keys(stats).length === 0) {
+                return res.status(400).json({ error: 'No dataset found. Please upload videos first.' });
+            }
+
+            // Train the model
             const result = await faceService.trainFaceModel();
 
+            // Update all users with dataset to face_trained = TRUE
+            for (const userId of Object.keys(stats)) {
+                await db.execute(
+                    'UPDATE users SET face_trained = TRUE WHERE id = ?',
+                    [parseInt(userId)]
+                );
+            }
+
             res.json({
-                message: 'Model training completed successfully',
-                result: result.output
+                message: 'Face recognition model trained successfully',
+                stats: stats,
+                result: result
             });
+
         } catch (error) {
             console.error('Model training error:', error);
-            res.status(500).json({ 
-                error: 'Model training failed',
-                message: error.message 
-            });
+            res.status(500).json({ error: 'Model training failed: ' + error.message });
         }
     }
 
@@ -186,72 +256,59 @@ class FaceController {
         }
     }
 
-    // Lấy thống kê dataset
+    // Lấy thống kê dataset (cập nhật từ face.js)
     async getDatasetStats(req, res) {
         try {
             const stats = await faceService.getDatasetStats();
-            
-            // Lấy thông tin user tương ứng
+
+            // Get user names for the stats
             const userIds = Object.keys(stats);
+            const userDetails = {};
+
             if (userIds.length > 0) {
                 const placeholders = userIds.map(() => '?').join(',');
                 const [users] = await db.execute(
-                    `SELECT id, username, full_name FROM users WHERE id IN (${placeholders})`,
+                    `SELECT id, full_name, username FROM users WHERE id IN (${placeholders})`,
                     userIds
                 );
 
-                const userMap = {};
                 users.forEach(user => {
-                    userMap[user.id] = user;
-                });
-
-                const detailedStats = {};
-                Object.keys(stats).forEach(userId => {
-                    detailedStats[userId] = {
-                        imageCount: stats[userId],
-                        user: userMap[userId] || null
+                    userDetails[user.id] = {
+                        full_name: user.full_name,
+                        username: user.username,
+                        image_count: stats[user.id]
                     };
                 });
-
-                res.json({
-                    stats: detailedStats,
-                    totalUsers: Object.keys(stats).length,
-                    totalImages: Object.values(stats).reduce((sum, count) => sum + count, 0)
-                });
-            } else {
-                res.json({
-                    stats: {},
-                    totalUsers: 0,
-                    totalImages: 0
-                });
             }
-        } catch (error) {
-            console.error('Get dataset stats error:', error);
-            res.status(500).json({ 
-                error: 'Failed to get dataset statistics',
-                message: error.message 
+
+            res.json({
+                message: 'Dataset statistics retrieved successfully',
+                stats: userDetails,
+                total_users: Object.keys(stats).length,
+                total_images: Object.values(stats).reduce((sum, count) => sum + count, 0)
             });
+
+        } catch (error) {
+            console.error('Dataset stats error:', error);
+            res.status(500).json({ error: 'Failed to get dataset statistics' });
         }
     }
 
-    // Kiểm tra trạng thái model
+    // Kiểm tra trạng thái model (cập nhật từ face.js)
     async getModelStatus(req, res) {
         try {
             const isModelTrained = await faceService.isModelTrained();
             const stats = await faceService.getDatasetStats();
-            
+
             res.json({
-                isModelTrained,
-                datasetStats: stats,
-                totalUsers: Object.keys(stats).length,
-                totalImages: Object.values(stats).reduce((sum, count) => sum + count, 0)
+                model_trained: isModelTrained,
+                dataset_available: Object.keys(stats).length > 0,
+                dataset_stats: stats
             });
+
         } catch (error) {
-            console.error('Get model status error:', error);
-            res.status(500).json({ 
-                error: 'Failed to get model status',
-                message: error.message 
-            });
+            console.error('Model status error:', error);
+            res.status(500).json({ error: 'Failed to get model status' });
         }
     }
 }

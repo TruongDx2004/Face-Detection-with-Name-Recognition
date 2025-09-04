@@ -412,36 +412,36 @@ const SessionDetailsModal = ({ session, isOpen, onClose }) => {
                   <div style={sessionManagementStyles.attendanceCard}>
                     <div style={sessionManagementStyles.cardLabel}>Tổng sinh viên</div>
                     <div style={sessionManagementStyles.cardValue}>
-                      {attendanceData.statistics.total_students}
+                      {attendanceData.summary.total}
                     </div>
                   </div>
                   <div style={sessionManagementStyles.attendanceCard}>
                     <div style={sessionManagementStyles.cardLabel}>Có mặt đúng giờ</div>
                     <div style={{ ...sessionManagementStyles.cardValue, color: '#10b981' }}>
-                      {attendanceData.statistics.present}
+                      {attendanceData.summary.present}
                     </div>
                   </div>
                   <div style={sessionManagementStyles.attendanceCard}>
                     <div style={sessionManagementStyles.cardLabel}>Có mặt muộn</div>
                     <div style={{ ...sessionManagementStyles.cardValue, color: '#f59e0b' }}>
-                      {attendanceData.statistics.late}
+                      {attendanceData.summary.late}
                     </div>
                   </div>
                   <div style={sessionManagementStyles.attendanceCard}>
                     <div style={sessionManagementStyles.cardLabel}>Vắng mặt</div>
                     <div style={{ ...sessionManagementStyles.cardValue, color: '#ef4444' }}>
-                      {attendanceData.statistics.absent}
+                      {attendanceData.summary.absent}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Present Students */}
-              {attendanceData.attendances.length > 0 && (
+              {attendanceData.summary.present > 0 && (
                 <div style={sessionManagementStyles.attendanceSection}>
                   <h4 style={sessionManagementStyles.sectionTitle}>
                     <i className="fas fa-check-circle"></i>
-                    Sinh viên đã điểm danh ({attendanceData.attendances.length})
+                    Sinh viên đã điểm danh ({attendanceData.summary.present})
                   </h4>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={sessionManagementStyles.table}>
@@ -455,31 +455,39 @@ const SessionDetailsModal = ({ session, isOpen, onClose }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {attendanceData.attendances.map((attendance, index) => (
-                          <tr key={attendance.id}>
+                        {attendanceData.students
+                          .filter(student => student.status === 'present' || student.status === 'late')
+                          .map((student, index) => (
+                          <tr key={student.id}>
                             <td style={sessionManagementStyles.td}>
-                              {attendance.student_code || 'N/A'}
+                              {student.student_code || 'N/A'}
                             </td>
                             <td style={sessionManagementStyles.td}>
-                              {attendance.student_name}
+                              {student.full_name}
                             </td>
                             <td style={sessionManagementStyles.td}>
                               <span style={{
                                 ...sessionManagementStyles.statusBadge,
-                                ...(attendance.status === 'present' 
+                                ...(student.status === 'present' 
                                   ? { background: '#dcfce7', color: '#166534' }
                                   : { background: '#fef3c7', color: '#92400e' }
                                 )
                               }}>
-                                <i className={`fas fa-${attendance.status === 'present' ? 'check' : 'clock'}`}></i>
-                                {attendance.status === 'present' ? 'Có mặt' : 'Muộn'}
+                                <i className={`fas fa-${student.status === 'present' ? 'check' : 'clock'}`}></i>
+                                {student.status === 'present' ? 'Có mặt' : 'Muộn'}
                               </span>
                             </td>
                             <td style={sessionManagementStyles.td}>
-                              {new Date(attendance.attendance_time).toLocaleString('vi-VN')}
+                              {student.attendance ? 
+                                new Date(student.attendance.attendance_time).toLocaleString('vi-VN') : 
+                                'N/A'
+                              }
                             </td>
                             <td style={sessionManagementStyles.td}>
-                              {Math.round(attendance.confidence_score)}%
+                              {student.attendance?.confidence_score ? 
+                                Math.round(student.attendance.confidence_score) + '%' : 
+                                'N/A'
+                              }
                             </td>
                           </tr>
                         ))}
@@ -490,11 +498,11 @@ const SessionDetailsModal = ({ session, isOpen, onClose }) => {
               )}
 
               {/* Absent Students */}
-              {attendanceData.absent_students.length > 0 && (
+              {attendanceData.summary.absent > 0 && (
                 <div style={sessionManagementStyles.attendanceSection}>
                   <h4 style={sessionManagementStyles.sectionTitle}>
                     <i className="fas fa-times-circle"></i>
-                    Sinh viên vắng mặt ({attendanceData.absent_students.length})
+                    Sinh viên vắng mặt ({attendanceData.summary.absent})
                   </h4>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={sessionManagementStyles.table}>
@@ -505,13 +513,15 @@ const SessionDetailsModal = ({ session, isOpen, onClose }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {attendanceData.absent_students.map((student, index) => (
-                          <tr key={student.student_id}>
+                        {attendanceData.students
+                          .filter(student => student.status === 'absent' || !student.status)
+                          .map((student, index) => (
+                          <tr key={student.id}>
                             <td style={sessionManagementStyles.td}>
                               {student.student_code || 'N/A'}
                             </td>
                             <td style={sessionManagementStyles.td}>
-                              {student.student_name}
+                              {student.full_name}
                             </td>
                           </tr>
                         ))}

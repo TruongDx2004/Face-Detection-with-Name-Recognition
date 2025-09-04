@@ -734,8 +734,6 @@ const SubjectScheduleManagement = () => {
                 schedule.class_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 schedule.teacher_name.toLowerCase().includes(searchQuery.toLowerCase());
 
-            console.log("Showing schedule :", schedule);
-
             const matchesClass = !scheduleFilters.class_id ||
                 schedule.class_name === scheduleFilters.class_id;
 

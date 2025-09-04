@@ -120,21 +120,24 @@ class AuthController {
         }
     }
 
-    // Lấy thông tin profile
+    // Lấy thông tin profile (cập nhật từ auth.js)
     async getProfile(req, res) {
         try {
             const userId = req.user.id;
-
-            const [rows] = await db.execute(
-                'SELECT id, username, full_name, email, role, is_active, face_trained, created_at FROM users WHERE id = ?',
-                [userId]
-            );
-
-            if (rows.length === 0) {
+            if (!userId) {
                 return res.status(404).json({ error: 'User not found' });
             }
 
-            const profile = rows[0];
+            const profile = {
+                id: req.user.id,
+                username: req.user.username,
+                full_name: req.user.full_name,
+                email: req.user.email,
+                role: req.user.role,
+                is_active: req.user.is_active,
+                face_trained: req.user.face_trained,
+                created_at: req.user.created_at
+            };
 
             // Nếu là học sinh thì lấy class_name và student_code từ class_students và classes
             if (profile.role === 'student') {
@@ -142,22 +145,86 @@ class AuthController {
                     `SELECT cs.student_code, c.name AS class_name
                      FROM class_students cs
                      JOIN classes c ON cs.class_id = c.id
-                     WHERE cs.student_id = ? LIMIT 1`,
-                    [userId]
+                     WHERE cs.student_id = ?
+                     LIMIT 1`,
+                    [profile.id]
                 );
                 if (rows.length > 0) {
-                    profile.student_code = rows[0].student_code;
                     profile.class_name = rows[0].class_name;
+                    profile.student_id = rows[0].student_code;
                 } else {
-                    profile.student_code = null;
                     profile.class_name = null;
+                    profile.student_id = null;
                 }
             }
 
-            res.json(profile);
+            return res.json({
+                message: 'Profile retrieved successfully',
+                data: profile
+            });
+
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Server error' });
+        }
+    }
+
+    // Cập nhật profile (từ auth.js)
+    async updateProfile(req, res) {
+        try {
+            const { full_name, email } = req.body;
+            const userId = req.user.id;
+
+            await db.execute(
+                'UPDATE users SET full_name = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [full_name, email, userId]
+            );
+
+            res.json({ message: 'Profile updated successfully' });
+
         } catch (error) {
-            console.error('Get profile error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('Profile update error:', error);
+            res.status(500).json({ error: 'Profile update failed' });
+        }
+    }
+
+    // Đổi mật khẩu (từ auth.js)
+    async changePassword(req, res) {
+        try {
+            const { current_password, new_password } = req.body;
+            const userId = req.user.id;
+
+            // Get current password hash
+            const [rows] = await db.execute(
+                'SELECT password_hash FROM users WHERE id = ?',
+                [userId]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            // Verify current password
+            const validPassword = await bcrypt.compare(current_password, rows[0].password_hash);
+            if (!validPassword) {
+                return res.status(400).json({ error: 'Current password is incorrect' });
+            }
+
+            // Hash new password
+            const saltRounds = 10;
+            const new_password_hash = await bcrypt.hash(new_password, saltRounds);
+
+            // Update password
+            await db.execute(
+                'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [new_password_hash, userId]
+            );
+
+            res.json({ message: 'Password changed successfully' });
+
+        } catch (error) {
+            console.error('Password change error:', error);
+            res.status(500).json({ error: 'Password change failed' });
         }
     }
 }

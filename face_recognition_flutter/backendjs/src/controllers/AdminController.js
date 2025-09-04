@@ -72,9 +72,8 @@ class AdminController {
                 query += ' WHERE ' + whereString;
                 countQuery += ' WHERE ' + whereString;
             }
-
-            query += ' ORDER BY u.created_at DESC LIMIT ? OFFSET ?';
-            const finalQueryParams = [...params, limitInt, offsetInt];
+            query += ` ORDER BY u.created_at DESC LIMIT ${limitInt} OFFSET ${offsetInt}`;
+            const finalQueryParams = params.slice(); // Clone params for main query
 
             const [users] = await db.execute(query, finalQueryParams);
             const [countResult] = await db.execute(countQuery, params);

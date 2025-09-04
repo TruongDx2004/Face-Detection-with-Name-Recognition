@@ -15,10 +15,11 @@ const authRoutes = require('../routes/authRoutes');
 const faceRoutes = require('../routes/faceRoutes');
 const attendanceRoutes = require('../routes/attendanceRoutes');
 const adminRoutes = require('../routes/adminRoutes');
+const classRoutes = require('../routes/classRoutes');
+const subjectRoutes = require('../routes/subjectRoutes');
 
 // Import old routes (to be migrated)
-const classRoutes = require('../routes/class');
-const subjectRoutes = require('../routes/subject');
+// const oldAttendanceRoutes = require('../routes/attendance'); // REMOVED - migrated to attendanceRoutes
 
 const { swaggerUi, swaggerSpec } = require('../swagger');
 
@@ -139,10 +140,11 @@ class App {
         this.app.use('/api/face', faceRoutes);
         this.app.use('/api/attendance', attendanceRoutes);
         this.app.use('/api/admin', adminRoutes);
-
-        // Legacy routes (to be migrated)
         this.app.use('/api/classes', classRoutes);
         this.app.use('/api/subjects', subjectRoutes);
+
+        // Legacy routes (to be migrated)
+        // this.app.use('/api/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
 
         // Backward compatibility
         this.app.use('/auth', authRoutes);
@@ -151,6 +153,7 @@ class App {
         this.app.use('/admin', adminRoutes);
         this.app.use('/classes', classRoutes);
         this.app.use('/subjects', subjectRoutes);
+        // this.app.use('/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
     }
 
     // Cấu hình error handling

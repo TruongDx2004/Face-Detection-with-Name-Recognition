@@ -138,6 +138,68 @@ router.get('/sessions/:session_id/report', AttendanceController.getAttendanceRep
 
 /**
  * @swagger
+ * /attendance/session/{session_id}:
+ *   get:
+ *     summary: Get session details
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: session_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Session ID
+ *     responses:
+ *       200:
+ *         description: Session details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 session:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     schedule_id:
+ *                       type: integer
+ *                     session_date:
+ *                       type: string
+ *                       format: date
+ *                     start_time:
+ *                       type: string
+ *                       format: time
+ *                     end_time:
+ *                       type: string
+ *                       format: time
+ *                     is_active:
+ *                       type: boolean
+ *                     class_name:
+ *                       type: string
+ *                     class_code:
+ *                       type: string
+ *                     subject_name:
+ *                       type: string
+ *                     teacher_name:
+ *                       type: string
+ *                     attendance_count:
+ *                       type: integer
+ *                     total_students:
+ *                       type: integer
+ *       404:
+ *         description: Session not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/session/:session_id', AttendanceController.getSessionDetails);
+
+/**
+ * @swagger
  * /attendance/sessions/{session_id}/status:
  *   put:
  *     summary: Update session status (Teacher only)
@@ -165,5 +227,141 @@ router.get('/sessions/:session_id/report', AttendanceController.getAttendanceRep
  *         description: Session status updated successfully
  */
 router.put('/sessions/:session_id/status', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AttendanceController.updateSessionStatus);
+
+/**
+ * @swagger
+ * /attendance/mark-manual:
+ *   post:
+ *     summary: Mark attendance manually (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - session_id
+ *               - student_id
+ *               - status
+ *             properties:
+ *               session_id:
+ *                 type: integer
+ *               student_id:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [present, absent, late]
+ *     responses:
+ *       200:
+ *         description: Attendance marked manually successfully
+ */
+router.post('/mark-manual', authorize(USER_ROLES.TEACHER), AttendanceController.markAttendanceManual);
+
+/**
+ * @swagger
+ * /attendance/active-sessions:
+ *   get:
+ *     summary: Get active sessions for student
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Active sessions retrieved successfully
+ */
+router.get('/active-sessions', authorize(USER_ROLES.STUDENT), AttendanceController.getActiveSessions);
+
+/**
+ * @swagger
+ * /attendance/my-attendance:
+ *   get:
+ *     summary: Get student's attendance history
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Attendance history retrieved successfully
+ */
+router.get('/my-attendance', authorize(USER_ROLES.STUDENT), AttendanceController.getMyAttendance);
+
+/**
+ * @swagger
+ * /attendance/my-sessions:
+ *   get:
+ *     summary: Get teacher's sessions
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Teacher sessions retrieved successfully
+ */
+router.get('/my-sessions', authorize(USER_ROLES.TEACHER), AttendanceController.getMySessions);
+
+/**
+ * @swagger
+ * /attendance/sessions/{session_id}/end:
+ *   put:
+ *     summary: End attendance session (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: session_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session ended successfully
+ */
+router.put('/sessions/:session_id/end', authorize(USER_ROLES.TEACHER), AttendanceController.endSession);
+
+/**
+ * @swagger
+ * /attendance/sessions/{id}:
+ *   delete:
+ *     summary: Delete attendance session (Teacher/Admin only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session deleted successfully
+ */
+router.delete('/sessions/:id', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AttendanceController.deleteSession);
 
 module.exports = router;
