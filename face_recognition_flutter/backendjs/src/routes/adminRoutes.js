@@ -374,4 +374,54 @@ router.get('/reports/attendance', authenticateToken, authorize('admin'), AdminCo
 
 router.post('/users/import', authenticateToken, authorize('admin'), AdminController.importUsers);
 
+/**
+ * @swagger
+ * /admin/users/template:
+ *   get:
+ *     summary: Get users import template
+ *     tags: [Admin - Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Template generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 template:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       full_name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       password:
+ *                         type: string
+ *                       class_name:
+ *                         type: string
+ *                       student_code:
+ *                         type: string
+ *                 instructions:
+ *                   type: object
+ *                 available_data:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin role required)
+ *       500:
+ *         description: Failed to generate template
+ */
+router.get('/users/template', authenticateToken, authorize('admin'), AdminController.getUsersTemplate);
+
 module.exports = router;

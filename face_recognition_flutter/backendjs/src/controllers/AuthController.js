@@ -94,13 +94,8 @@ class AuthController {
             const password_hash = await bcrypt.hash(password, 10);
 
             // Insert user
-            const query = role === 'student'
-                ? 'INSERT INTO users (username, password_hash, full_name, email, role, student_id, class_name) VALUES (?, ?, ?, ?, ?, ?, ?)'
-                : 'INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)';
-
-            const params = role === 'student'
-                ? [username, password_hash, full_name, email, role, student_id, class_name]
-                : [username, password_hash, full_name, email, role];
+            const query = 'INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)';
+            const params = [username, password_hash, full_name, email, role];
 
             const [result] = await db.execute(query, params);
 
@@ -216,7 +211,7 @@ class AuthController {
 
             // Update password
             await db.execute(
-                'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                'UPDATE users SET password_hash = ? WHERE id = ?',
                 [new_password_hash, userId]
             );
 

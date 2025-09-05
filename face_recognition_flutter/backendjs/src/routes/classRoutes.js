@@ -30,6 +30,17 @@ router.use(authenticateToken);
  *           type: string
  *         description: Filter by class name (partial match)
  *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive]
+ *         description: Filter by class status
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: string
+ *         description: Filter by academic year
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -89,6 +100,235 @@ router.use(authenticateToken);
  *         description: Internal server error
  */
 router.get('/', ClassController.getAllClasses);
+
+/**
+ * @swagger
+ * /classes/available-students:
+ *   get:
+ *     summary: Get available students (not in any class)
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Available students retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 students:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin role required)
+ *       500:
+ *         description: Failed to retrieve available students
+ */
+router.get('/available-students', authorize(USER_ROLES.ADMIN), ClassController.getAvailableStudents);
+
+/**
+ * @swagger
+ * /classes/import:
+ *   post:
+ *     summary: Import multiple classes (Admin only)
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               required:
+ *                 - name
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   description: Class name
+ *     responses:
+ *       200:
+ *         description: Import process completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       row:
+ *                         type: integer
+ *                       status:
+ *                         type: string
+ *                       message:
+ *                         type: string
+ *       400:
+ *         description: Request body must be an array of classes
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin role required)
+ *       500:
+ *         description: Failed to import classes
+ */
+router.post('/import', authorize(USER_ROLES.ADMIN), ClassController.importClasses);
+
+/**
+ * @swagger
+ * /classes/statistics:
+ *   get:
+ *     summary: Get class statistics (Admin only)
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Class statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 statistics:
+ *                   type: object
+ *                   properties:
+ *                     totalClasses:
+ *                       type: integer
+ *                     activeClasses:
+ *                       type: integer
+ *                     inactiveClasses:
+ *                       type: integer
+ *                     totalYears:
+ *                       type: integer
+ *                     totalStudents:
+ *                       type: integer
+ *                     studentsWithFace:
+ *                       type: integer
+ *                     yearBreakdown:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           year:
+ *                             type: string
+ *                           classCount:
+ *                             type: integer
+ *                           studentCount:
+ *                             type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin role required)
+ *       500:
+ *         description: Failed to retrieve statistics
+ */
+router.get('/statistics', authorize(USER_ROLES.ADMIN), ClassController.getClassStatistics);
+
+/**
+ * @swagger
+ * /classes/years:
+ *   get:
+ *     summary: Get available years
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Available years retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 years:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Failed to retrieve available years
+ */
+router.get('/years', ClassController.getAvailableYears);
+
+/**
+ * @swagger
+ * /classes/year/{year}:
+ *   get:
+ *     summary: Get classes by year
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: year
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Academic year
+ *     responses:
+ *       200:
+ *         description: Classes for the specified year retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 classes:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       code:
+ *                         type: string
+ *                       year:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       studentCount:
+ *                         type: integer
+ *                       studentsWithFace:
+ *                         type: integer
+ *                 year:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Failed to retrieve classes by year
+ */
+router.get('/year/:year', ClassController.getClassesByYear);
 
 /**
  * @swagger
@@ -358,94 +598,46 @@ router.delete('/:id/students/:student_id', authorize(USER_ROLES.ADMIN), ClassCon
 
 /**
  * @swagger
- * /classes/available-students:
- *   get:
- *     summary: Get available students (not in any class)
+ * /classes/{id}/status:
+ *   patch:
+ *     summary: Update class status (Admin only)
  *     tags: [Classes]
  *     security:
  *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Available students retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 students:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (admin role required)
- *       500:
- *         description: Failed to retrieve available students
- */
-router.get('/available-students', authorize(USER_ROLES.ADMIN), ClassController.getAvailableStudents);
-
-/**
- * @swagger
- * /classes/import:
- *   post:
- *     summary: Import multiple classes (Admin only)
- *     tags: [Classes]
- *     security:
- *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Class ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: array
- *             items:
- *               type: object
- *               required:
- *                 - name
- *               properties:
- *                 name:
- *                   type: string
- *                   description: Class name
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [active, inactive]
+ *                 description: New status for the class
  *     responses:
  *       200:
- *         description: Import process completed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 results:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       row:
- *                         type: integer
- *                       status:
- *                         type: string
- *                       message:
- *                         type: string
+ *         description: Class status updated successfully
  *       400:
- *         description: Request body must be an array of classes
+ *         description: Status must be either "active" or "inactive"
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden (admin role required)
+ *       404:
+ *         description: Class not found
  *       500:
- *         description: Failed to import classes
+ *         description: Failed to update class status
  */
-router.post('/import', authorize(USER_ROLES.ADMIN), ClassController.importClasses);
+router.patch('/:id/status', authorize(USER_ROLES.ADMIN), ClassController.updateClassStatus);
 
 module.exports = router;

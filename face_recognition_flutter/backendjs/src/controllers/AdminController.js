@@ -323,7 +323,6 @@ class AdminController {
             for (const [index, user] of usersToImport.entries()) {
                 const result = { row: index + 2, status: 'success', message: 'User created successfully' };
                 const { username, full_name, email, role, password, student_code, class_name } = user;
-
                 // Validate required fields
                 if (!username || !full_name || !email || !role) {
                     result.status = 'failure';
@@ -371,7 +370,6 @@ class AdminController {
                         [newUserId, class_id, codeToInsert]
                     );
                 }
-
                 importResults.push(result);
             }
 
@@ -619,6 +617,79 @@ class AdminController {
         } catch (error) {
             console.error('Get attendance report error:', error);
             res.status(500).json({ error: 'Failed to get attendance report' });
+        }
+    }
+
+    // Lấy template cho import users
+    async getUsersTemplate(req, res) {
+        try {
+            // Get sample data for template
+            const [classes] = await db.execute('SELECT name FROM classes LIMIT 3');
+
+            const template = [
+                {
+                    username: 'student001',
+                    full_name: 'Nguyễn Văn A',
+                    email: 'student001@example.com',
+                    role: 'student',
+                    password: '123456',
+                    class_name: classes[0]?.name || 'Lớp 10A1',
+                    student_code: 'SV001'
+                },
+                {
+                    username: 'teacher001',
+                    full_name: 'Trần Thị B',
+                    email: 'teacher001@example.com',
+                    role: 'teacher',
+                    password: '123456',
+                    class_name: '',
+                    student_code: ''
+                },
+                {
+                    username: 'student002',
+                    full_name: 'Lê Văn C',
+                    email: 'student002@example.com',
+                    role: 'student',
+                    password: '123456',
+                    class_name: classes[1]?.name || 'Lớp 10A2',
+                    student_code: 'SV002'
+                }
+            ];
+
+            res.json({
+                message: 'Template người dùng được tạo thành công',
+                template,
+                instructions: {
+                    required_fields: ['username', 'full_name', 'email', 'role'],
+                    optional_fields: ['password', 'class_name', 'student_code'],
+                    field_descriptions: {
+                        username: 'Tên đăng nhập (duy nhất)',
+                        full_name: 'Họ và tên đầy đủ',
+                        email: 'Địa chỉ email (duy nhất)',
+                        role: 'Vai trò: student, teacher, hoặc admin',
+                        password: 'Mật khẩu (mặc định: 123456 nếu để trống)',
+                        class_name: 'Tên lớp (chỉ áp dụng cho sinh viên)',
+                        student_code: 'Mã sinh viên (chỉ áp dụng cho sinh viên)'
+                    },
+                    notes: [
+                        'Username và email phải là duy nhất trong hệ thống',
+                        'Nếu role là "student" và có class_name + student_code, sinh viên sẽ được tự động thêm vào lớp',
+                        'Nếu không có password, hệ thống sẽ tự động đặt mật khẩu là "123456"',
+                        'class_name phải khớp chính xác với tên lớp đã có trong hệ thống',
+                        'student_code phải là duy nhất trong toàn bộ hệ thống',
+                        'Với teacher và admin, để trống class_name và student_code',
+                        'Xóa các dòng ví dụ trước khi import',
+                        'Tối đa 100 người dùng mỗi lần import'
+                    ]
+                },
+                available_data: {
+                    classes: classes.map(c => c.name),
+                    roles: ['student', 'teacher', 'admin']
+                }
+            });
+        } catch (error) {
+            console.error('Export users template error:', error);
+            res.status(500).json({ error: 'Lỗi khi tạo template người dùng' });
         }
     }
 }

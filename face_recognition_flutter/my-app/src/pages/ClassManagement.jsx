@@ -246,15 +246,11 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
   const fetchClassStudents = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getClasses();
+      const response = await apiService.getClassStudents(classData.id);
+
       if (response.success) {
         console.log('Fetch class students response:', response);
-
-        const targetClass = response.data.classes.find(
-          cls => cls.id === classData.id
-        );
-
-        setStudents(targetClass?.students || []);
+        setStudents(response.data.students || []);
       }
 
     } catch (error) {
@@ -264,6 +260,7 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
       setLoading(false);
     }
   };
+
 
   const fetchAvailableStudents = async () => {
     try {
@@ -392,11 +389,11 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
                 <tr key={student.id} style={{
                   borderBottom: index < students.length - 1 ? '1px solid #e2e8f0' : 'none'
                 }}>
-                  <td style={{ padding: '0.75rem' }}>{student.code || 'N/A'}</td>
-                  <td style={{ padding: '0.75rem', fontWeight: '500' }}>{student.name}</td>
+                  <td style={{ padding: '0.75rem' }}>{student.student_code || 'N/A'}</td>
+                  <td style={{ padding: '0.75rem', fontWeight: '500' }}>{student.full_name}</td>
                   <td style={{ padding: '0.75rem', color: '#64748b' }}>{student.email}</td>
                   <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                    {student.hasFace ? (
+                    {student.face_trained === 1 ? (
                       <span style={{ color: '#10b981' }}>
                         <i className="fas fa-check-circle"></i>
                       </span>
@@ -587,11 +584,12 @@ const ClassManagement = () => {
   const [showClassModal, setShowClassModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [currentClass, setCurrentClass] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [classTemplate, setClassTemplate] = useState(null);
 
   const currentTime = useTime();
   const { notifications, showNotification, removeNotification } = useNotification();
@@ -612,7 +610,52 @@ const ClassManagement = () => {
     };
 
     checkPermission();
+    fetchClassTemplate();
   }, []);
+
+  const fetchClassTemplate = async () => {
+    try {
+      // Try to fetch from API first (when endpoint is available)
+      // const response = await apiService.get('/classes/template');
+      // setClassTemplate(response.data);
+      
+      // Fallback template for now
+      const template = {
+        template: [
+          { name: 'Lớp 10A1', code: '10A1', year: '2024', description: 'Lớp 10 chuyên Toán', status: 'active' },
+          { name: 'Lớp 10A2', code: '10A2', year: '2024', description: 'Lớp 10 chuyên Lý', status: 'active' }
+        ],
+        instructions: {
+          required_fields: ['name'],
+          optional_fields: ['code', 'year', 'description', 'status'],
+          field_descriptions: {
+            name: 'Tên lớp (bắt buộc, duy nhất)',
+            code: 'Mã lớp (tùy chọn, duy nhất nếu có)',
+            year: 'Năm học (tùy chọn)',
+            description: 'Mô tả lớp (tùy chọn)',
+            status: 'Trạng thái: active hoặc inactive (mặc định: active)'
+          },
+          notes: [
+            'Tên lớp phải là duy nhất trong hệ thống',
+            'Mã lớp (nếu có) phải là duy nhất',
+            'Status có thể là "active" hoặc "inactive"',
+            'Xóa các dòng ví dụ trước khi import',
+            'Tối đa 100 lớp mỗi lần import'
+          ]
+        }
+      };
+      setClassTemplate(template);
+    } catch (error) {
+      console.error('Error fetching class template:', error);
+    }
+  };
+
+  const handleClassImport = (result) => {
+    console.log('Class import result:', result);
+    const successCount = result.summary?.success || 0;
+    showNotification(`Import hoàn tất! ${successCount} lớp học được import thành công.`, 'success');
+    fetchClasses(); // Refresh class list
+  };
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -839,19 +882,19 @@ const ClassManagement = () => {
               </button>
               <button
                 style={styles.actionBtn}
-                onClick={() => setShowImportModal(true)}
-                title="Nhập từ Excel"
-              >
-                <i className="fas fa-file-import"></i>
-              </button>
-              <button
-                style={styles.actionBtn}
                 onClick={() => showNotification('Đang xuất dữ liệu...', 'info')}
                 title="Xuất Excel"
               >
                 <i className="fas fa-file-export"></i>
               </button>
             </div>
+            <button
+              style={{ ...styles.btn, ...styles.btnSecondary, marginRight: '10px' }}
+              onClick={() => setShowImportModal(true)}
+            >
+              <i className="fas fa-file-import"></i>
+              Import Excel
+            </button>
             <button
               style={{ ...styles.btn, ...styles.btnPrimary }}
               onClick={handleAddClass}
@@ -1091,12 +1134,15 @@ const ClassManagement = () => {
           </button>
         </div>
       </Modal>
-      {/* Import User Modal */}
+      {/* Import Class Modal */}
       <ImportModal
         isOpen={showImportModal}
-        onClose={() => !modalLoading && setShowImportModal(false)}
+        onClose={() => setShowImportModal(false)}
         onImport={handleImportClasses}
         isLoading={modalLoading}
+        type="classes"
+        title="🏫 Import Lớp học từ Excel"
+        templateData={classTemplate}
       />
     </div>
   );

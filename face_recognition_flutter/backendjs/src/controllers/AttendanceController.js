@@ -475,7 +475,10 @@ class AttendanceController {
 
             // Kiểm tra session tồn tại và thuộc về teacher
             const [sessions] = await db.execute(
-                'SELECT id, status FROM attendance_sessions WHERE id = ? AND teacher_id = ?',
+                `SELECT ats.id, ats.is_active 
+                 FROM attendance_sessions ats
+                 JOIN schedules s ON ats.schedule_id = s.id
+                 WHERE ats.id = ? AND s.teacher_id = ?`,
                 [session_id, teacher_id]
             );
 
@@ -483,26 +486,26 @@ class AttendanceController {
                 return res.status(404).json({ error: 'Session not found or not authorized' });
             }
 
-            if (sessions[0].status !== 'active') {
+            if (!sessions[0].is_active) {
                 return res.status(400).json({ error: 'Session is not active' });
             }
 
             // Kiểm tra student đã điểm danh chưa
             const [existing] = await db.execute(
-                'SELECT id FROM attendance_records WHERE session_id = ? AND student_id = ?',
+                'SELECT id FROM attendances WHERE session_id = ? AND student_id = ?',
                 [session_id, student_id]
             );
 
             if (existing.length > 0) {
                 // Cập nhật status
                 await db.execute(
-                    'UPDATE attendance_records SET status = ?, marked_at = CURRENT_TIMESTAMP WHERE session_id = ? AND student_id = ?',
+                    'UPDATE attendances SET status = ?, attendance_time = CURRENT_TIMESTAMP WHERE session_id = ? AND student_id = ?',
                     [status, session_id, student_id]
                 );
             } else {
                 // Tạo mới
                 await db.execute(
-                    'INSERT INTO attendance_records (session_id, student_id, status, marked_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                    'INSERT INTO attendances (session_id, student_id, status, attendance_time) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
                     [session_id, student_id, status]
                 );
             }
@@ -599,7 +602,7 @@ class AttendanceController {
 
             // Get total count
             const [countResult] = await db.execute(
-                'SELECT COUNT(*) as total FROM attendance_records WHERE student_id = ?',
+                'SELECT COUNT(*) as total FROM attendances WHERE student_id = ?',
                 [student_id]
             );
             const total = countResult[0].total;
@@ -652,7 +655,7 @@ class AttendanceController {
 
             // Get total count
             const [countResult] = await db.execute(
-                'SELECT COUNT(*) as total FROM attendance_sessions WHERE teacher_id = ?',
+                'SELECT COUNT(*) as total FROM attendance_sessions ats JOIN schedules s ON ats.schedule_id = s.id WHERE s.teacher_id = ?',
                 [teacher_id]
             );
             const total = countResult[0].total;
@@ -681,7 +684,10 @@ class AttendanceController {
 
             // Kiểm tra session thuộc về teacher
             const [sessions] = await db.execute(
-                'SELECT id, status FROM attendance_sessions WHERE id = ? AND teacher_id = ?',
+                `SELECT ats.id, ats.is_active 
+                 FROM attendance_sessions ats
+                 JOIN schedules s ON ats.schedule_id = s.id
+                 WHERE ats.id = ? AND s.teacher_id = ?`,
                 [sessionId, teacher_id]
             );
 
@@ -689,7 +695,7 @@ class AttendanceController {
                 return res.status(404).json({ error: 'Session not found or not authorized' });
             }
 
-            if (sessions[0].status === 'completed') {
+            if (!sessions[0].is_active) {
                 return res.status(400).json({ error: 'Session is already completed' });
             }
 

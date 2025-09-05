@@ -143,6 +143,16 @@ class ApiService {
     async importClasses(classesData) {
         return await this.makeRequest('POST', '/classes/import', classesData);
     }
+
+    // ============ SUBJECT IMPORT ENDPOINT ============
+    async importSubjects(subjectsData) {
+        return await this.makeRequest('POST', '/subjects/import', subjectsData);
+    }
+
+    // ============ SCHEDULE IMPORT ENDPOINT ============
+    async importSchedules(schedulesData) {
+        return await this.makeRequest('POST', '/subjects/schedules/import', schedulesData);
+    }
     
     // ============ ATTENDANCE ENDPOINTS ============
     async createAttendanceSession(sessionData) {
@@ -240,8 +250,8 @@ class ApiService {
         return await this.makeRequest('DELETE', `/classes/${classId}/students/${studentId}`);
     }
 
-    async getAvailableStudents(classId) {
-        return await this.makeRequest('GET', '/classes/available-students', null, { class_id: classId });
+    async getAvailableStudents() {
+        return await this.makeRequest('GET', '/classes/available-students');
     }
 
     // ============ SUBJECT MANAGEMENT ENDPOINTS ============

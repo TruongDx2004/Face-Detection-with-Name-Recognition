@@ -978,8 +978,6 @@ const AttendanceSessionManagement = () => {
                         <th style={sessionManagementStyles.th}>Ngày</th>
                         <th style={sessionManagementStyles.th}>Thời gian</th>
                         <th style={sessionManagementStyles.th}>Trạng thái</th>
-                        <th style={sessionManagementStyles.th}>Điểm danh</th>
-                        <th style={sessionManagementStyles.th}>Tỷ lệ</th>
                         <th style={sessionManagementStyles.th}>Hành động</th>
                       </tr>
                     </thead>
@@ -995,7 +993,7 @@ const AttendanceSessionManagement = () => {
                               #{session.id}
                             </td>
                             <td style={sessionManagementStyles.td}>
-                              <div style={{ fontWeight: '500' }}>{session.subject}</div>
+                              <div style={{ fontWeight: '500' }}>{session.subject_name}</div>
                             </td>
                             <td style={sessionManagementStyles.td}>
                               {session.class_name}
@@ -1026,31 +1024,7 @@ const AttendanceSessionManagement = () => {
                                 {session.is_active ? 'Hoạt động' : 'Đã kết thúc'}
                               </span>
                             </td>
-                            <td style={sessionManagementStyles.td}>
-                              <div style={{ fontSize: '0.875rem' }}>
-                                <div style={{ color: '#10b981' }}>
-                                  Có mặt: {session.present_count || 0}
-                                </div>
-                                <div style={{ color: '#f59e0b' }}>
-                                  Muộn: {session.late_count || 0}
-                                </div>
-                                <div style={{ color: '#ef4444' }}>
-                                  Vắng: {session.absent_count || 0}
-                                </div>
-                              </div>
-                            </td>
-                            <td style={sessionManagementStyles.td}>
-                              <div style={{ 
-                                fontWeight: '600',
-                                color: attendanceRate >= 80 ? '#10b981' : 
-                                       attendanceRate >= 60 ? '#f59e0b' : '#ef4444'
-                              }}>
-                                {attendanceRate}%
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                {session.present_count + session.late_count}/{session.total_students}
-                              </div>
-                            </td>
+                            
                             <td style={sessionManagementStyles.td}>
                               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <button
@@ -1070,7 +1044,7 @@ const AttendanceSessionManagement = () => {
                                   <i className="fas fa-eye"></i>
                                 </button>
 
-                                {session.is_active && (
+                                {session.is_active === 1 && (
                                   <button
                                     style={{
                                       ...sessionManagementStyles.actionBtn,
@@ -1090,7 +1064,7 @@ const AttendanceSessionManagement = () => {
                                   </button>
                                 )}
 
-                                <button
+                                {/* <button
                                   style={{
                                     ...sessionManagementStyles.actionBtn,
                                     ...sessionManagementStyles.deleteBtn
@@ -1106,7 +1080,7 @@ const AttendanceSessionManagement = () => {
                                   title="Xóa phiên"
                                 >
                                   <i className="fas fa-trash"></i>
-                                </button>
+                                </button> */}
                               </div>
                             </td>
                           </tr>

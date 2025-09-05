@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Notification from '../components/Notification';
+import ImportModal from '../components/ImportModal';
 import Sidebar from '../components/Sidebar';
 import LoadingOverlay from '../components/LoadingOverlay';
 import useNotification from '../hooks/useNotification';
@@ -8,6 +9,7 @@ import styles from '../components/styles';
 import classManagementStyles from '../styles/ClassManagementStyles';
 import apiService from '../services/api-service';
 import authService from '../services/auth-service';
+import * as XLSX from 'xlsx';
 
 // Stats Card Component
 const StatsCard = ({ title, value, icon, color, change }) => {
@@ -644,11 +646,15 @@ const SubjectScheduleManagement = () => {
     const [showSubjectModal, setShowSubjectModal] = useState(false);
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showSubjectImportModal, setShowSubjectImportModal] = useState(false);
+    const [showScheduleImportModal, setShowScheduleImportModal] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleteType, setDeleteType] = useState(''); // 'subject' or 'schedule'
     const [modalLoading, setModalLoading] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
+    const [subjectTemplate, setSubjectTemplate] = useState(null);
+    const [scheduleTemplate, setScheduleTemplate] = useState(null);
 
     const { notifications, showNotification, removeNotification } = useNotification();
 
@@ -668,7 +674,301 @@ const SubjectScheduleManagement = () => {
         };
 
         checkPermission();
+        fetchTemplates();
     }, []);
+
+    const fetchTemplates = async () => {
+        try {
+            // Try to fetch subject template from API
+            try {
+                const subjectResponse = await apiService.get('/subjects/template');
+                setSubjectTemplate(subjectResponse.data);
+            } catch (error) {
+                console.log('Using fallback subject template');
+                setSubjectTemplate(createSubjectTemplate());
+            }
+
+            // Try to fetch schedule template from API
+            try {
+                const scheduleResponse = await apiService.get('/subjects/schedules/template');
+                setScheduleTemplate(scheduleResponse.data);
+            } catch (error) {
+                console.log('Using fallback schedule template');
+                setScheduleTemplate(await createScheduleTemplate());
+            }
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+            // Set fallback templates
+            setSubjectTemplate(createSubjectTemplate());
+            setScheduleTemplate(await createScheduleTemplate());
+        }
+    };
+
+    const createSubjectTemplate = () => {
+        return {
+            template: [
+                { name: 'Toán rời rạc' },
+                { name: 'Bảo mật thông tin' },
+            ],
+            instructions: {
+                required_fields: ['name'],
+                field_descriptions: {
+                    name: 'Tên môn học (bắt buộc, duy nhất)'
+                },
+                notes: [
+                    'Tên môn học phải là duy nhất trong hệ thống',
+                    'Tên môn học không được để trống',
+                    'Xóa các dòng ví dụ trước khi import',
+                    'Tối đa 100 môn học mỗi lần import',
+                    'Chỉ hỗ trợ file Excel (.xlsx, .xls)'
+                ]
+            }
+        };
+    };
+
+    const createScheduleTemplate = async () => {
+        // Get current data for realistic examples
+        let availableClasses = [];
+        let availableSubjects = [];
+        let availableTeachers = [];
+
+        try {
+            // Try to get current data for examples
+            if (scheduleOptions.classes.length > 0) {
+                availableClasses = scheduleOptions.classes.slice(0, 3).map(c => c.name);
+            }
+            if (scheduleOptions.subjects.length > 0) {
+                availableSubjects = scheduleOptions.subjects.slice(0, 3).map(s => s.name);
+            }
+            if (scheduleOptions.teachers.length > 0) {
+                availableTeachers = scheduleOptions.teachers.slice(0, 3).map(t => t.full_name);
+            }
+        } catch (error) {
+            console.log('Using default examples for schedule template');
+        }
+
+        return {
+            template: [
+                {
+                    class_name: availableClasses[0] || 'Lớp 10A1',
+                    subject_name: availableSubjects[0] || 'Toán học',
+                    teacher_name: availableTeachers[0] || 'Nguyễn Văn A',
+                    weekday: 1,
+                    start_time: '08:00:00',
+                    end_time: '09:30:00'
+                },
+                {
+                    class_name: availableClasses[1] || 'Lớp 10A2',
+                    subject_name: availableSubjects[1] || 'Vật lý',
+                    teacher_name: availableTeachers[1] || 'Nguyễn Văn A',
+                    weekday: 2,
+                    start_time: '10:00:00',
+                    end_time: '11:30:00'
+                },
+                {
+                    class_name: availableClasses[2] || 'Lớp 10A3',
+                    subject_name: availableSubjects[2] || 'Hóa học',
+                    teacher_name: availableTeachers[2] || 'Lê Văn C',
+                    weekday: 3,
+                    start_time: '13:30:00',
+                    end_time: '15:00:00'
+                }
+            ],
+            instructions: {
+                required_fields: ['class_name', 'subject_name', 'teacher_name', 'weekday', 'start_time', 'end_time'],
+                field_descriptions: {
+                    class_name: 'Tên lớp học (phải khớp chính xác với lớp đã có)',
+                    subject_name: 'Tên môn học (phải khớp chính xác với môn học đã có)',
+                    teacher_name: 'Họ tên giáo viên (phải khớp chính xác với giáo viên đã có)',
+                    weekday: 'Thứ trong tuần (0=Chủ nhật, 1=Thứ hai, 2=Thứ ba, 3=Thứ tư, 4=Thứ năm, 5=Thứ sáu, 6=Thứ bảy)',
+                    start_time: 'Giờ bắt đầu (định dạng HH:MM:SS, ví dụ: 08:00:00)',
+                    end_time: 'Giờ kết thúc (định dạng HH:MM:SS, ví dụ: 09:30:00)'
+                },
+                notes: [
+                    'Tất cả lớp học, môn học và giáo viên phải đã tồn tại trong hệ thống',
+                    'Không được có xung đột thời gian cho cùng lớp trong cùng ngày',
+                    'Giờ bắt đầu phải nhỏ hơn giờ kết thúc',
+                    'Weekday phải là số từ 0 đến 6',
+                    'Thời gian phải đúng định dạng HH:MM:SS (24 giờ)',
+                    'Xóa các dòng ví dụ trước khi import',
+                    'Tối đa 50 lịch học mỗi lần import',
+                    'Chỉ hỗ trợ file Excel (.xlsx, .xls)'
+                ],
+                examples: {
+                    weekdays: [
+                        '0 = Chủ nhật',
+                        '1 = Thứ hai',
+                        '2 = Thứ ba',
+                        '3 = Thứ tư',
+                        '4 = Thứ năm',
+                        '5 = Thứ sáu',
+                        '6 = Thứ bảy'
+                    ],
+                    time_format: [
+                        '08:00:00 (8 giờ sáng)',
+                        '13:30:00 (1 giờ 30 chiều)',
+                        '15:45:00 (3 giờ 45 chiều)'
+                    ]
+                }
+            },
+            available_data: {
+                classes: availableClasses.length > 0 ? availableClasses : ['Lớp 10A1', 'Lớp 10A2', 'Lớp 11A1'],
+                subjects: availableSubjects.length > 0 ? availableSubjects : ['Toán học', 'Vật lý', 'Hóa học'],
+                teachers: availableTeachers.length > 0 ? availableTeachers : ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C']
+            }
+        };
+    };
+
+    const handleSubjectImport = (result) => {
+        console.log('Subject import result:', result);
+        const successCount = result.summary?.success || 0;
+        showNotification(`Import hoàn tất! ${successCount} môn học được import thành công.`, 'success');
+        fetchSubjects(); // Refresh subjects list
+    };
+
+    const handleImportFile = async (subjectsData) => {
+        try {
+            const result = await apiService.importSubjects(subjectsData);
+            handleSubjectImport(result);
+        } catch (error) {
+            console.error('Subject import error:', error);
+            showNotification('Có lỗi xảy ra khi import môn học.', 'error');
+        }
+    };
+
+
+    const handleScheduleImport = (result) => {
+        console.log('Schedule import result:', result);
+        const successCount = result.summary?.success || 0;
+        showNotification(`Import hoàn tất! ${successCount} lịch học được import thành công.`, 'success');
+        fetchSchedules(); // Refresh schedules list
+    };
+
+    const handleImportSchduleFile = async (schedulesData) => {
+        try {
+            const result = await apiService.importSchedules(schedulesData);
+            handleScheduleImport(result);
+        } catch (error) {
+            console.error('Schedule import error:', error);
+            showNotification('Có lỗi khi import lịch học.', 'error');
+        }
+    };
+
+
+    // Download Subject Template Excel
+    const downloadSubjectTemplate = () => {
+        try {
+            const template = subjectTemplate || createSubjectTemplate();
+
+            // Create main template sheet
+            const ws = XLSX.utils.json_to_sheet(template.template);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Môn học');
+
+            // Create instructions sheet
+            const instructionsData = [
+                ['HƯỚNG DẪN IMPORT MÔN HỌC'],
+                [''],
+                ['1. CÁC TRƯỜNG BẮT BUỘC:'],
+                ...template.instructions.required_fields.map(field => [`   - ${field}`]),
+                [''],
+                ['2. MÔ TẢ CÁC TRƯỜNG:'],
+                ...Object.entries(template.instructions.field_descriptions || {}).map(([field, desc]) => [`   ${field}: ${desc}`]),
+                [''],
+                ['3. GHI CHÚ QUAN TRỌNG:'],
+                ...template.instructions.notes.map(note => [`   - ${note}`]),
+                [''],
+                ['4. VÍ DỤ DỮ LIỆU:'],
+                ['   Xem sheet "Môn học" để tham khảo format dữ liệu'],
+                [''],
+                ['5. CÁCH SỬ DỤNG:'],
+                ['   - Xóa các dòng ví dụ trong sheet "Môn học"'],
+                ['   - Nhập dữ liệu thực tế của bạn'],
+                ['   - Lưu file và import vào hệ thống'],
+                [''],
+                ['Chúc bạn import thành công! 🎉']
+            ];
+
+            const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsData);
+            XLSX.utils.book_append_sheet(wb, instructionsSheet, 'Hướng dẫn');
+
+            // Download file
+            XLSX.writeFile(wb, 'Template_Mon_Hoc.xlsx');
+            showNotification('Đã tải template môn học thành công!', 'success');
+        } catch (error) {
+            console.error('Error downloading subject template:', error);
+            showNotification('Lỗi khi tải template môn học', 'error');
+        }
+    };
+
+    // Download Schedule Template Excel
+    const downloadScheduleTemplate = async () => {
+        try {
+            const template = scheduleTemplate || await createScheduleTemplate();
+
+            // Create main template sheet
+            const ws = XLSX.utils.json_to_sheet(template.template);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Lịch học');
+
+            // Create instructions sheet
+            const instructionsData = [
+                ['HƯỚNG DẪN IMPORT LỊCH HỌC'],
+                [''],
+                ['1. CÁC TRƯỜNG BẮT BUỘC:'],
+                ...template.instructions.required_fields.map(field => [`   - ${field}`]),
+                [''],
+                ['2. MÔ TẢ CÁC TRƯỜNG:'],
+                ...Object.entries(template.instructions.field_descriptions || {}).map(([field, desc]) => [`   ${field}: ${desc}`]),
+                [''],
+                ['3. VÍ DỤ WEEKDAY:'],
+                ...template.instructions.examples.weekdays.map(example => [`   ${example}`]),
+                [''],
+                ['4. VÍ DỤ THỜI GIAN:'],
+                ...template.instructions.examples.time_format.map(example => [`   ${example}`]),
+                [''],
+                ['5. GHI CHÚ QUAN TRỌNG:'],
+                ...template.instructions.notes.map(note => [`   - ${note}`]),
+                [''],
+                ['6. CÁCH SỬ DỤNG:'],
+                ['   - Xóa các dòng ví dụ trong sheet "Lịch học"'],
+                ['   - Nhập dữ liệu thực tế của bạn'],
+                ['   - Đảm bảo tên lớp, môn học, giáo viên đã tồn tại'],
+                ['   - Lưu file và import vào hệ thống'],
+                [''],
+                ['Chúc bạn import thành công! 🎉']
+            ];
+
+            const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsData);
+            XLSX.utils.book_append_sheet(wb, instructionsSheet, 'Hướng dẫn');
+
+            // Create available data sheet
+            const availableDataSheet = [
+                ['DỮ LIỆU CÓ SẴN TRONG HỆ THỐNG'],
+                [''],
+                ['DANH SÁCH LỚP HỌC:'],
+                ...template.available_data.classes.map(cls => [`   - ${cls}`]),
+                [''],
+                ['DANH SÁCH MÔN HỌC:'],
+                ...template.available_data.subjects.map(subject => [`   - ${subject}`]),
+                [''],
+                ['DANH SÁCH GIÁO VIÊN:'],
+                ...template.available_data.teachers.map(teacher => [`   - ${teacher}`]),
+                [''],
+                ['LƯU Ý: Dữ liệu trong file import phải khớp chính xác với danh sách trên']
+            ];
+
+            const dataSheet = XLSX.utils.aoa_to_sheet(availableDataSheet);
+            XLSX.utils.book_append_sheet(wb, dataSheet, 'Dữ liệu có sẵn');
+
+            // Download file
+            XLSX.writeFile(wb, 'Template_Lich_Hoc.xlsx');
+            showNotification('Đã tải template lịch học thành công!', 'success');
+        } catch (error) {
+            console.error('Error downloading schedule template:', error);
+            showNotification('Lỗi khi tải template lịch học', 'error');
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -678,6 +978,16 @@ const SubjectScheduleManagement = () => {
                 fetchSchedules(),
                 fetchScheduleOptions()
             ]);
+
+            // Refresh schedule template with real data after fetching options
+            if (scheduleOptions.classes.length > 0 || scheduleOptions.subjects.length > 0 || scheduleOptions.teachers.length > 0) {
+                try {
+                    const updatedScheduleTemplate = await createScheduleTemplate();
+                    setScheduleTemplate(updatedScheduleTemplate);
+                } catch (error) {
+                    console.log('Could not update schedule template with real data');
+                }
+            }
         } catch (error) {
             console.error('Fetch data error:', error);
             showNotification('Lỗi khi tải dữ liệu', 'error');
@@ -738,7 +1048,7 @@ const SubjectScheduleManagement = () => {
                 schedule.class_name === scheduleFilters.class_id;
 
             const matchesSubject = !scheduleFilters.subject_id ||
-                       schedule.subject_name.toLowerCase() === scheduleFilters.subject_id.toLowerCase();
+                schedule.subject_name.toLowerCase() === scheduleFilters.subject_id.toLowerCase();
 
             const matchesTeacher = !scheduleFilters.teacher_id ||
                 schedule.teacher_name.toLowerCase() === scheduleFilters.teacher_id.toLowerCase() ||
@@ -977,13 +1287,7 @@ const SubjectScheduleManagement = () => {
                             >
                                 <i className="fas fa-sync-alt"></i>
                             </button>
-                            <button
-                                style={styles.actionBtn}
-                                onClick={() => showNotification('Tính năng nhập Excel đang phát triển', 'info')}
-                                title="Nhập từ Excel"
-                            >
-                                <i className="fas fa-file-import"></i>
-                            </button>
+
                             <button
                                 style={styles.actionBtn}
                                 onClick={() => showNotification('Đang xuất dữ liệu...', 'info')}
@@ -1070,6 +1374,13 @@ const SubjectScheduleManagement = () => {
                                 </div>
 
                                 <div style={classManagementStyles.filterSection}>
+                                    <button
+                                        style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary, marginRight: '10px' }}
+                                        onClick={() => setShowSubjectImportModal(true)}
+                                    >
+                                        <i className="fas fa-file-import"></i>
+                                        Import Excel
+                                    </button>
                                     <button
                                         style={{ ...classManagementStyles.btn, ...classManagementStyles.btnPrimary }}
                                         onClick={handleAddSubject}
@@ -1171,6 +1482,13 @@ const SubjectScheduleManagement = () => {
                                 </div>
 
                                 <div style={classManagementStyles.filterSection}>
+                                    <button
+                                        style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary, marginRight: '10px' }}
+                                        onClick={() => setShowScheduleImportModal(true)}
+                                    >
+                                        <i className="fas fa-file-import"></i>
+                                        Import Excel
+                                    </button>
                                     <button
                                         style={{ ...classManagementStyles.btn, ...classManagementStyles.btnPrimary }}
                                         onClick={handleAddSchedule}
@@ -1444,6 +1762,28 @@ const SubjectScheduleManagement = () => {
                     </button>
                 </div>
             </Modal>
+
+            {/* Subject Import Modal */}
+            <ImportModal
+                isOpen={showSubjectImportModal}
+                onClose={() => setShowSubjectImportModal(false)}
+                onImport={handleImportFile}
+                isLoading={modalLoading}
+                type="subjects"
+                title="📚 Import Môn học từ Excel"
+                templateData={subjectTemplate}
+            />
+
+            {/* Schedule Import Modal */}
+            <ImportModal
+                isOpen={showScheduleImportModal}
+                onClose={() => setShowScheduleImportModal(false)}
+                onImport={handleImportSchduleFile}
+                isLoading={modalLoading}
+                type="schedules"
+                title="📅 Import Lịch học từ Excel"
+                templateData={scheduleTemplate}
+            />
         </div>
     );
 };

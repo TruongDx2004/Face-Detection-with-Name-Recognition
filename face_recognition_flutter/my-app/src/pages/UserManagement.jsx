@@ -943,13 +943,14 @@ const UserManagement = () => {
     const [showUserModal, setShowUserModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [resetPasswordTarget, setResetPasswordTarget] = useState(null);
     const [modalLoading, setModalLoading] = useState(false);
     const [hasPermission, setHasPermission] = useState(false);
+    const [userTemplate, setUserTemplate] = useState(null);
     const [newPassword, setNewPassword] = useState('');
-    const [showImportModal, setShowImportModal] = useState(false);
 
     const currentTime = useTime();
     const { notifications, showNotification, removeNotification } = useNotification();
@@ -970,7 +971,42 @@ const UserManagement = () => {
         };
 
         checkPermission();
+        fetchUserTemplate();
     }, []);
+
+    const fetchUserTemplate = async () => {
+        try {
+            const response = await apiService.get('/admin/users/template');
+            setUserTemplate(response.data);
+        } catch (error) {
+            console.error('Error fetching user template:', error);
+            // Set fallback template if API fails
+            setUserTemplate({
+                template: [
+                    {
+                        username: 'student001',
+                        full_name: 'Nguyễn Văn A',
+                        email: 'student001@example.com',
+                        role: 'student',
+                        password: '123456',
+                        class_name: 'Lớp 10A1',
+                        student_code: 'SV001'
+                    }
+                ],
+                instructions: {
+                    required_fields: ['username', 'full_name', 'email', 'role'],
+                    notes: ['Username và email phải duy nhất', 'Sinh viên cần có class_name và student_code']
+                }
+            });
+        }
+    };
+
+    const handleUserImport = (result) => {
+        console.log('User import result:', result);
+        const successCount = result.results?.filter(r => r.status === 'success').length || 0;
+        showNotification(`Import hoàn tất! ${successCount} người dùng được import thành công.`, 'success');
+        fetchUsers(); // Refresh user list
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -1044,7 +1080,6 @@ const UserManagement = () => {
                 email: user.email,
                 role: user.role,
                 password: user.password || '123456', // Mật khẩu mặc định nếu không có
-                is_active: user.is_active === 'TRUE' || user.is_active === '1', // Xử lý giá trị boolean
                 student_code: user.student_code,
                 class_name: user.class_name
             }));
@@ -1251,19 +1286,19 @@ const UserManagement = () => {
                             </button>
                             <button
                                 style={styles.actionBtn}
-                                onClick={() => setShowImportModal(true)}
-                                title="Nhập từ Excel"
-                            >
-                                <i className="fas fa-file-import"></i>
-                            </button>
-                            <button
-                                style={styles.actionBtn}
                                 onClick={() => showNotification('Đang xuất dữ liệu...', 'info')}
                                 title="Xuất Excel"
                             >
                                 <i className="fas fa-file-export"></i>
                             </button>
                         </div>
+                        <button
+                            style={{ ...styles.btn, ...styles.btnSecondary, marginRight: '10px' }}
+                            onClick={() => setShowImportModal(true)}
+                        >
+                            <i className="fas fa-file-import"></i>
+                            Import Excel
+                        </button>
                         <button
                             style={{ ...styles.btn, ...styles.btnPrimary }}
                             onClick={handleAddUser}
@@ -1584,9 +1619,12 @@ const UserManagement = () => {
             {/* Import User Modal */}
             <ImportModal
                 isOpen={showImportModal}
-                onClose={() => !modalLoading && setShowImportModal(false)}
+                onClose={() => setShowImportModal(false)}
                 onImport={handleImportUsers}
                 isLoading={modalLoading}
+                type="users"
+                title="👥 Import Người dùng từ Excel"
+                templateData={userTemplate}
             />
         </div>
     );

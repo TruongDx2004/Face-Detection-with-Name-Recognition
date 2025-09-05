@@ -8,6 +8,8 @@ class ClassController {
             let limit = parseInt(req.query.limit, 10) || 20;
             const offset = (page - 1) * limit;
             const name = (req.query.name || '').trim();
+            const status = req.query.status;
+            const year = req.query.year;
 
             let query = `
                 SELECT 
@@ -31,6 +33,16 @@ class ClassController {
                 params.push(`%${name}%`);
             }
 
+            if (status) {
+                query += ' AND c.status = ?';
+                params.push(status);
+            }
+
+            if (year) {
+                query += ' AND c.year = ?';
+                params.push(year);
+            }
+
             query += `
                 GROUP BY c.id, c.name, c.code, c.year, c.description, c.status
                 ORDER BY c.name
@@ -45,6 +57,14 @@ class ClassController {
             if (name) {
                 countQuery += ' AND c.name LIKE ?';
                 countParams.push(`%${name}%`);
+            }
+            if (status) {
+                countQuery += ' AND c.status = ?';
+                countParams.push(status);
+            }
+            if (year) {
+                countQuery += ' AND c.year = ?';
+                countParams.push(year);
             }
 
             const [countResult] = await db.execute(countQuery, countParams);
@@ -69,19 +89,35 @@ class ClassController {
     // Tạo class mới
     async createClass(req, res) {
         try {
-            const { name } = req.body;
+            const { name, code, year, description, status } = req.body;
 
             if (!name) {
                 return res.status(400).json({ error: 'Class name is required' });
             }
 
-            // Check if class already exists
-            const [existing] = await db.execute('SELECT id FROM classes WHERE name = ?', [name]);
-            if (existing.length > 0) {
-                return res.status(400).json({ error: 'Class already exists' });
+            // Validate status if provided
+            if (status && !['active', 'inactive'].includes(status)) {
+                return res.status(400).json({ error: 'Status must be either "active" or "inactive"' });
             }
 
-            const [result] = await db.execute('INSERT INTO classes (name) VALUES (?)', [name]);
+            // Check if class already exists by name
+            const [existing] = await db.execute('SELECT id FROM classes WHERE name = ?', [name]);
+            if (existing.length > 0) {
+                return res.status(400).json({ error: 'Class name already exists' });
+            }
+
+            // Check if code already exists (if provided)
+            if (code) {
+                const [codeExists] = await db.execute('SELECT id FROM classes WHERE code = ?', [code]);
+                if (codeExists.length > 0) {
+                    return res.status(400).json({ error: 'Class code already exists' });
+                }
+            }
+
+            const [result] = await db.execute(
+                'INSERT INTO classes (name, code, year, description, status) VALUES (?, ?, ?, ?, ?)', 
+                [name, code || null, year || null, description || null, status || 'active']
+            );
 
             res.status(201).json({
                 message: 'Class created successfully',
@@ -106,15 +142,13 @@ class ClassController {
                     c.year,
                     c.description,
                     c.status,
-                    c.created_at,
-                    c.updated_at,
                     COUNT(DISTINCT cs.student_id) AS studentCount,
                     SUM(CASE WHEN u.face_trained = TRUE THEN 1 ELSE 0 END) AS studentsWithFace
                 FROM classes c
                 LEFT JOIN class_students cs ON c.id = cs.class_id
                 LEFT JOIN users u ON cs.student_id = u.id
                 WHERE c.id = ?
-                GROUP BY c.id`,
+                GROUP BY c.id, c.name, c.code, c.year, c.description, c.status`,
                 [classId]
             );
 
@@ -136,10 +170,15 @@ class ClassController {
     async updateClass(req, res) {
         try {
             const { id } = req.params;
-            const { name } = req.body;
+            const { name, code, year, description, status } = req.body;
 
             if (!name) {
                 return res.status(400).json({ error: 'Class name is required' });
+            }
+
+            // Validate status if provided
+            if (status && !['active', 'inactive'].includes(status)) {
+                return res.status(400).json({ error: 'Status must be either "active" or "inactive"' });
             }
 
             // Check for duplicate name (excluding current class)
@@ -148,7 +187,18 @@ class ClassController {
                 return res.status(400).json({ error: 'Class name already exists' });
             }
 
-            const [result] = await db.execute('UPDATE classes SET name = ? WHERE id = ?', [name, id]);
+            // Check for duplicate code (excluding current class)
+            if (code) {
+                const [codeExists] = await db.execute('SELECT id FROM classes WHERE code = ? AND id != ?', [code, id]);
+                if (codeExists.length > 0) {
+                    return res.status(400).json({ error: 'Class code already exists' });
+                }
+            }
+
+            const [result] = await db.execute(
+                'UPDATE classes SET name = ?, code = ?, year = ?, description = ?, status = ? WHERE id = ?', 
+                [name, code || null, year || null, description || null, status || 'active', id]
+            );
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({ error: 'Class not found' });
@@ -212,8 +262,7 @@ class ClassController {
                     u.email,
                     u.face_trained,
                     u.is_active,
-                    cs.student_code,
-                    cs.joined_at
+                    cs.student_code
                 FROM class_students cs
                 JOIN users u ON cs.student_id = u.id
                 WHERE cs.class_id = ?
@@ -274,8 +323,8 @@ class ClassController {
             }
 
             await db.execute(
-                'INSERT INTO class_students (class_id, student_id, student_code) VALUES (?, ?, ?)',
-                [id, student_id, student_code]
+                'INSERT INTO class_students (student_id, class_id, student_code) VALUES (?, ?, ?)',
+                [student_id, id, student_code]
             );
 
             res.status(201).json({ message: 'Student added to class successfully' });
@@ -355,7 +404,7 @@ class ClassController {
         try {
             for (const [index, cls] of classesToImport.entries()) {
                 const result = { row: index + 2, status: 'success', message: 'Class created successfully' };
-                const { name } = cls;
+                const { name, code, year, description, status } = cls;
 
                 // Validate required fields
                 if (!name) {
@@ -365,7 +414,15 @@ class ClassController {
                     continue;
                 }
 
-                // Check for existing class
+                // Validate status if provided
+                if (status && !['active', 'inactive'].includes(status)) {
+                    result.status = 'failure';
+                    result.message = 'Status must be either "active" or "inactive"';
+                    importResults.push(result);
+                    continue;
+                }
+
+                // Check for existing class by name
                 const [existing] = await connection.execute(
                     'SELECT id FROM classes WHERE name = ?',
                     [name]
@@ -377,8 +434,25 @@ class ClassController {
                     continue;
                 }
 
+                // Check for existing class by code (if provided)
+                if (code) {
+                    const [codeExists] = await connection.execute(
+                        'SELECT id FROM classes WHERE code = ?',
+                        [code]
+                    );
+                    if (codeExists.length > 0) {
+                        result.status = 'failure';
+                        result.message = `Class code '${code}' already exists`;
+                        importResults.push(result);
+                        continue;
+                    }
+                }
+
                 // Insert class
-                await connection.execute('INSERT INTO classes (name) VALUES (?)', [name]);
+                await connection.execute(
+                    'INSERT INTO classes (name, code, year, description, status) VALUES (?, ?, ?, ?, ?)', 
+                    [name, code || null, year || null, description || null, status || 'active']
+                );
 
                 importResults.push(result);
             }
@@ -395,6 +469,132 @@ class ClassController {
             res.status(500).json({ error: 'Failed to import classes. Transaction rolled back.' });
         } finally {
             connection.release();
+        }
+    }
+
+    // Lấy thống kê tổng quan về classes
+    async getClassStatistics(req, res) {
+        try {
+            const [stats] = await db.execute(`
+                SELECT 
+                    COUNT(*) as totalClasses,
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as activeClasses,
+                    SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactiveClasses,
+                    COUNT(DISTINCT year) as totalYears
+                FROM classes
+            `);
+
+            const [studentStats] = await db.execute(`
+                SELECT 
+                    COUNT(DISTINCT cs.student_id) as totalStudents,
+                    COUNT(DISTINCT CASE WHEN u.face_trained = TRUE THEN cs.student_id END) as studentsWithFace
+                FROM class_students cs
+                LEFT JOIN users u ON cs.student_id = u.id
+            `);
+
+            const [yearStats] = await db.execute(`
+                SELECT 
+                    year,
+                    COUNT(*) as classCount,
+                    COUNT(DISTINCT cs.student_id) as studentCount
+                FROM classes c
+                LEFT JOIN class_students cs ON c.id = cs.class_id
+                WHERE year IS NOT NULL
+                GROUP BY year
+                ORDER BY year DESC
+            `);
+
+            res.json({
+                message: 'Class statistics retrieved successfully',
+                statistics: {
+                    ...stats[0],
+                    ...studentStats[0],
+                    yearBreakdown: yearStats
+                }
+            });
+        } catch (error) {
+            console.error('Get class statistics error:', error);
+            res.status(500).json({ error: 'Failed to retrieve class statistics' });
+        }
+    }
+
+    // Lấy danh sách các năm học có sẵn
+    async getAvailableYears(req, res) {
+        try {
+            const [years] = await db.execute(`
+                SELECT DISTINCT year 
+                FROM classes 
+                WHERE year IS NOT NULL 
+                ORDER BY year DESC
+            `);
+
+            res.json({
+                message: 'Available years retrieved successfully',
+                years: years.map(row => row.year)
+            });
+        } catch (error) {
+            console.error('Get available years error:', error);
+            res.status(500).json({ error: 'Failed to retrieve available years' });
+        }
+    }
+
+    // Cập nhật trạng thái class (active/inactive)
+    async updateClassStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+
+            if (!status || !['active', 'inactive'].includes(status)) {
+                return res.status(400).json({ error: 'Status must be either "active" or "inactive"' });
+            }
+
+            const [result] = await db.execute(
+                'UPDATE classes SET status = ? WHERE id = ?',
+                [status, id]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Class not found' });
+            }
+
+            res.json({ message: `Class status updated to ${status} successfully` });
+        } catch (error) {
+            console.error('Update class status error:', error);
+            res.status(500).json({ error: 'Failed to update class status' });
+        }
+    }
+
+    // Lấy danh sách classes theo năm học
+    async getClassesByYear(req, res) {
+        try {
+            const { year } = req.params;
+
+            const [classes] = await db.execute(`
+                SELECT 
+                    c.id,
+                    c.name,
+                    c.code,
+                    c.year,
+                    c.description,
+                    c.status,
+                    COUNT(DISTINCT cs.student_id) AS studentCount,
+                    SUM(CASE WHEN u.face_trained = TRUE THEN 1 ELSE 0 END) AS studentsWithFace
+                FROM classes c
+                LEFT JOIN class_students cs ON c.id = cs.class_id
+                LEFT JOIN users u ON cs.student_id = u.id
+                WHERE c.year = ?
+                GROUP BY c.id, c.name, c.code, c.year, c.description, c.status
+                ORDER BY c.name
+            `, [year]);
+
+            res.json({
+                message: `Classes for year ${year} retrieved successfully`,
+                classes,
+                year
+            });
+        } catch (error) {
+            console.error('Get classes by year error:', error);
+            res.status(500).json({ error: 'Failed to retrieve classes by year' });
         }
     }
 }

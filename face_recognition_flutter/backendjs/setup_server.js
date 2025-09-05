@@ -19,7 +19,7 @@ const DB_CONFIG = {
     host: 'localhost',
     port: 3306,
     user: 'root',
-    password: '25251325cz', // Change to your password
+    password: '12345678', // Change to your password
     database: 'face_attendance'
 };
 
