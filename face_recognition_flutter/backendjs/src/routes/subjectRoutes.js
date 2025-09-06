@@ -641,7 +641,7 @@ router.delete('/:id', authorize(USER_ROLES.ADMIN), SubjectController.deleteSubje
  *       500:
  *         description: Failed to retrieve subject schedules
  */
-router.get('/:id/schedules', SubjectController.getSubjectSchedules);
+router.get('/:id/schedules', SubjectController.getSubjectCourseSections);
 
 /**
  * @swagger

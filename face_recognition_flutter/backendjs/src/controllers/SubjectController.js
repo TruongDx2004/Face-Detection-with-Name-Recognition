@@ -1,18 +1,30 @@
 const db = require('../config/database');
+const responseHelper = require('../utils/responseHelper');
 
 class SubjectController {
     // Lấy danh sách tất cả subjects
     async getAllSubjects(req, res) {
         try {
-            const { name, page = 1, limit = 20 } = req.query;
+            const { name, code, is_active, page = 1, limit = 20 } = req.query;
             const offset = (page - 1) * limit;
 
-            let query = 'SELECT id, name FROM subjects WHERE 1=1';
+            let query = `SELECT id, name, code, description, credits, is_active, created_at, updated_at 
+                        FROM subjects WHERE 1=1`;
             const params = [];
 
             if (name) {
                 query += ' AND name LIKE ?';
                 params.push(`%${name}%`);
+            }
+
+            if (code) {
+                query += ' AND code LIKE ?';
+                params.push(`%${code}%`);
+            }
+
+            if (is_active !== undefined) {
+                query += ' AND is_active = ?';
+                params.push(is_active === 'true' ? 1 : 0);
             }
 
             query += ` ORDER BY name LIMIT ${limit} OFFSET ${offset}`;
@@ -22,16 +34,26 @@ class SubjectController {
             // Get total count for pagination
             let countQuery = 'SELECT COUNT(*) as total FROM subjects WHERE 1=1';
             const countParams = [];
+            
             if (name) {
                 countQuery += ' AND name LIKE ?';
                 countParams.push(`%${name}%`);
             }
 
+            if (code) {
+                countQuery += ' AND code LIKE ?';
+                countParams.push(`%${code}%`);
+            }
+
+            if (is_active !== undefined) {
+                countQuery += ' AND is_active = ?';
+                countParams.push(is_active === 'true' ? 1 : 0);
+            }
+
             const [countResult] = await db.execute(countQuery, countParams);
             const total = countResult[0].total;
 
-            res.json({
-                message: 'Subjects retrieved successfully',
+            return responseHelper.success(res, {
                 subjects,
                 pagination: {
                     page: parseInt(page),
@@ -39,47 +61,60 @@ class SubjectController {
                     total,
                     totalPages: Math.ceil(total / limit)
                 }
-            });
+            }, 'Subjects retrieved successfully');
         } catch (error) {
             console.error('Get subjects error:', error);
-            res.status(500).json({ error: 'Failed to retrieve subjects' });
+            return responseHelper.error(res, 'Failed to retrieve subjects', 500);
         }
     }
 
     // Tạo subject mới
     async createSubject(req, res) {
         try {
-            const { name } = req.body;
-
-            if (!name) {
-                return res.status(400).json({ error: 'Subject name is required' });
+            const { name, code, description, credits = 3 } = req.body.name;
+            console.log(req.body);
+            // Validation
+            if (!name || !code) {
+                return responseHelper.error(res, 'Subject name and code are required', 400);
             }
 
-            // Check if subject with same name already exists
+            if (credits && (credits < 1 || credits > 10)) {
+                return responseHelper.error(res, 'Credits must be between 1 and 10', 400);
+            }
+
+            // Check if subject with same name or code already exists
             const [existing] = await db.execute(
-                'SELECT id FROM subjects WHERE name = ?',
-                [name]
+                'SELECT id, name, code FROM subjects WHERE name = ? OR code = ?',
+                [name, code]
             );
 
             if (existing.length > 0) {
-                return res.status(409).json({ error: 'Subject with this name already exists' });
+                const existingSubject = existing[0];
+                if (existingSubject.name === name) {
+                    return responseHelper.error(res, 'Subject with this name already exists', 409);
+                }
+                if (existingSubject.code === code) {
+                    return responseHelper.error(res, 'Subject with this code already exists', 409);
+                }
             }
 
             const [result] = await db.execute(
-                'INSERT INTO subjects (name) VALUES (?)',
-                [name]
+                'INSERT INTO subjects (name, code, description, credits) VALUES (?, ?, ?, ?)',
+                [name, code, description || null, credits]
             );
 
-            res.status(201).json({
-                message: 'Subject created successfully',
-                subject: {
-                    id: result.insertId,
-                    name
-                }
-            });
+            // Get the created subject
+            const [newSubject] = await db.execute(
+                'SELECT id, name, code, description, credits, is_active, created_at FROM subjects WHERE id = ?',
+                [result.insertId]
+            );
+
+            return responseHelper.success(res, {
+                subject: newSubject[0]
+            }, 'Subject created successfully', 201);
         } catch (error) {
             console.error('Create subject error:', error);
-            res.status(500).json({ error: 'Failed to create subject' });
+            return responseHelper.error(res, 'Failed to create subject', 500);
         }
     }
 
@@ -89,21 +124,20 @@ class SubjectController {
             const subjectId = req.params.id;
 
             const [subjects] = await db.execute(
-                'SELECT id, name FROM subjects WHERE id = ?',
+                'SELECT id, name, code, description, credits, is_active, created_at, updated_at FROM subjects WHERE id = ?',
                 [subjectId]
             );
 
             if (subjects.length === 0) {
-                return res.status(404).json({ error: 'Subject not found' });
+                return responseHelper.error(res, 'Subject not found', 404);
             }
 
-            res.json({
-                message: 'Subject retrieved successfully',
+            return responseHelper.success(res, {
                 subject: subjects[0]
-            });
+            }, 'Subject retrieved successfully');
         } catch (error) {
             console.error('Get subject error:', error);
-            res.status(500).json({ error: 'Failed to retrieve subject' });
+            return responseHelper.error(res, 'Failed to retrieve subject', 500);
         }
     }
 
@@ -111,40 +145,87 @@ class SubjectController {
     async updateSubject(req, res) {
         try {
             const subjectId = req.params.id;
-            const { name } = req.body;
+            const { name, code, description, credits, is_active } = req.body.name;
 
-            if (!name) {
-                return res.status(400).json({ error: 'Subject name is required' });
+            // Validation
+            if (!name || !code) {
+                return responseHelper.error(res, 'Subject name and code are required', 400);
+            }
+
+            if (credits && (credits < 1 || credits > 10)) {
+                return responseHelper.error(res, 'Credits must be between 1 and 10', 400);
             }
 
             // Check if subject exists
             const [existing] = await db.execute('SELECT id FROM subjects WHERE id = ?', [subjectId]);
             if (existing.length === 0) {
-                return res.status(404).json({ error: 'Subject not found' });
+                return responseHelper.error(res, 'Subject not found', 404);
             }
 
-            // Check for duplicate name (excluding current subject)
-            const [duplicates] = await db.execute(
-                'SELECT id FROM subjects WHERE name = ? AND id != ?',
-                [name, subjectId]
+            // Check if another subject with same name or code exists
+            const [duplicate] = await db.execute(
+                'SELECT id, name, code FROM subjects WHERE (name = ? OR code = ?) AND id != ?',
+                [name, code, subjectId]
             );
-            if (duplicates.length > 0) {
-                return res.status(409).json({ error: 'Subject with this name already exists' });
+
+            if (duplicate.length > 0) {
+                const duplicateSubject = duplicate[0];
+                if (duplicateSubject.name === name) {
+                    return responseHelper.error(res, 'Subject with this name already exists', 409);
+                }
+                if (duplicateSubject.code === code) {
+                    return responseHelper.error(res, 'Subject with this code already exists', 409);
+                }
             }
+
+            // Build update query dynamically
+            const updateFields = [];
+            const updateValues = [];
+
+            if (name !== undefined) {
+                updateFields.push('name = ?');
+                updateValues.push(name);
+            }
+            if (code !== undefined) {
+                updateFields.push('code = ?');
+                updateValues.push(code);
+            }
+            if (description !== undefined) {
+                updateFields.push('description = ?');
+                updateValues.push(description);
+            }
+            if (credits !== undefined) {
+                updateFields.push('credits = ?');
+                updateValues.push(credits);
+            }
+            if (is_active !== undefined) {
+                updateFields.push('is_active = ?');
+                updateValues.push(is_active);
+            }
+
+            updateValues.push(subjectId);
 
             const [result] = await db.execute(
-                'UPDATE subjects SET name = ? WHERE id = ?',
-                [name, subjectId]
+                `UPDATE subjects SET ${updateFields.join(', ')} WHERE id = ?`,
+                updateValues
             );
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Subject not found' });
+                return responseHelper.error(res, 'Subject not found', 404);
             }
 
-            res.json({ message: 'Subject updated successfully' });
+            // Get updated subject
+            const [updatedSubject] = await db.execute(
+                'SELECT id, name, code, description, credits, is_active, created_at, updated_at FROM subjects WHERE id = ?',
+                [subjectId]
+            );
+
+            return responseHelper.success(res, {
+                subject: updatedSubject[0]
+            }, 'Subject updated successfully');
         } catch (error) {
             console.error('Update subject error:', error);
-            res.status(500).json({ error: 'Failed to update subject' });
+            return responseHelper.error(res, 'Failed to update subject', 500);
         }
     }
 
@@ -154,68 +235,99 @@ class SubjectController {
             const subjectId = req.params.id;
 
             // Check if subject exists
-            const [existing] = await db.execute('SELECT id FROM subjects WHERE id = ?', [subjectId]);
+            const [existing] = await db.execute('SELECT id, name FROM subjects WHERE id = ?', [subjectId]);
             if (existing.length === 0) {
-                return res.status(404).json({ error: 'Subject not found' });
+                return responseHelper.error(res, 'Subject not found', 404);
             }
 
-            // Check if subject is being used in schedules
-            const [schedules] = await db.execute(
-                'SELECT COUNT(*) as count FROM schedules WHERE subject_id = ?',
+            // Check if subject is being used in course_sections
+            const [courseSections] = await db.execute(
+                'SELECT COUNT(*) as count FROM course_sections WHERE subject_id = ?',
                 [subjectId]
             );
 
-            if (schedules[0].count > 0) {
-                return res.status(400).json({ 
-                    error: 'Cannot delete subject that is being used in schedules' 
-                });
+            if (courseSections[0].count > 0) {
+                return responseHelper.error(res, 'Cannot delete subject that is being used in course sections', 400);
             }
 
-            await db.execute('DELETE FROM subjects WHERE id = ?', [subjectId]);
+            // Soft delete by setting is_active to false instead of hard delete
+            const [result] = await db.execute(
+                'UPDATE subjects SET is_active = FALSE WHERE id = ?',
+                [subjectId]
+            );
 
-            res.json({ message: 'Subject deleted successfully' });
+            if (result.affectedRows === 0) {
+                return responseHelper.error(res, 'Subject not found', 404);
+            }
+
+            return responseHelper.success(res, {
+                subject: { id: subjectId, name: existing[0].name }
+            }, 'Subject deleted successfully');
         } catch (error) {
             console.error('Delete subject error:', error);
-            res.status(500).json({ error: 'Failed to delete subject' });
+            return responseHelper.error(res, 'Failed to delete subject', 500);
         }
     }
 
-    // Lấy schedules của subject
-    async getSubjectSchedules(req, res) {
+    // Lấy course sections của subject
+    async getSubjectCourseSections(req, res) {
         try {
             const subjectId = req.params.id;
+            const { page = 1, limit = 20 } = req.query;
+            const offset = (page - 1) * limit;
 
             // Check if subject exists
-            const [subjectExists] = await db.execute('SELECT id FROM subjects WHERE id = ?', [subjectId]);
+            const [subjectExists] = await db.execute('SELECT id, name FROM subjects WHERE id = ?', [subjectId]);
             if (subjectExists.length === 0) {
-                return res.status(404).json({ error: 'Subject not found' });
+                return responseHelper.error(res, 'Subject not found', 404);
             }
 
-            const [schedules] = await db.execute(
+            const [courseSections] = await db.execute(
                 `SELECT 
-                    s.id,
-                    s.weekday,
-                    s.start_time,
-                    s.end_time,
+                    cs.id,
+                    cs.name,
+                    cs.code,
+                    cs.semester,
+                    cs.academic_year,
+                    cs.max_students,
+                    cs.is_active,
+                    cs.created_at,
                     c.name as class_name,
                     c.code as class_code,
                     u.full_name as teacher_name,
-                    u.username as teacher_username
-                FROM schedules s
-                JOIN classes c ON s.class_id = c.id
-                JOIN users u ON s.teacher_id = u.id
-                WHERE s.subject_id = ?
-                ORDER BY s.weekday, s.start_time`,
+                    u.email as teacher_email,
+                    COUNT(DISTINCT cse.student_id) as enrolled_students
+                FROM course_sections cs
+                LEFT JOIN classes c ON cs.class_id = c.id
+                LEFT JOIN users u ON cs.teacher_id = u.id
+                LEFT JOIN course_section_enrollments cse ON cs.id = cse.course_section_id
+                WHERE cs.subject_id = ?
+                GROUP BY cs.id
+                ORDER BY cs.academic_year DESC, cs.semester, cs.name
+                LIMIT ${limit} OFFSET ${offset}`,
                 [subjectId]
             );
 
-            res.json({
-                message: 'Subject schedules retrieved successfully',
-                schedules
-            });
+            // Get total count
+            const [countResult] = await db.execute(
+                'SELECT COUNT(*) as total FROM course_sections WHERE subject_id = ?',
+                [subjectId]
+            );
+            const total = countResult[0].total;
+
+            return responseHelper.success(res, {
+                subject: subjectExists[0],
+                courseSections,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            }, 'Subject course sections retrieved successfully');
         } catch (error) {
-            console.error('Get subject schedules error:', error);
-            res.status(500).json({ error: 'Failed to retrieve subject schedules' });
+            console.error('Get subject course sections error:', error);
+            return responseHelper.error(res, 'Failed to retrieve subject course sections', 500);
         }
     }
 
@@ -356,7 +468,7 @@ class SubjectController {
     // Tạo schedule mới
     async createSchedule(req, res) {
         try {
-            const { class_id, subject_id, teacher_id, weekday, start_time, end_time } = req.body;
+            const { class_id, subject_id, teacher_id, weekday, start_time, end_time } = req.body.name;
 
             if (!class_id || !subject_id || !teacher_id || !weekday || !start_time || !end_time) {
                 return res.status(400).json({ error: 'All fields are required' });
@@ -408,7 +520,7 @@ class SubjectController {
     async updateSchedule(req, res) {
         try {
             const { id } = req.params;
-            const { class_id, subject_id, teacher_id, weekday, start_time, end_time } = req.body;
+            const { class_id, subject_id, teacher_id, weekday, start_time, end_time } = req.body.name;
 
             if (!class_id || !subject_id || !teacher_id || !weekday || !start_time || !end_time) {
                 return res.status(400).json({ error: 'All fields are required' });
@@ -505,7 +617,7 @@ class SubjectController {
 
     // Import nhiều subjects từ Excel
     async importSubjects(req, res) {
-        const subjectsToImport = req.body;
+        const subjectsToImport = req.body.name;
         const importResults = [];
 
         if (!Array.isArray(subjectsToImport)) {
@@ -581,7 +693,7 @@ class SubjectController {
 
     // Import nhiều schedules từ Excel
     async importSchedules(req, res) {
-        const schedulesToImport = req.body;
+        const schedulesToImport = req.body.name;
         const importResults = [];
 
         if (!Array.isArray(schedulesToImport)) {

@@ -165,31 +165,59 @@ async function setupDatabase() {
 
             `CREATE TABLE IF NOT EXISTS subjects (
                 id INT PRIMARY KEY AUTO_INCREMENT,
-                name VARCHAR(100) NOT NULL
+                name VARCHAR(100) NOT NULL,
+                code VARCHAR(20) UNIQUE NOT NULL,
+                description TEXT,
+                credits INT DEFAULT 3,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )`,
+
+            `CREATE TABLE IF NOT EXISTS course_sections (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL,
+                code VARCHAR(20) UNIQUE NOT NULL,
+                class_id INT NOT NULL,
+                subject_id INT NOT NULL,
+                teacher_id INT NOT NULL,
+                semester VARCHAR(20) NOT NULL,
+                academic_year VARCHAR(9) NOT NULL,
+                max_students INT DEFAULT 50,
+                description TEXT,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+                FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+                FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_course_section (class_id, subject_id, semester, academic_year)
             )`,
 
             `CREATE TABLE IF NOT EXISTS schedules (
                 id INT PRIMARY KEY AUTO_INCREMENT,
-                class_id INT NOT NULL,
-                subject_id INT NOT NULL,
-                teacher_id INT NOT NULL,
-                weekday TINYINT NOT NULL,
+                course_section_id INT NOT NULL,
+                weekday TINYINT NOT NULL COMMENT '1=Monday, 2=Tuesday, ..., 7=Sunday',
                 start_time TIME NOT NULL,
                 end_time TIME NOT NULL,
-                FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
-                FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
-                FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
+                room VARCHAR(50),
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
             )`,
 
             `CREATE TABLE IF NOT EXISTS attendance_sessions (
                 id INT PRIMARY KEY AUTO_INCREMENT,
-                schedule_id INT NOT NULL,
+                course_section_id INT NOT NULL,
                 session_date DATE NOT NULL,
                 start_time TIME NOT NULL,
                 end_time TIME,
+                session_name VARCHAR(100),
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
             )`,
 
             `CREATE TABLE IF NOT EXISTS attendances (
@@ -262,23 +290,58 @@ async function setupDatabase() {
                     `INSERT INTO class_students (student_id, class_id, student_code) VALUES (?, ?, ?)`,
                     [student_id, class_id, user.student_id]
                 );
-                // 4. Thêm môm học
-                const [subjectResult] = await dbConnection.execute(
-                    'INSERT INTO subjects (name) VALUES (?)',
-                    ['Python Programming']
+                // 4. Thêm môn học (chỉ thêm một lần)
+                let subject_id;
+                const [existingSubjects] = await dbConnection.execute(
+                    'SELECT id FROM subjects WHERE code = ?',
+                    ['PY101']
                 );
-                const subject_id = subjectResult.insertId;
+                if (existingSubjects.length > 0) {
+                    subject_id = existingSubjects[0].id;
+                } else {
+                    const [subjectResult] = await dbConnection.execute(
+                        'INSERT INTO subjects (name, code, description, credits) VALUES (?, ?, ?, ?)',
+                        ['Python Programming', 'PY101', 'Lập trình Python cơ bản', 3]
+                    );
+                    subject_id = subjectResult.insertId;
+                }
 
-                // 5. Thêm lịch học
+                // 5. Tìm teacher_id (lấy teacher đầu tiên)
+                const [teacherRows] = await dbConnection.execute(
+                    'SELECT id FROM users WHERE role = "teacher" LIMIT 1'
+                );
+                const teacher_id = teacherRows.length > 0 ? teacherRows[0].id : 2; // fallback to id 2
+
+                // 6. Thêm lớp học phần (course section) - chỉ thêm một lần
+                const currentYear = new Date().getFullYear();
+                const academicYear = `${currentYear}-${currentYear + 1}`;
+                const courseSectionCode = `${user.class_name.replace(/\s+/g, '')}_PY101`;
+                
+                let course_section_id;
+                const [existingCourseSections] = await dbConnection.execute(
+                    'SELECT id FROM course_sections WHERE code = ?',
+                    [courseSectionCode]
+                );
+                if (existingCourseSections.length > 0) {
+                    course_section_id = existingCourseSections[0].id;
+                } else {
+                    const [courseSectionResult] = await dbConnection.execute(
+                        `INSERT INTO course_sections (name, code, class_id, subject_id, teacher_id, semester, academic_year, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [`${user.class_name} - Python Programming`, courseSectionCode, class_id, subject_id, teacher_id, 'HK1', academicYear, 'Lớp học phần Python Programming cho lớp ' + user.class_name]
+                    );
+                    course_section_id = courseSectionResult.insertId;
+                }
+
+                // 7. Thêm lịch học cho lớp học phần
                 await dbConnection.execute(
-                    `INSERT INTO schedules (class_id, subject_id, teacher_id, weekday, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?)`,
-                    [class_id, subject_id, 2, 2, '09:00:00', '11:00:00']
+                    `INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)`,
+                    [course_section_id, 2, '09:00:00', '11:00:00', 'P101']
                 );
 
-                // 6. Thêm buổi học (attendance session)
+                // 8. Thêm buổi học (attendance session)
                 await dbConnection.execute(
-                    `INSERT INTO attendance_sessions (schedule_id, session_date, start_time) VALUES (?, CURDATE(), ?)`,
-                    [1, '09:00:00']
+                    `INSERT INTO attendance_sessions (course_section_id, session_date, start_time, session_name) VALUES (?, CURDATE(), ?, ?)`,
+                    [course_section_id, '09:00:00', 'Buổi 1 - Giới thiệu Python']
                 );
 
             } else {

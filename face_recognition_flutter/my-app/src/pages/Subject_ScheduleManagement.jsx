@@ -70,11 +70,56 @@ const SubjectCard = ({ subject, onEdit, onDelete }) => {
             onMouseLeave={() => setIsHovered(false)}
         >
             <div style={classManagementStyles.classCardHeader}>
+                <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '0.75rem',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.2rem',
+                    marginRight: '1rem'
+                }}>
+                    <i className="fas fa-book"></i>
+                </div>
                 <div style={classManagementStyles.classInfo}>
                     <div style={classManagementStyles.className}>{subject.name}</div>
                     <div style={classManagementStyles.classCode}>
-                        ID: {subject.id}
+                        Mã: {subject.code}
                     </div>
+                    <div style={{
+                        fontSize: '0.875rem',
+                        color: '#ffffffff',
+                        marginTop: '0.25rem'
+                    }}>
+                        Tín chỉ: {subject.credits} | 
+                        <span style={{
+                            marginLeft: '0.5rem',
+                            padding: '0.125rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            backgroundColor: subject.is_active ? '#dcfce7' : '#fef2f2',
+                            color: subject.is_active ? '#166534' : '#dc2626'
+                        }}>
+                            {subject.is_active ? 'Hoạt động' : 'Không hoạt động'}
+                        </span>
+                    </div>
+                    {subject.description && (
+                        <div style={{
+                            fontSize: '0.875rem',
+                            color: '#f6f6f6ff',
+                            marginTop: '0.5rem',
+                            lineHeight: '1.4',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                        }}>
+                            {subject.description}
+                        </div>
+                    )}
                 </div>
             </div>
             <div style={classManagementStyles.classCardBody}>
@@ -233,7 +278,11 @@ const Modal = ({ isOpen, onClose, title, size = 'normal', children }) => {
 // Subject Form Component
 const SubjectForm = ({ subject, onSave, onCancel, isLoading }) => {
     const [formData, setFormData] = useState({
-        name: subject?.name || ''
+        name: subject?.name || '',
+        code: subject?.code || '',
+        description: subject?.description || '',
+        credits: subject?.credits || 3,
+        is_active: subject?.is_active !== undefined ? subject.is_active : true
     });
     const [errors, setErrors] = useState({});
 
@@ -249,6 +298,12 @@ const SubjectForm = ({ subject, onSave, onCancel, isLoading }) => {
         if (!formData.name.trim()) {
             newErrors.name = 'Tên môn học không được để trống';
         }
+        if (!formData.code.trim()) {
+            newErrors.code = 'Mã môn học không được để trống';
+        }
+        if (formData.credits < 1 || formData.credits > 10) {
+            newErrors.credits = 'Số tín chỉ phải từ 1 đến 10';
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -262,18 +317,78 @@ const SubjectForm = ({ subject, onSave, onCancel, isLoading }) => {
     return (
         <>
             <div style={classManagementStyles.modalBody}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={classManagementStyles.formGroup}>
+                        <label style={classManagementStyles.formLabel}>
+                            Tên môn học <span style={classManagementStyles.required}>*</span>
+                        </label>
+                        <input
+                            type="text"
+                            style={classManagementStyles.formInput}
+                            value={formData.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            placeholder="Ví dụ: Toán học, Lập trình"
+                        />
+                        {errors.name && <div style={classManagementStyles.formError}>{errors.name}</div>}
+                    </div>
+
+                    <div style={classManagementStyles.formGroup}>
+                        <label style={classManagementStyles.formLabel}>
+                            Mã môn học <span style={classManagementStyles.required}>*</span>
+                        </label>
+                        <input
+                            type="text"
+                            style={classManagementStyles.formInput}
+                            value={formData.code}
+                            onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
+                            placeholder="Ví dụ: MATH101, CS101"
+                        />
+                        {errors.code && <div style={classManagementStyles.formError}>{errors.code}</div>}
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={classManagementStyles.formGroup}>
+                        <label style={classManagementStyles.formLabel}>
+                            Số tín chỉ <span style={classManagementStyles.required}>*</span>
+                        </label>
+                        <input
+                            type="number"
+                            style={classManagementStyles.formInput}
+                            value={formData.credits}
+                            onChange={(e) => handleInputChange('credits', parseInt(e.target.value) || 1)}
+                            min="1"
+                            max="10"
+                        />
+                        {errors.credits && <div style={classManagementStyles.formError}>{errors.credits}</div>}
+                    </div>
+
+                    <div style={classManagementStyles.formGroup}>
+                        <label style={classManagementStyles.formLabel}>Trạng thái</label>
+                        <select
+                            style={classManagementStyles.formInput}
+                            value={formData.is_active}
+                            onChange={(e) => handleInputChange('is_active', e.target.value === 'true')}
+                        >
+                            <option value={true}>Hoạt động</option>
+                            <option value={false}>Không hoạt động</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style={classManagementStyles.formGroup}>
-                    <label style={classManagementStyles.formLabel}>
-                        Tên môn học <span style={classManagementStyles.required}>*</span>
-                    </label>
-                    <input
-                        type="text"
-                        style={classManagementStyles.formInput}
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="Ví dụ: Toán học, Lập trình"
+                    <label style={classManagementStyles.formLabel}>Mô tả</label>
+                    <textarea
+                        style={{
+                            ...classManagementStyles.formInput,
+                            minHeight: '80px',
+                            resize: 'vertical'
+                        }}
+                        value={formData.description}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        placeholder="Mô tả chi tiết về môn học..."
+                        rows="3"
                     />
-                    {errors.name && <div style={classManagementStyles.formError}>{errors.name}</div>}
                 </div>
             </div>
 
@@ -635,6 +750,7 @@ const SubjectScheduleManagement = () => {
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
+    const [subjectStatusFilter, setSubjectStatusFilter] = useState('');
     const [scheduleFilters, setScheduleFilters] = useState({
         class_id: '',
         subject_id: '',
@@ -1032,9 +1148,24 @@ const SubjectScheduleManagement = () => {
     // Apply filters
     useEffect(() => {
         // Filter subjects
-        let filteredSubjs = subjects.filter(subject =>
-            !searchQuery || subject.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        let filteredSubjs = subjects.filter(subject => {
+            // Search filter
+            const matchesSearch = !searchQuery || (() => {
+                const query = searchQuery.toLowerCase();
+                return (
+                    subject.name.toLowerCase().includes(query) ||
+                    subject.code.toLowerCase().includes(query) ||
+                    (subject.description && subject.description.toLowerCase().includes(query))
+                );
+            })();
+
+            // Status filter
+            const matchesStatus = !subjectStatusFilter || 
+                (subjectStatusFilter === 'active' && subject.is_active) ||
+                (subjectStatusFilter === 'inactive' && !subject.is_active);
+
+            return matchesSearch && matchesStatus;
+        });
         setFilteredSubjects(filteredSubjs);
 
         // Filter schedules
@@ -1060,7 +1191,7 @@ const SubjectScheduleManagement = () => {
             return matchesSearch && matchesClass && matchesSubject && matchesTeacher && matchesWeekday;
         });
         setFilteredSchedules(filteredScheds);
-    }, [subjects, schedules, searchQuery, scheduleFilters]);
+    }, [subjects, schedules, searchQuery, subjectStatusFilter, scheduleFilters]);
 
     // Calculate statistics
     const statistics = {
@@ -1083,9 +1214,9 @@ const SubjectScheduleManagement = () => {
         try {
             let response;
             if (currentItem) {
-                response = await apiService.updateSubject(currentItem.id, formData.name);
+                response = await apiService.updateSubject(currentItem.id, formData);
             } else {
-                response = await apiService.createSubject(formData.name);
+                response = await apiService.createSubject(formData);
             }
 
             if (response.success) {
@@ -1358,7 +1489,7 @@ const SubjectScheduleManagement = () => {
                                         <input
                                             type="text"
                                             style={classManagementStyles.searchInput}
-                                            placeholder="Tìm kiếm môn học..."
+                                            placeholder="Tìm kiếm môn học (tên, mã, mô tả)..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                         />
@@ -1371,9 +1502,37 @@ const SubjectScheduleManagement = () => {
                                             </button>
                                         )}
                                     </div>
+                                    
+                                    <select
+                                        style={{
+                                            padding: '0.75rem',
+                                            border: '1px solid #d1d5db',
+                                            borderRadius: '0.5rem',
+                                            fontSize: '0.875rem',
+                                            backgroundColor: '#fff',
+                                            minWidth: '150px',
+                                            outline: 'none'
+                                        }}
+                                        value={subjectStatusFilter}
+                                        onChange={(e) => setSubjectStatusFilter(e.target.value)}
+                                    >
+                                        <option value="">Tất cả trạng thái</option>
+                                        <option value="active">Hoạt động</option>
+                                        <option value="inactive">Không hoạt động</option>
+                                    </select>
                                 </div>
 
                                 <div style={classManagementStyles.filterSection}>
+                                    <button
+                                        style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary, marginRight: '10px' }}
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setSubjectStatusFilter('');
+                                        }}
+                                    >
+                                        <i className="fas fa-filter"></i>
+                                        Xóa bộ lọc
+                                    </button>
                                     <button
                                         style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary, marginRight: '10px' }}
                                         onClick={() => setShowSubjectImportModal(true)}

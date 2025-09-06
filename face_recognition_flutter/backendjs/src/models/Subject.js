@@ -45,7 +45,7 @@ class Subject {
             
             const [result] = await db.execute(
                 'INSERT INTO subjects (name, code, description, credits) VALUES (?, ?, ?, ?)',
-                [name, code, description, credits]
+                [name, code, description || null, credits || 3]
             );
             
             return await Subject.findById(result.insertId);

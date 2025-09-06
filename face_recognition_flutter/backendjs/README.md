@@ -230,6 +230,34 @@ docker run -p 8000:8000 face-attendance-api
 - `GET /api/admin/classes` - Quản lý lớp học
 - `GET /api/admin/stats` - Thống kê hệ thống
 
+### Classes (Lớp học)
+- `GET /api/classes` - Lấy tất cả lớp học
+- `POST /api/classes` - Tạo lớp học mới
+- `GET /api/classes/:id` - Lấy lớp học theo ID
+- `PUT /api/classes/:id` - Cập nhật lớp học
+- `DELETE /api/classes/:id` - Xóa lớp học
+- `GET /api/classes/:id/students` - Lấy sinh viên trong lớp
+- `POST /api/classes/:id/students` - Thêm sinh viên vào lớp
+
+### Subjects (Môn học)
+- `GET /api/subjects` - Lấy tất cả môn học
+- `POST /api/subjects` - Tạo môn học mới
+- `GET /api/subjects/:id` - Lấy môn học theo ID
+- `PUT /api/subjects/:id` - Cập nhật môn học
+- `DELETE /api/subjects/:id` - Xóa môn học
+
+### Course Sections (Lớp học phần) - MỚI!
+- `GET /api/course-sections` - Lấy tất cả lớp học phần
+- `POST /api/course-sections` - Tạo lớp học phần mới
+- `GET /api/course-sections/:id` - Lấy lớp học phần theo ID
+- `PUT /api/course-sections/:id` - Cập nhật lớp học phần
+- `DELETE /api/course-sections/:id` - Xóa lớp học phần
+- `GET /api/course-sections/:id/schedules` - Lấy lịch học của lớp học phần
+- `GET /api/course-sections/:id/students` - Lấy sinh viên của lớp học phần
+- `GET /api/course-sections/:id/attendance-sessions` - Lấy buổi điểm danh
+- `GET /api/course-sections/teacher/:teacherId` - Lấy lớp học phần theo giảng viên
+- `GET /api/course-sections/class/:classId` - Lấy lớp học phần theo lớp
+
 ## 🤝 Contributing
 
 1. Fork the project

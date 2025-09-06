@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import AdminDashboard from './pages/AdminDashboard'; 
 import ClassManagement from './pages/ClassManagement';
+import CourseManagement from './pages/CourseManagement';
 import UserManagement from './pages/UserManagement';
 import FaceRegistration from './pages/FaceRegistration';
 import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
@@ -25,6 +26,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/classes" element={<ClassManagement />} />
+        <Route path="/course-sections" element={<CourseManagement />} />
         <Route path="/users" element={<UserManagement />} />
         <Route path="/face-recognition" element={<FaceRegistration />} />
         <Route path="/subjects" element={<SubjectScheduleManagement />} />

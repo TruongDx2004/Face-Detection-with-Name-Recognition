@@ -359,6 +359,47 @@ class ApiService {
         return await this.makeRequest('GET', '/admin/reports/attendance', null, filters);
     }
 
+    // ============ COURSE SECTIONS ENDPOINTS ============
+    async getCourseSections(params = {}) {
+        return await this.makeRequest('GET', '/course-sections', null, params);
+    }
+
+    async getCourseSection(id) {
+        return await this.makeRequest('GET', `/course-sections/${id}`);
+    }
+
+    async createCourseSection(courseSectionData) {
+        return await this.makeRequest('POST', '/course-sections', courseSectionData);
+    }
+
+    async updateCourseSection(id, courseSectionData) {
+        return await this.makeRequest('PUT', `/course-sections/${id}`, courseSectionData);
+    }
+
+    async deleteCourseSection(id) {
+        return await this.makeRequest('DELETE', `/course-sections/${id}`);
+    }
+
+    async getCourseSectionSchedules(id) {
+        return await this.makeRequest('GET', `/course-sections/${id}/schedules`);
+    }
+
+    async getCourseSectionStudents(id) {
+        return await this.makeRequest('GET', `/course-sections/${id}/students`);
+    }
+
+    async getCourseSectionAttendanceSessions(id) {
+        return await this.makeRequest('GET', `/course-sections/${id}/attendance-sessions`);
+    }
+
+    async getCourseSectionsByTeacher(teacherId, params = {}) {
+        return await this.makeRequest('GET', `/course-sections/teacher/${teacherId}`, null, params);
+    }
+
+    async getCourseSectionsByClass(classId, params = {}) {
+        return await this.makeRequest('GET', `/course-sections/class/${classId}`, null, params);
+    }
+
     // ============ UTILITY METHODS ============
     async testConnection() {
         return await this.makeRequest('GET', '/');

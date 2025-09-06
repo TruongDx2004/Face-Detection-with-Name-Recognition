@@ -6,7 +6,7 @@ class Class {
         this.name = data.name;
         this.description = data.description;
         this.teacher_id = data.teacher_id;
-        this.is_active = data.is_active;
+        this.status  = data.is_active;
         this.created_at = data.created_at;
         this.updated_at = data.updated_at;
     }
@@ -15,7 +15,7 @@ class Class {
     static async findById(id) {
         try {
             const [rows] = await db.execute(
-                'SELECT * FROM classes WHERE id = ? AND is_active = TRUE',
+                'SELECT * FROM classes WHERE id = ? AND status = TRUE',
                 [id]
             );
             return rows.length > 0 ? new Class(rows[0]) : null;
@@ -71,7 +71,7 @@ class Class {
     static async delete(id) {
         try {
             await db.execute(
-                'UPDATE classes SET is_active = FALSE, updated_at = NOW() WHERE id = ?',
+                'UPDATE classes SET status = FALSE, updated_at = NOW() WHERE id = ?',
                 [id]
             );
             return true;
@@ -89,13 +89,13 @@ class Class {
                 SELECT c.*, u.full_name as teacher_name 
                 FROM classes c 
                 LEFT JOIN users u ON c.teacher_id = u.id 
-                WHERE c.is_active = TRUE 
+                WHERE c.status  = TRUE 
                 ORDER BY c.created_at DESC 
                 LIMIT ? OFFSET ?
             `, [limit, offset]);
 
             const [countResult] = await db.execute(
-                'SELECT COUNT(*) as total FROM classes WHERE is_active = TRUE'
+                'SELECT COUNT(*) as total FROM classes WHERE status  = TRUE'
             );
 
             return {
@@ -120,7 +120,7 @@ class Class {
                 SELECT u.*, cs.student_code 
                 FROM users u 
                 JOIN class_students cs ON u.id = cs.student_id 
-                WHERE cs.class_id = ? AND u.is_active = TRUE
+                WHERE cs.class_id = ? AND u.status = TRUE
                 ORDER BY cs.student_code
             `, [classId]);
 
