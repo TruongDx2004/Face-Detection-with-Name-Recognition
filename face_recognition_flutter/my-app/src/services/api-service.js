@@ -291,27 +291,27 @@ class ApiService {
         if (filters.subjectId) queryParams.subject_id = filters.subjectId;
         if (filters.teacherId) queryParams.teacher_id = filters.teacherId;
 
-        return await this.makeRequest('GET', '/subjects/schedules', null, queryParams);
+        return await this.makeRequest('GET', '/schedules', null, queryParams);
     }
 
     async createSchedule(scheduleData) {
-        return await this.makeRequest('POST', '/subjects/schedules', scheduleData);
+        return await this.makeRequest('POST', '/schedules', scheduleData);
     }
 
     async updateSchedule(id, scheduleData) {
-        return await this.makeRequest('PUT', `/subjects/schedules/${id}`, scheduleData);
+        return await this.makeRequest('PUT', `/schedules/${id}`, scheduleData);
     }
 
     async deleteSchedule(id) {
-        return await this.makeRequest('DELETE', `/subjects/schedules/${id}`);
+        return await this.makeRequest('DELETE', `/schedules/${id}`);
     }
 
     async getScheduleOptions() {
-        return await this.makeRequest('GET', '/subjects/schedules/options');
+        return await this.makeRequest('GET', '/schedules/options');
     }
 
     async getStudentSchedules() {
-        return await this.makeRequest('GET', '/subjects/schedules');
+        return await this.makeRequest('GET', '/schedules');
     }
 
     // ============ ADMIN ENDPOINTS ============

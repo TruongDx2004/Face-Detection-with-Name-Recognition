@@ -10,6 +10,7 @@ import FaceRegistration from './pages/FaceRegistration';
 import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
 import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
 import TeacherDashboard from './pages/teacher/TeacherDashboard'; 
+import ScheduleManagement from './pages/ScheduleManagement';
 import ClassDetail from './pages/teacher/ClassDetail';
 import Login from './pages/Login';
 import apiService from './services/api-service';
@@ -27,6 +28,7 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/classes" element={<ClassManagement />} />
         <Route path="/course-sections" element={<CourseManagement />} />
+        <Route path="/schedules" element={<ScheduleManagement/>} />
         <Route path="/users" element={<UserManagement />} />
         <Route path="/face-recognition" element={<FaceRegistration />} />
         <Route path="/subjects" element={<SubjectScheduleManagement />} />

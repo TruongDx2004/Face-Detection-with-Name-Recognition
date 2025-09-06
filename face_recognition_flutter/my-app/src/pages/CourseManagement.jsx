@@ -631,7 +631,7 @@ const CourseManagement = () => {
         <Sidebar
           isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          activePage="courses"
+          activePage="course"
         />
         <main style={mainContentStyle}>
           <div style={{

@@ -18,6 +18,7 @@ const adminRoutes = require('../routes/adminRoutes');
 const classRoutes = require('../routes/classRoutes');
 const subjectRoutes = require('../routes/subjectRoutes');
 const courseSectionRoutes = require('../routes/courseSectionRoutes');
+const scheduleRoutes = require('../routes/scheduleRoutes');
 
 // Import old routes (to be migrated)
 // const oldAttendanceRoutes = require('../routes/attendance'); // REMOVED - migrated to attendanceRoutes
@@ -144,6 +145,7 @@ class App {
         this.app.use('/api/classes', classRoutes);
         this.app.use('/api/subjects', subjectRoutes);
         this.app.use('/api/course-sections', courseSectionRoutes);
+        this.app.use('/api/schedules',scheduleRoutes);
 
         // Legacy routes (to be migrated)
         // this.app.use('/api/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
@@ -156,6 +158,7 @@ class App {
         this.app.use('/classes', classRoutes);
         this.app.use('/subjects', subjectRoutes);
         this.app.use('/course-sections', courseSectionRoutes);
+        this.app.use('/schedules',scheduleRoutes);
         // this.app.use('/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
     }
 
