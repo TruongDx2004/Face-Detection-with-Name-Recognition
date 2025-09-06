@@ -1,61 +1,69 @@
 // Class Management specific styles
 const classManagementStyles = {
   filterBar: {
-    background: '#ffffff',
-    padding: '1.5rem',
-    borderRadius: '1rem',
-    border: '1px solid #e2e8f0',
-    marginBottom: '2rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '1.5rem',
-    flexWrap: 'wrap'
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "1rem",
+    flexWrap: "wrap", // để không bị vỡ layout khi hẹp
+    gap: "1rem"
   },
   searchSection: {
-    flex: 1,
-    maxWidth: '400px'
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
+    flex: 1, // chiếm phần rộng còn lại
+    minWidth: "250px"
   },
   searchBox: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center'
-  },
-  searchInput: {
-    width: '100%',
-    padding: '0.5rem 0.5rem 0.5rem 2.5rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5rem',
-    fontSize: '0.875rem',
-    transition: 'all 0.15s ease-in-out'
+    position: "relative",
+    flex: 1,
+    display: "flex",
+    alignItems: "center"
   },
   searchIcon: {
-    position: 'absolute',
-    left: '12px',
-    color: '#94a3b8'
+    position: "absolute",
+    left: "10px",
+    color: "#9ca3af"
+  },
+  searchInput: {
+    width: "100%",
+    padding: "0.5rem 2.5rem 0.5rem 2rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.5rem",
+    fontSize: "0.875rem",
+    outline: "none"
   },
   clearSearch: {
-    position: 'absolute',
-    right: '8px',
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    cursor: 'pointer',
-    padding: '4px',
-    borderRadius: '50%'
+    position: "absolute",
+    right: "10px",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    color: "#9ca3af"
   },
   filterSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem'
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem"
   },
-  filterSelect: {
-    padding: '0.5rem 1rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5rem',
-    fontSize: '0.875rem',
-    background: 'white',
-    cursor: 'pointer'
+  btn: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.5rem 1rem",
+    borderRadius: "0.5rem",
+    fontSize: "0.875rem",
+    cursor: "pointer",
+    border: "none"
+  },
+  btnPrimary: {
+    backgroundColor: "#2563eb",
+    color: "#fff"
+  },
+  btnSecondary: {
+    backgroundColor: "#f3f4f6",
+    color: "#111827"
   },
   viewOptions: {
     display: 'flex',
@@ -311,6 +319,62 @@ const classManagementStyles = {
     background: '#ef4444',
     color: 'white',
     borderColor: '#ef4444'
+  },
+  modalBody: {
+    padding: "1rem",
+  },
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "0.75rem",
+    marginTop: "1.5rem",
+    borderTop: "1px solid #e5e7eb",
+    paddingTop: "1rem"
+  },
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem"
+  },
+  formLabel: {
+    fontWeight: "500",
+    fontSize: "0.875rem",
+    color: "#374151"
+  },
+  required: {
+    color: "#ef4444",
+    marginLeft: "0.25rem"
+  },
+  formInput: {
+    padding: "0.5rem 0.75rem",
+    border: "1px solid #d1d5db",
+    borderRadius: "0.5rem",
+    fontSize: "0.875rem",
+    outline: "none"
+  },
+  formError: {
+    color: "#ef4444",
+    fontSize: "0.75rem"
+  },
+  btn: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.5rem 1rem",
+    borderRadius: "0.5rem",
+    fontSize: "0.875rem",
+    cursor: "pointer",
+    border: "none",
+    transition: "all 0.2s"
+  },
+  btnPrimary: {
+    backgroundColor: "#2563eb",
+    color: "#fff"
+  },
+  btnOutline: {
+    backgroundColor: "#fff",
+    border: "1px solid #d1d5db",
+    color: "#374151"
   }
 };
 

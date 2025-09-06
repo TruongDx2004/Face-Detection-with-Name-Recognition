@@ -71,7 +71,7 @@ class SubjectController {
     // Tạo subject mới
     async createSubject(req, res) {
         try {
-            const { name, code, description, credits = 3 } = req.body;
+            const { name, code, description, credits = 3 } = req.body.name.name;
             
             // Validation
             if (!name || !code) {
@@ -145,7 +145,7 @@ class SubjectController {
     async updateSubject(req, res) {
         try {
             const subjectId = req.params.id;
-            const { name, code, description, credits, is_active } = req.body;
+            const { name, code, description, credits, is_active } = req.body.name;
 
             // Validation
             if (!name || !code) {
@@ -395,7 +395,7 @@ class SubjectController {
 
     // Import nhiều subjects từ Excel
     async importSubjects(req, res) {
-        const subjectsToImport = req.body;
+        const subjectsToImport = req.body.name;
         const importResults = [];
 
         if (!Array.isArray(subjectsToImport)) {

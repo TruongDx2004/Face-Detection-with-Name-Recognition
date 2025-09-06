@@ -7,7 +7,7 @@ import ClassManagement from './pages/ClassManagement';
 import CourseManagement from './pages/CourseManagement';
 import UserManagement from './pages/UserManagement';
 import FaceRegistration from './pages/FaceRegistration';
-import SubjectScheduleManagement from './pages/Subject_ScheduleManagement';
+import SubjectScheduleManagement from './pages/SubjectManagement';
 import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
 import TeacherDashboard from './pages/teacher/TeacherDashboard'; 
 import ScheduleManagement from './pages/ScheduleManagement';

@@ -21,12 +21,12 @@ const Sidebar = ({ isCollapsed, onToggle, activePage }) => {
 
   const navItems = [
     { id: 'dashboard', icon: 'fas fa-home', text: 'Dashboard', path: '/admin-dashboard' },
-    { id: 'users', icon: 'fas fa-users', text: 'Quản lý người dùng', path: '/users' },
-    { id: 'classes', icon: 'fas fa-school', text: 'Quản lý lớp học', path: '/classes' },
+    { id: 'users', icon: 'fas fa-users', text: 'Người dùng', path: '/users' },
+    { id: 'classes', icon: 'fas fa-school', text: 'Lớp học', path: '/classes' },
+    { id: 'subjects', icon: 'fas fa-book', text: 'Môn học', path: '/subjects' },
     { id: 'courses', icon: 'fas fa-graduation-cap', text: 'Lớp học phần', path: '/course-sections' },
     { id: 'schedules', icon: 'fas fa-calendar-alt', text: 'Lịch học', path: '/schedules'},
     { id: 'sessions', icon: 'fas fa-calendar-check', text: 'Phiên điểm danh', path: '/sessions' },
-    { id: 'subjects', icon: 'fas fa-book', text: 'Môn học & Lịch', path: '/subjects' },
     { id: 'face-recognition', icon: 'fas fa-face-smile', text: 'Nhận diện khuôn mặt', path: '/face-recognition' },
     
   ];
