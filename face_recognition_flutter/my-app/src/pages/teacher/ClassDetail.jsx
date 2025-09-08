@@ -11,28 +11,29 @@ import { SessionDetailModal } from './TeacherDashboard';
 // Styles cho nội dung class detail
 const styles = {
   classInfo: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
-    marginBottom: '30px'
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+    gap: "20px",
+    marginBottom: "30px",
+    width: "100%",       // đảm bảo container full width
   },
   infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '20px',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+    backgroundColor: "#ffffff",
+    borderRadius: "12px",
+    padding: "20px",
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
   },
   infoLabel: {
-    fontSize: '14px',
-    color: '#64748b',
-    fontWeight: '500',
-    marginBottom: '8px'
+    fontSize: "14px",
+    color: "#64748b",
+    fontWeight: "500",
+    marginBottom: "6px",
   },
   infoValue: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#1a202c'
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#1a202c",
   },
   tabContainer: {
     borderBottom: '2px solid #e2e8f0',
@@ -229,6 +230,56 @@ const styles = {
     transition: 'border-color 0.2s ease',
     outline: 'none'
   },
+  // Styles for class management
+  classCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
+    padding: '20px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+    transition: 'all 0.2s ease',
+    position: 'relative'
+  },
+  classCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '16px'
+  },
+  className: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '4px',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  classInfo: {
+    fontSize: '13px',
+    color: '#64748b'
+  },
+  classIcon: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
+    backgroundColor: '#eff6ff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    color: '#3b82f6'
+  },
+  classStats: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '12px',
+    marginBottom: '16px'
+  },
+  classActions: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap'
+  },
   button: {
     padding: '10px 20px',
     borderRadius: '8px',
@@ -245,6 +296,11 @@ const styles = {
     backgroundColor: '#f1f5f9',
     color: '#374151',
     border: '1px solid #e2e8f0'
+  },
+  buttonPrimary: {
+    backgroundColor: '#3b82f6',
+    color: '#ffffff',
+    border: 'none'
   },
   emptyState: {
     textAlign: 'center',
@@ -386,11 +442,11 @@ const StudentsList = ({ students, showClassInfo = false }) => {
   const filteredAndSortedStudents = useMemo(() => {
     let filtered = students.filter(student => {
       const matchesSearch = student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           student.student_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           student.username?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        student.student_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.username?.toLowerCase().includes(searchTerm.toLowerCase());
+
       const matchesClass = filterClass === 'all' || student.class_name === filterClass;
-      
+
       return matchesSearch && matchesClass;
     });
 
@@ -575,6 +631,307 @@ const StudentsList = ({ students, showClassInfo = false }) => {
   );
 };
 
+// Component lựa chọn lớp để quản lý sinh viên
+const ClassSelector = ({
+  allTeacherClasses,
+  students,
+  schedules,
+  sessions,
+  onSelectClass
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+
+  const getClassStats = (classId) => {
+    const classStudents = students.filter(s => s.class_id === classId);
+    const classSchedules = schedules.filter(s => s.class_id === classId);
+    const classSessions = sessions.filter(s => s.class_id === classId);
+
+    return {
+      studentCount: classStudents.length,
+      scheduleCount: classSchedules.length,
+      sessionCount: classSessions.length,
+      activeStudents: classStudents.filter(s => s.is_active).length,
+      activeSessions: classSessions.filter(s => s.is_active).length,
+      faceTrainedStudents: classStudents.filter(s => s.face_trained).length
+    };
+  };
+
+  const filteredAndSortedClasses = useMemo(() => {
+    let filtered = allTeacherClasses.filter(cls =>
+      cls.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => {
+      let aVal, bVal;
+
+      if (sortBy === 'studentCount') {
+        aVal = getClassStats(a.id).studentCount;
+        bVal = getClassStats(b.id).studentCount;
+      } else {
+        aVal = a[sortBy] || '';
+        bVal = b[sortBy] || '';
+      }
+
+      const comparison = typeof aVal === 'number' ? aVal - bVal : aVal.toString().localeCompare(bVal.toString());
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [allTeacherClasses, searchTerm, sortBy, sortOrder, students]);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  return (
+    <div>
+      {/* Header và controls */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, color: '#374151', fontSize: '18px' }}>
+            Chọn lớp để quản lý sinh viên
+          </h3>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={styles.formInput}
+            >
+              <option value="name">Sắp xếp theo tên</option>
+              <option value="studentCount">Sắp xếp theo số sinh viên</option>
+            </select>
+            <button
+              onClick={() => handleSort(sortBy)}
+              style={{ ...styles.button, ...styles.buttonSecondary }}
+            >
+              <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>
+            </button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Tìm kiếm lớp học..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            ...styles.formInput,
+            maxWidth: '400px',
+            paddingLeft: '40px',
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%23666\' viewBox=\'0 0 16 16\'%3E%3Cpath d=\'M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z\'/%3E%3C/svg%3E")',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: '12px center',
+            backgroundSize: '16px'
+          }}
+        />
+      </div>
+
+      {/* Classes Grid */}
+      <div style={styles.scheduleGrid}>
+        {/* Card "Tất cả lớp" */}
+        <div
+          style={{
+            ...styles.classCard,
+            cursor: 'pointer',
+            border: '2px dashed #3b82f6'
+          }}
+          onClick={() => onSelectClass('all')}
+        >
+          <div style={styles.classCardHeader}>
+            <div>
+              <div style={styles.className}>
+                <i className="fas fa-layer-group" style={{ marginRight: '8px', color: '#3b82f6' }}></i>
+                Tất cả lớp học
+              </div>
+              <div style={styles.classInfo}>Quản lý tổng thể tất cả sinh viên</div>
+            </div>
+            <div style={styles.classIcon}>
+              <i className="fas fa-users"></i>
+            </div>
+          </div>
+
+          <div style={styles.classStats}>
+            <div style={styles.statItem}>
+              <div style={styles.statNumber}>{allTeacherClasses.length}</div>
+              <div style={styles.statLabel}>Lớp học</div>
+            </div>
+            <div style={styles.statItem}>
+              <div style={styles.statNumber}>{students.length}</div>
+              <div style={styles.statLabel}>Tổng sinh viên</div>
+            </div>
+            <div style={styles.statItem}>
+              <div style={styles.statNumber}>{students.filter(s => s.is_active).length}</div>
+              <div style={styles.statLabel}>Đang học</div>
+            </div>
+            <div style={styles.statItem}>
+              <div style={styles.statNumber}>{students.filter(s => s.face_trained).length}</div>
+              <div style={styles.statLabel}>Đã training</div>
+            </div>
+          </div>
+
+          <div style={styles.classActions}>
+            <button
+              style={{ ...styles.button, ...styles.buttonPrimary, width: '100%' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectClass('all');
+              }}
+            >
+              <i className="fas fa-users"></i>
+              Quản lý tất cả sinh viên
+            </button>
+          </div>
+        </div>
+
+        {/* Từng lớp riêng biệt */}
+        {filteredAndSortedClasses.map(classItem => {
+          const stats = getClassStats(classItem.id);
+          return (
+            <div
+              key={classItem.id}
+              style={{
+                ...styles.classCard,
+                cursor: 'pointer'
+              }}
+              onClick={() => onSelectClass(classItem.id)}
+            >
+              <div style={styles.classCardHeader}>
+                <div>
+                  <div style={styles.className}>
+                    <i className="fas fa-graduation-cap" style={{ marginRight: '8px', color: '#10b981' }}></i>
+                    {classItem.name}
+                  </div>
+                  <div style={styles.classInfo}>
+                    {classItem.subjects?.join(', ') || 'Không có môn học'}
+                  </div>
+                </div>
+                <div style={styles.classIcon}>
+                  <i className="fas fa-users"></i>
+                </div>
+              </div>
+
+              <div style={styles.classStats}>
+                <div style={styles.statItem}>
+                  <div style={styles.statNumber}>{stats.studentCount}</div>
+                  <div style={styles.statLabel}>Sinh viên</div>
+                </div>
+                <div style={styles.statItem}>
+                  <div style={styles.statNumber}>{stats.activeStudents}</div>
+                  <div style={styles.statLabel}>Đang học</div>
+                </div>
+                <div style={styles.statItem}>
+                  <div style={styles.statNumber}>{stats.faceTrainedStudents}</div>
+                  <div style={styles.statLabel}>Đã training</div>
+                </div>
+                <div style={styles.statItem}>
+                  <div style={styles.statNumber}>{stats.sessionCount}</div>
+                  <div style={styles.statLabel}>Phiên điểm danh</div>
+                </div>
+              </div>
+
+              <div style={styles.classActions}>
+                <button
+                  style={{ ...styles.button, ...styles.buttonPrimary, flex: 1 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectClass(classItem.id);
+                  }}
+                >
+                  <i className="fas fa-users"></i>
+                  Quản lý sinh viên
+                </button>
+                <button
+                  style={{ ...styles.button, ...styles.buttonSecondary }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Navigate to class detail in same page
+                    window.location.href = `/teacher/classes/${classItem.id}`;
+                  }}
+                >
+                  <i className="fas fa-eye"></i>
+                  Chi tiết
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Component quản lý sinh viên theo lớp đã chọn
+const ClassStudentsManager = ({
+  selectedClassId,
+  allTeacherClasses,
+  students,
+  onBack
+}) => {
+  const selectedClassData = selectedClassId === 'all'
+    ? { name: 'Tất cả lớp học', id: 'all' }
+    : allTeacherClasses.find(c => c.id === selectedClassId);
+
+  const filteredStudents = selectedClassId === 'all'
+    ? students
+    : students.filter(s => s.class_id === selectedClassId);
+
+  return (
+    <div>
+      {/* Header với thông tin lớp và nút quay lại */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px',
+        padding: '20px',
+        backgroundColor: '#f8fafc',
+        borderRadius: '12px',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div>
+          <h3 style={{ margin: 0, color: '#374151', fontSize: '20px', display: 'flex', alignItems: 'center' }}>
+            <i className="fas fa-users" style={{ marginRight: '12px', color: '#3b82f6' }}></i>
+            Quản lý sinh viên - {selectedClassData?.name}
+          </h3>
+          <div style={{ marginTop: '8px', display: 'flex', gap: '24px' }}>
+            <span style={{ fontSize: '14px', color: '#64748b' }}>
+              <i className="fas fa-user-graduate" style={{ marginRight: '6px' }}></i>
+              {filteredStudents.length} sinh viên
+            </span>
+            <span style={{ fontSize: '14px', color: '#64748b' }}>
+              <i className="fas fa-user-check" style={{ marginRight: '6px' }}></i>
+              {filteredStudents.filter(s => s.is_active).length} đang học
+            </span>
+            <span style={{ fontSize: '14px', color: '#64748b' }}>
+              <i className="fas fa-robot" style={{ marginRight: '6px' }}></i>
+              {filteredStudents.filter(s => s.face_trained).length} đã training
+            </span>
+          </div>
+        </div>
+        <button
+          style={{ ...styles.button, ...styles.buttonSecondary }}
+          onClick={onBack}
+        >
+          <i className="fas fa-arrow-left"></i>
+          Quay lại chọn lớp
+        </button>
+      </div>
+
+      {/* Danh sách sinh viên với tính năng nâng cao */}
+      <StudentsList
+        students={filteredStudents}
+        showClassInfo={selectedClassId === 'all'}
+      />
+    </div>
+  );
+};
+
 const SessionsHistory = ({ sessions, schedules }) => {
   const [filterSchedule, setFilterSchedule] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -694,6 +1051,8 @@ const ClassDetail = () => {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [allTeacherClasses, setAllTeacherClasses] = useState([]);
+  const [selectedClassForManagement, setSelectedClassForManagement] = useState(null);
+  const [classManagementView, setClassManagementView] = useState('selector'); // 'selector' | 'students'
 
   useEffect(() => {
     loadClassData();
@@ -778,30 +1137,30 @@ const ClassDetail = () => {
       const schedulesResponse = await ApiService.getSchedules({
         teacher_id: teacherId
       });
-      
+
       if (schedulesResponse.success) {
         const teacherSchedules = schedulesResponse.data.schedules || [];
         setSchedules(teacherSchedules);
-        
+
         // Get unique class IDs from schedules
         const classIds = [...new Set(teacherSchedules.map(s => s.class_id))];
-        
+
         // Load all students from these classes
-        const allStudentsPromises = classIds.map(classId => 
+        const allStudentsPromises = classIds.map(classId =>
           ApiService.getClassStudents(classId)
         );
-        
+
         const studentsResponses = await Promise.all(allStudentsPromises);
         const allStudents = [];
         const teacherClasses = [];
-        
+
         for (let i = 0; i < studentsResponses.length; i++) {
           if (studentsResponses[i].success) {
             const classStudents = studentsResponses[i].data.students || [];
             const classId = classIds[i];
             const className = teacherSchedules.find(s => s.class_id === classId)?.class_name || `Lớp ${classId}`;
             const subjects = [...new Set(teacherSchedules.filter(s => s.class_id === classId).map(s => s.subject_name))];
-            
+
             // Add class info to each student
             const studentsWithClass = classStudents.map(student => ({
               ...student,
@@ -809,7 +1168,7 @@ const ClassDetail = () => {
               class_name: className,
               subjects: subjects.join(', ')
             }));
-            
+
             allStudents.push(...studentsWithClass);
             teacherClasses.push({
               id: classId,
@@ -819,10 +1178,10 @@ const ClassDetail = () => {
             });
           }
         }
-        
+
         setStudents(allStudents);
         setAllTeacherClasses(teacherClasses);
-        
+
         // Set summary data
         setClassData({
           name: 'Tất cả lớp học trong học kì',
@@ -834,19 +1193,19 @@ const ClassDetail = () => {
         });
 
         // Load sessions for all classes
-        const allSessionsPromises = classIds.map(classId => 
+        const allSessionsPromises = classIds.map(classId =>
           ApiService.getSessions({ class_id: classId })
         );
-        
+
         const sessionsResponses = await Promise.all(allSessionsPromises);
         const allSessions = [];
-        
+
         sessionsResponses.forEach(response => {
           if (response.success) {
             allSessions.push(...(response.data.sessions || []));
           }
         });
-        
+
         setSessions(allSessions);
       }
     } catch (err) {
@@ -912,8 +1271,8 @@ const ClassDetail = () => {
 
   if (loading) {
     return (
-      <AppLayout 
-        user={{ full_name: 'Teacher' }} 
+      <AppLayout
+        user={{ full_name: 'Teacher' }}
         onLogout={handleLogout}
         currentTime={currentTime}
         title={`Chi tiết lớp: ${classData?.name || 'Loading...'}`}
@@ -925,8 +1284,8 @@ const ClassDetail = () => {
 
   if (error) {
     return (
-      <AppLayout 
-        user={{ full_name: 'Teacher' }} 
+      <AppLayout
+        user={{ full_name: 'Teacher' }}
         onLogout={handleLogout}
         currentTime={currentTime}
         title="Lỗi"
@@ -938,8 +1297,8 @@ const ClassDetail = () => {
 
   if (!classData) {
     return (
-      <AppLayout 
-        user={{ full_name: 'Teacher' }} 
+      <AppLayout
+        user={{ full_name: 'Teacher' }}
         onLogout={handleLogout}
         currentTime={currentTime}
         title="Không tìm thấy"
@@ -950,8 +1309,8 @@ const ClassDetail = () => {
   }
 
   return (
-    <AppLayout 
-      user={{ full_name: 'Teacher' }} 
+    <AppLayout
+      user={{ full_name: 'Teacher' }}
       onLogout={handleLogout}
       currentTime={currentTime}
       title={`Chi tiết lớp: ${classData.name}`}
@@ -984,67 +1343,85 @@ const ClassDetail = () => {
       />
 
       {/* Class Overview Cards */}
-      <div style={styles.classInfo}>
-        <div style={styles.infoCard}>
-          <div style={styles.infoLabel}>{classId ? 'Tên lớp' : 'Tổng quan'}</div>
-          <div style={styles.infoValue}>{classData.name}</div>
-        </div>
-        {!classId && (
-          <>
-            <div style={styles.infoCard}>
-              <div style={styles.infoLabel}>Số lớp học</div>
-              <div style={styles.infoValue}>{classData.total_classes || 0}</div>
-            </div>
-            <div style={styles.infoCard}>
-              <div style={styles.infoLabel}>Học kì hiện tại</div>
-              <div style={styles.infoValue}>{classData.current_semester || 'N/A'}</div>
-            </div>
-            <div style={styles.infoCard}>
-              <div style={styles.infoLabel}>Năm học</div>
-              <div style={styles.infoValue}>{classData.current_academic_year || 'N/A'}</div>
-            </div>
-          </>
-        )}
-        <div style={styles.infoCard}>
-          <div style={styles.infoLabel}>Số sinh viên</div>
-          <div style={styles.infoValue}>{students.length}</div>
-        </div>
-        <div style={styles.infoCard}>
-          <div style={styles.infoLabel}>{classId ? 'Số môn học' : 'Tổng lịch học'}</div>
-          <div style={styles.infoValue}>{schedules.length}</div>
-        </div>
-        <div style={styles.infoCard}>
-          <div style={styles.infoLabel}>Tổng phiên điểm danh</div>
-          <div style={styles.infoValue}>{sessions.length}</div>
-        </div>
+       <div style={styles.classInfo}>
+      <div style={styles.infoCard}>
+        <div style={styles.infoLabel}>{classId ? "Tên lớp" : "Tổng quan"}</div>
+        <div style={styles.infoValue}>{classData.name}</div>
       </div>
+
+      {!classId && (
+        <>
+          <div style={styles.infoCard}>
+            <div style={styles.infoLabel}>Số lớp học</div>
+            <div style={styles.infoValue}>{classData.total_classes || 0}</div>
+          </div>
+          <div style={styles.infoCard}>
+            <div style={styles.infoLabel}>Học kì hiện tại</div>
+            <div style={styles.infoValue}>{classData.current_semester || "N/A"}</div>
+          </div>
+          <div style={styles.infoCard}>
+            <div style={styles.infoLabel}>Năm học</div>
+            <div style={styles.infoValue}>{classData.current_academic_year || "N/A"}</div>
+          </div>
+        </>
+      )}
+
+      <div style={styles.infoCard}>
+        <div style={styles.infoLabel}>Số sinh viên</div>
+        <div style={styles.infoValue}>{students.length}</div>
+      </div>
+
+      <div style={styles.infoCard}>
+        <div style={styles.infoLabel}>{classId ? "Số môn học" : "Tổng lịch học"}</div>
+        <div style={styles.infoValue}>{schedules.length}</div>
+      </div>
+
+      <div style={styles.infoCard}>
+        <div style={styles.infoLabel}>Tổng phiên điểm danh</div>
+        <div style={styles.infoValue}>{sessions.length}</div>
+      </div>
+    </div>
 
       {/* Navigation Tabs */}
       <div style={styles.tabContainer}>
         <div style={styles.tabList}>
-          {[
-            { key: 'overview', label: 'Tổng quan', icon: 'fas fa-chart-bar' },
-            { key: 'students', label: 'Danh sách sinh viên', icon: 'fas fa-user-graduate' },
-            { key: 'schedules', label: 'Lịch học', icon: 'fas fa-calendar' },
-            { key: 'sessions', label: 'Lịch sử điểm danh', icon: 'fas fa-clipboard-check' }
-          ].map(tab => (
+          {classId ? (
+            // Khi có classId - hiển thị tất cả tabs
+            [
+              { key: 'overview', label: 'Tổng quan', icon: 'fas fa-chart-bar' },
+              { key: 'students', label: 'Danh sách sinh viên', icon: 'fas fa-user-graduate' },
+              { key: 'schedules', label: 'Lịch học', icon: 'fas fa-calendar' },
+              { key: 'sessions', label: 'Lịch sử điểm danh', icon: 'fas fa-clipboard-check' }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                style={{
+                  ...styles.tab,
+                  ...(activeTab === tab.key ? styles.tabActive : {})
+                }}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                <i className={tab.icon} style={{ marginRight: '8px' }}></i>
+                {tab.label}
+              </button>
+            ))
+          ) : (
+            // Khi không có classId - chỉ hiển thị tab quản lý sinh viên
             <button
-              key={tab.key}
               style={{
                 ...styles.tab,
-                ...(activeTab === tab.key ? styles.tabActive : {})
+                ...styles.tabActive // Luôn active vì chỉ có 1 tab
               }}
-              onClick={() => setActiveTab(tab.key)}
             >
-              <i className={tab.icon} style={{ marginRight: '8px' }}></i>
-              {tab.label}
+              <i className="fas fa-users" style={{ marginRight: '8px' }}></i>
+              Quản lý sinh viên theo lớp
             </button>
-          ))}
+          )}
         </div>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && (
+      {classId && activeTab === 'overview' && (
         <div style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>
@@ -1098,26 +1475,72 @@ const ClassDetail = () => {
         </div>
       )}
 
-      {activeTab === 'students' && (
+      {(activeTab === 'students' || !classId) && (
         <div style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>
-              <i className="fas fa-user-graduate"></i>
-              Danh sách sinh viên ({students.length})
-            </h2>
-            <button
-              style={{ ...styles.button, ...styles.buttonSecondary }}
-              onClick={loadClassData}
-            >
-              <i className="fas fa-sync-alt"></i>
-              Làm mới
-            </button>
-          </div>
-          <StudentsList students={students} showClassInfo={!classId} />
+          {classId ? (
+            // Hiển thị sinh viên của lớp cụ thể
+            <>
+              <div style={styles.sectionHeader}>
+                <h2 style={styles.sectionTitle}>
+                  <i className="fas fa-user-graduate"></i>
+                  Danh sách sinh viên ({students.length})
+                </h2>
+                <button
+                  style={{ ...styles.button, ...styles.buttonSecondary }}
+                  onClick={loadClassData}
+                >
+                  <i className="fas fa-sync-alt"></i>
+                  Làm mới
+                </button>
+              </div>
+              <StudentsList students={students} showClassInfo={false} />
+            </>
+          ) : (
+            // Hiển thị quản lý sinh viên theo lớp
+            <>
+              {classManagementView === 'selector' ? (
+                <>
+                  <div style={styles.sectionHeader}>
+                    <h2 style={styles.sectionTitle}>
+                      <i className="fas fa-layer-group"></i>
+                      Quản lý sinh viên theo lớp
+                    </h2>
+                    <button
+                      style={{ ...styles.button, ...styles.buttonSecondary }}
+                      onClick={loadClassData}
+                    >
+                      <i className="fas fa-sync-alt"></i>
+                      Làm mới
+                    </button>
+                  </div>
+                  <ClassSelector
+                    allTeacherClasses={allTeacherClasses}
+                    students={students}
+                    schedules={schedules}
+                    sessions={sessions}
+                    onSelectClass={(classId) => {
+                      setSelectedClassForManagement(classId);
+                      setClassManagementView('students');
+                    }}
+                  />
+                </>
+              ) : (
+                <ClassStudentsManager
+                  selectedClassId={selectedClassForManagement}
+                  allTeacherClasses={allTeacherClasses}
+                  students={students}
+                  onBack={() => {
+                    setClassManagementView('selector');
+                    setSelectedClassForManagement(null);
+                  }}
+                />
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {activeTab === 'schedules' && (
+      {classId && activeTab === 'schedules' && (
         <div style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>
@@ -1148,7 +1571,7 @@ const ClassDetail = () => {
         </div>
       )}
 
-      {activeTab === 'sessions' && (
+      {classId && activeTab === 'sessions' && (
         <div style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>

@@ -12,6 +12,7 @@ import AttendanceSessionManagement from './pages/AttendanceSessionManagement';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ScheduleManagement from './pages/ScheduleManagement';
 import ClassDetail from './pages/teacher/ClassDetail';
+import TeacherSchedules from './pages/teacher/TeacherSchedules';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -36,6 +37,8 @@ function App() {
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/classes" element={<ClassDetail />} />
         <Route path="/teacher/classes/:classId" element={<ClassDetail />} />
+        <Route path="/teacher/schedules" element={<TeacherSchedules />} />
+
       </Routes>
     </BrowserRouter>
   );
