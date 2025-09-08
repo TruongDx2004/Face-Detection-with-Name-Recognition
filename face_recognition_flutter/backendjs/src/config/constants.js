@@ -86,7 +86,7 @@ module.exports = {
     ERROR_MESSAGES: {
         UNAUTHORIZED: 'Unauthorized access',
         FORBIDDEN: 'Insufficient permissions',
-        NOT_FOUND: 'Resource not found',
+        NOT_FOUND: 'Tính năng đang được phát triển',
         VALIDATION_ERROR: 'Validation error',
         INTERNAL_ERROR: 'Internal server error',
         FACE_NOT_RECOGNIZED: 'Face not recognized',

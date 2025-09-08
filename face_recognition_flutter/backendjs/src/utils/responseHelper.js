@@ -71,7 +71,7 @@ class ResponseHelper {
      * @param {Object} res - Express response object
      * @param {string} message - Error message
      */
-    static notFound(res, message = 'Resource not found') {
+    static notFound(res, message = 'Tính năng đang được phát triển') {
         return this.error(res, message, 404);
     }
 

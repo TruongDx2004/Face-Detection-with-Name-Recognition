@@ -56,7 +56,6 @@ class CourseSectionController {
                 name, code, class_id, subject_id, teacher_id,
                 semester, academic_year, max_students, description
             } = req.body;
-
             // Validate required fields
             if (!name || !code || !class_id || !subject_id || !teacher_id || !semester || !academic_year) {
                 return ResponseHelper.error(res, 'Missing required fields', 400);

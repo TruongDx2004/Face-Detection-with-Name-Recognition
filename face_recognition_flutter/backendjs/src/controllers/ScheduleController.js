@@ -23,6 +23,7 @@ class ScheduleController {
                     cs.semester,
                     cs.academic_year,
                     c.name as class_name,
+                    cs.class_id,
                     sub.name as subject_name,
                     u.full_name as teacher_name
                 FROM schedules s
@@ -117,7 +118,7 @@ class ScheduleController {
     async getWeeklySchedule(req, res) {
         try {
             const { course_section_id, week_start } = req.query;
-            
+
             let query = `
                 SELECT 
                     s.id,
@@ -298,7 +299,7 @@ class ScheduleController {
             `, [courseSection.class_id, weekday, start_time, start_time, end_time, end_time]);
 
             if (conflicts.length > 0) {
-                return responseHelper.error(res, 
+                return responseHelper.error(res,
                     `Time conflict detected with course "${conflicts[0].course_name}" on the same day`, 400);
             }
 
@@ -314,7 +315,7 @@ class ScheduleController {
             `, [courseSection.teacher_id, weekday, start_time, start_time, end_time, end_time]);
 
             if (teacherConflicts.length > 0) {
-                return responseHelper.error(res, 
+                return responseHelper.error(res,
                     `Teacher has conflicting schedule with course "${teacherConflicts[0].course_name}" in class "${teacherConflicts[0].class_name}"`, 400);
             }
 
@@ -420,6 +421,18 @@ class ScheduleController {
                 return responseHelper.error(res, 'No fields to update', 400);
             }
 
+            if (req.body.course_section_id !== undefined) {
+                const [csCheck] = await db.execute(
+                    'SELECT id FROM course_sections WHERE id = ?',
+                    [req.body.course_section_id]
+                );
+                if (csCheck.length === 0) {
+                    return responseHelper.error(res, 'Invalid course_section_id', 400);
+                }
+                updateFields.push('course_section_id = ?');
+                updateValues.push(req.body.course_section_id);
+            }
+            
             // Validate time logic if both times are being updated or provided
             const finalStartTime = start_time || schedule.start_time;
             const finalEndTime = end_time || schedule.end_time;
@@ -430,7 +443,7 @@ class ScheduleController {
             // Check for conflicts if time or weekday is being changed
             if (weekday !== undefined || start_time !== undefined || end_time !== undefined) {
                 const finalWeekday = weekday !== undefined ? weekday : schedule.weekday;
-                
+
                 // Check class conflicts
                 const [conflicts] = await db.execute(`
                     SELECT s.id, cs.name as course_name
@@ -442,7 +455,7 @@ class ScheduleController {
                 `, [schedule.class_id, finalWeekday, id, finalStartTime, finalStartTime, finalEndTime, finalEndTime]);
 
                 if (conflicts.length > 0) {
-                    return responseHelper.error(res, 
+                    return responseHelper.error(res,
                         `Time conflict detected with course "${conflicts[0].course_name}" on the same day`, 400);
                 }
 
@@ -458,14 +471,12 @@ class ScheduleController {
                 `, [schedule.teacher_id, finalWeekday, id, finalStartTime, finalStartTime, finalEndTime, finalEndTime]);
 
                 if (teacherConflicts.length > 0) {
-                    return responseHelper.error(res, 
+                    return responseHelper.error(res,
                         `Teacher has conflicting schedule with course "${teacherConflicts[0].course_name}" in class "${teacherConflicts[0].class_name}"`, 400);
                 }
             }
 
             updateValues.push(id);
-
-            // Update schedule
             const [result] = await db.execute(
                 `UPDATE schedules SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
                 updateValues
@@ -627,13 +638,13 @@ class ScheduleController {
 
         try {
             for (const [index, scheduleData] of schedulesToImport.entries()) {
-                const result = { 
-                    row: index + 2, 
-                    status: 'success', 
+                const result = {
+                    row: index + 2,
+                    status: 'success',
                     message: 'Schedule created successfully',
                     data: scheduleData
                 };
-                
+
                 const { course_section_code, weekday, start_time, end_time, room } = scheduleData;
 
                 // Validate required fields
@@ -670,7 +681,7 @@ class ScheduleController {
 
                 // Get course section ID
                 const [courseSectionRows] = await connection.execute(
-                    'SELECT id, teacher_id, class_id FROM course_sections WHERE code = ?', 
+                    'SELECT id, teacher_id, class_id FROM course_sections WHERE code = ?',
                     [course_section_code.trim()]
                 );
                 if (courseSectionRows.length === 0) {
@@ -717,7 +728,7 @@ class ScheduleController {
             }
 
             await connection.commit();
-            
+
             const successCount = importResults.filter(r => r.status === 'success').length;
             const failureCount = importResults.filter(r => r.status === 'failure').length;
 
