@@ -364,4 +364,318 @@ router.put('/sessions/:session_id/end', authorize(USER_ROLES.TEACHER), Attendanc
  */
 router.delete('/sessions/:id', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AttendanceController.deleteSession);
 
+/**
+ * @swagger
+ * /attendance/history:
+ *   get:
+ *     summary: Get attendance history with filters
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: class_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: subject_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: student_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Attendance history retrieved successfully
+ */
+router.get('/history', AttendanceController.getAttendanceHistory);
+
+/**
+ * @swagger
+ * /attendance/course-sections/{course_section_id}/sessions:
+ *   get:
+ *     summary: Get attendance sessions for course section (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: course_section_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Course section attendance sessions retrieved successfully
+ *       403:
+ *         description: Not authorized to access this course section
+ */
+router.get('/course-sections/:course_section_id/sessions', authorize(USER_ROLES.TEACHER), AttendanceController.getCourseSectionAttendanceSessions);
+
+/**
+ * @swagger
+ * /attendance/course-sections/{course_section_id}/students:
+ *   get:
+ *     summary: Get students in course section (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: course_section_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Course section students retrieved successfully
+ *       403:
+ *         description: Not authorized to access this course section
+ */
+router.get('/course-sections/:course_section_id/students', authorize(USER_ROLES.TEACHER), AttendanceController.getCourseSectionStudents);
+
+/**
+ * @swagger
+ * /attendance/course-sections/teacher/{teacher_id}:
+ *   get:
+ *     summary: Get course sections by teacher
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teacher_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Teacher ID
+ *     responses:
+ *       200:
+ *         description: Teacher course sections retrieved successfully
+ *       403:
+ *         description: Not authorized to access this data
+ */
+router.get('/course-sections/teacher/:teacher_id', AttendanceController.getCourseSectionsByTeacher);
+
+/**
+ * @swagger
+ * /attendance/create-session:
+ *   post:
+ *     summary: Create attendance session with course section (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - course_section_id
+ *               - session_date
+ *               - start_time
+ *             properties:
+ *               course_section_id:
+ *                 type: integer
+ *               session_date:
+ *                 type: string
+ *                 format: date
+ *               start_time:
+ *                 type: string
+ *                 format: time
+ *               end_time:
+ *                 type: string
+ *                 format: time
+ *               session_name:
+ *                 type: string
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               session_number:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Attendance session created successfully
+ *       403:
+ *         description: Only teachers can create sessions
+ */
+router.post('/create-session', authorize(USER_ROLES.TEACHER), AttendanceController.createAttendanceSession);
+
+/**
+ * @swagger
+ * /attendance/end-session/{session_id}:
+ *   put:
+ *     summary: End attendance session (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: session_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session ended successfully
+ */
+router.put('/end-session/:session_id', authorize(USER_ROLES.TEACHER), AttendanceController.endSession);
+
+/**
+ * @swagger
+ * /attendance/mark-attendance:
+ *   post:
+ *     summary: Mark attendance by face recognition
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               session_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Attendance marked successfully
+ */
+router.post('/mark-attendance', AttendanceController.uploadMiddleware, AttendanceController.markAttendanceByFace);
+
+/**
+ * @swagger
+ * /attendance/mark-attendance-manual:
+ *   post:
+ *     summary: Mark attendance manually (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - session_id
+ *               - student_id
+ *               - status
+ *             properties:
+ *               session_id:
+ *                 type: integer
+ *               student_id:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [present, absent, late]
+ *     responses:
+ *       200:
+ *         description: Attendance marked manually successfully
+ */
+router.post('/mark-attendance-manual', authorize(USER_ROLES.TEACHER), AttendanceController.markAttendanceManual);
+
+/**
+ * @swagger
+ * /attendance/sessions/{sessionId}/stop:
+ *   put:
+ *     summary: Stop attendance session (alias for end session)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session stopped successfully
+ */
+router.put('/sessions/:sessionId/stop', authorize(USER_ROLES.TEACHER), AttendanceController.endSession);
+
+/**
+ * @swagger
+ * /attendance/sessions/{session_id}/records:
+ *   get:
+ *     summary: Get attendance records for specific session (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: session_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Session ID
+ *     responses:
+ *       200:
+ *         description: Session attendance records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     session:
+ *                       type: object
+ *                     attendanceRecords:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     statistics:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         present:
+ *                           type: integer
+ *                         absent:
+ *                           type: integer
+ *                         attendanceRate:
+ *                           type: integer
+ *       403:
+ *         description: Not authorized to access this session
+ *       404:
+ *         description: Session not found
+ */
+router.get('/sessions/:session_id/records', authorize(USER_ROLES.TEACHER), AttendanceController.getSessionAttendanceRecords);
+
 module.exports = router;

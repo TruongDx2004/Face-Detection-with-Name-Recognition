@@ -1053,6 +1053,7 @@ const ClassDetail = () => {
   const [allTeacherClasses, setAllTeacherClasses] = useState([]);
   const [selectedClassForManagement, setSelectedClassForManagement] = useState(null);
   const [classManagementView, setClassManagementView] = useState('selector'); // 'selector' | 'students'
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     loadClassData();
@@ -1131,6 +1132,7 @@ const ClassDetail = () => {
         return;
       }
       console.log(profileResponse);
+      setCurrentUser(profileResponse.data);
       const teacherId = profileResponse.data.id;
 
       // Get all schedules for this teacher
@@ -1272,7 +1274,7 @@ const ClassDetail = () => {
   if (loading) {
     return (
       <AppLayout
-        user={{ full_name: 'Teacher' }}
+        user={currentUser}
         onLogout={handleLogout}
         currentTime={currentTime}
         title={`Chi tiết lớp: ${classData?.name || 'Loading...'}`}
@@ -1285,7 +1287,7 @@ const ClassDetail = () => {
   if (error) {
     return (
       <AppLayout
-        user={{ full_name: 'Teacher' }}
+        user={currentUser}
         onLogout={handleLogout}
         currentTime={currentTime}
         title="Lỗi"
@@ -1298,7 +1300,7 @@ const ClassDetail = () => {
   if (!classData) {
     return (
       <AppLayout
-        user={{ full_name: 'Teacher' }}
+        user={currentUser}
         onLogout={handleLogout}
         currentTime={currentTime}
         title="Không tìm thấy"
@@ -1310,7 +1312,7 @@ const ClassDetail = () => {
 
   return (
     <AppLayout
-      user={{ full_name: 'Teacher' }}
+      user={currentUser}
       onLogout={handleLogout}
       currentTime={currentTime}
       title={`Chi tiết lớp: ${classData.name}`}

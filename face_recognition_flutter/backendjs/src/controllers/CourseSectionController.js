@@ -217,7 +217,7 @@ class CourseSectionController {
 
             const sessions = await CourseSection.getAttendanceSessions(id);
             
-            return ResponseHelper.success(res, sessions, 'Course section attendance sessions retrieved successfully');
+            return ResponseHelper.success(res, sessions, 'Course section attendance sessions retrieved successfullyyy');
         } catch (error) {
             return ResponseHelper.error(res, error.message, 500);
         }

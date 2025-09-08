@@ -138,7 +138,7 @@ class ApiService {
     async importUsers(usersData) {
         return await this.makeRequest('POST', '/admin/users/import', usersData);
     }
-    
+
     // ============ CLASS IMPORT ENDPOINT ============
     async importClasses(classesData) {
         return await this.makeRequest('POST', '/classes/import', classesData);
@@ -153,7 +153,7 @@ class ApiService {
     async importSchedules(schedulesData) {
         return await this.makeRequest('POST', '/subjects/schedules/import', schedulesData);
     }
-    
+
     // ============ ATTENDANCE ENDPOINTS ============
     async createAttendanceSession(sessionData) {
         return await this.makeRequest('POST', '/attendance/create-session', sessionData);
@@ -167,10 +167,11 @@ class ApiService {
         return await this.makeMultipartRequest('POST', '/attendance/mark-attendance', formData);
     }
 
-    async markAttendanceManual(sessionId, studentId) {
+    async markAttendanceManual(sessionId, studentId, status = 'present') {
         return await this.makeRequest('POST', '/attendance/mark-attendance-manual', {
             session_id: sessionId,
-            student_id: studentId
+            student_id: studentId,
+            status
         });
     }
 
@@ -216,6 +217,10 @@ class ApiService {
 
     async deleteSession(sessionId) {
         return await this.makeRequest('DELETE', `/attendance/sessions/${sessionId}`);
+    }
+
+    async getSessionAttendanceRecords(sessionId) {
+        return await this.makeRequest('GET', `/attendance/sessions/${sessionId}/records`);
     }
 
     // ============ CLASS MANAGEMENT ENDPOINTS ============
@@ -281,7 +286,7 @@ class ApiService {
     async getSessionAttendanceForClass(sessionId) {
         return await this.makeRequest('GET', `/attendance/session/${sessionId}`);
     }
-    
+
     async getSchedules(filters = {}) {
         const queryParams = {
             page: filters.page || 1,

@@ -191,6 +191,32 @@ class ApiService {
         return await this.makeRequest('DELETE', `/attendance/sessions/${sessionId}`);
     }
 
+    // ============ COURSE SECTIONS ENDPOINTS ============
+    async getCourseSectionsByTeacher(teacherId) {
+        return await this.makeRequest('GET', `/attendance/course-sections/teacher/${teacherId}`);
+    }
+
+    async getCourseSectionAttendanceSessions(courseSectionId) {
+        return await this.makeRequest('GET', `/attendance/course-sections/${courseSectionId}/sessions`);
+    }
+
+    async getCourseSectionStudents(courseSectionId) {
+        return await this.makeRequest('GET', `/attendance/course-sections/${courseSectionId}/students`);
+    }
+
+    // ============ ADDITIONAL ATTENDANCE ENDPOINTS ============
+    async markAttendanceManual(sessionId, studentId, status = 'present') {
+        return await this.makeRequest('POST', '/attendance/mark-attendance-manual', {
+            session_id: sessionId,
+            student_id: studentId,
+            status: status
+        });
+    }
+
+    async getSessionAttendanceRecords(sessionId) {
+        return await this.makeRequest('GET', `/attendance/sessions/${sessionId}/records`);
+    }
+
     // ============ CLASS MANAGEMENT ENDPOINTS ============
     async getClasses(name = null) {
         const queryParams = {};

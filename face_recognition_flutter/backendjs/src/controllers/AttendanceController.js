@@ -48,7 +48,9 @@ class AttendanceController {
 
             // Lấy thông tin từ course_section
             const [courseSections] = await db.execute(
-                `SELECT class_id, subject_id, teacher_id, name FROM course_sections WHERE id = ? AND is_active = TRUE`,
+                `SELECT class_id, subject_id, teacher_id, name 
+             FROM course_sections 
+             WHERE id = ? AND is_active = TRUE`,
                 [course_section_id]
             );
 
@@ -66,7 +68,7 @@ class AttendanceController {
             // Kiểm tra đã có session active cho ngày này chưa
             const [existingSessions] = await db.execute(
                 `SELECT id FROM attendance_sessions 
-                 WHERE course_section_id = ? AND session_date = ? AND is_active = TRUE`,
+             WHERE course_section_id = ? AND session_date = ? AND is_active = TRUE`,
                 [course_section_id, session_date]
             );
 
@@ -74,23 +76,33 @@ class AttendanceController {
                 return res.status(400).json({ error: 'Already have an active session today' });
             }
 
-            const [result] = await db.execute(`
-                INSERT INTO attendance_sessions (course_section_id, session_date, start_time, session_name, is_active) 
-                VALUES (?, ?, ?, ?, TRUE)
-            `, [course_section_id, session_date, start_time, session_name || `Session ${session_date}`, true]);
+            console.log({
+                course_section_id,
+                session_date,
+                start_time,
+                session_name
+            });
+
+            const [result] = await db.execute(
+                `INSERT INTO attendance_sessions (course_section_id, session_date, start_time, session_name, is_active) 
+             VALUES (?, ?, ?, ?, TRUE)`,
+                [course_section_id, session_date, start_time, session_name || `Session ${session_date}`]
+            );
 
             res.status(201).json({
                 message: 'Attendance session created successfully',
                 session_id: result.insertId,
                 session_date,
                 start_time,
-                session_name: session_name || `Session ${session_date}`
+                session_name: session_name || `Session ${session_date}`,
+                class_id: courseSection.class_id   // 👈 thêm class_id vào response
             });
         } catch (error) {
             console.error('Create attendance session error:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+
 
     // Lấy danh sách sessions
     async getAttendanceSessions(req, res) {
@@ -646,59 +658,59 @@ class AttendanceController {
         }
     }
 
-    // Lấy sessions của teacher
-    async getMySessions(req, res) {
-        try {
-            const teacher_id = req.user.id;
-            const { page = 1, limit = 20 } = req.query;
-            const offset = (page - 1) * limit;
+    // // Lấy sessions của teacher
+    // async getMySessions(req, res) {
+    //     try {
+    //         const teacher_id = req.user.id;
+    //         const { page = 1, limit = 20 } = req.query;
+    //         const offset = (page - 1) * limit;
 
-            const [sessions] = await db.execute(
-                `SELECT 
-                    ats.id,
-                    ats.session_name,
-                    ats.session_date,
-                    ats.start_time,
-                    ats.end_time,
-                    ats.is_active,
-                    s.name as subject_name,
-                    c.name as class_name,
-                    cs.name as course_section_name,
-                    COUNT(a.id) as total_attendance
-                FROM attendance_sessions ats
-                JOIN course_sections cs ON ats.course_section_id = cs.id
-                JOIN subjects s ON cs.subject_id = s.id
-                JOIN classes c ON cs.class_id = c.id
-                LEFT JOIN attendances a ON ats.id = a.session_id
-                WHERE cs.teacher_id = ?
-                GROUP BY ats.id
-                ORDER BY ats.session_date DESC, ats.start_time DESC
-                LIMIT ${limit} OFFSET ${offset}`,
-                [teacher_id]
-            );
+    //         const [sessions] = await db.execute(
+    //             `SELECT 
+    //                 ats.id,
+    //                 ats.session_name,
+    //                 ats.session_date,
+    //                 ats.start_time,
+    //                 ats.end_time,
+    //                 ats.is_active,
+    //                 s.name as subject_name,
+    //                 c.name as class_name,
+    //                 cs.name as course_section_name,
+    //                 COUNT(a.id) as total_attendance
+    //             FROM attendance_sessions ats
+    //             JOIN course_sections cs ON ats.course_section_id = cs.id
+    //             JOIN subjects s ON cs.subject_id = s.id
+    //             JOIN classes c ON cs.class_id = c.id
+    //             LEFT JOIN attendances a ON ats.id = a.session_id
+    //             WHERE cs.teacher_id = ?
+    //             GROUP BY ats.id
+    //             ORDER BY ats.session_date DESC, ats.start_time DESC
+    //             LIMIT ${limit} OFFSET ${offset}`,
+    //             [teacher_id]
+    //         );
 
-            // Get total count
-            const [countResult] = await db.execute(
-                'SELECT COUNT(*) as total FROM attendance_sessions ats JOIN course_sections cs ON ats.course_section_id = cs.id WHERE cs.teacher_id = ?',
-                [teacher_id]
-            );
-            const total = countResult[0].total;
+    //         // Get total count
+    //         const [countResult] = await db.execute(
+    //             'SELECT COUNT(*) as total FROM attendance_sessions ats JOIN course_sections cs ON ats.course_section_id = cs.id WHERE cs.teacher_id = ?',
+    //             [teacher_id]
+    //         );
+    //         const total = countResult[0].total;
 
-            res.json({
-                message: 'Teacher sessions retrieved successfully',
-                sessions,
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total,
-                    totalPages: Math.ceil(total / limit)
-                }
-            });
-        } catch (error) {
-            console.error('Get my sessions error:', error);
-            res.status(500).json({ error: 'Failed to retrieve teacher sessions' });
-        }
-    }
+    //         res.json({
+    //             message: 'Teacher sessions retrieved successfully',
+    //             sessions,
+    //             pagination: {
+    //                 page: parseInt(page),
+    //                 limit: parseInt(limit),
+    //                 total,
+    //                 totalPages: Math.ceil(total / limit)
+    //             }
+    //         });
+    //     } catch (error) {
+    //         console.error('Get my sessions error:', error);
+    //         res.status(500).json({ error: 'Failed to retrieve teacher sessions' });
+    //     }
+    // }
 
     // Kết thúc session
     async endSession(req, res) {
@@ -768,52 +780,6 @@ class AttendanceController {
         } catch (error) {
             console.error('Delete session error:', error);
             res.status(500).json({ error: 'Failed to delete session' });
-        }
-    }
-
-    // Điểm danh thủ công (Teacher only)
-    async markAttendanceManual(req, res) {
-        try {
-            const { session_id, student_id, status } = req.body;
-
-            if (!session_id || !student_id || !status) {
-                return res.status(400).json({ error: 'Missing required fields' });
-            }
-
-            // Kiểm tra session tồn tại
-            const [sessions] = await db.execute(
-                'SELECT * FROM attendance_sessions WHERE id = ?',
-                [session_id]
-            );
-
-            if (sessions.length === 0) {
-                return res.status(404).json({ error: 'Session not found' });
-            }
-
-            // Kiểm tra đã điểm danh chưa
-            const [existing] = await db.execute(
-                'SELECT * FROM attendances WHERE session_id = ? AND student_id = ?',
-                [session_id, student_id]
-            );
-
-            if (existing.length > 0) {
-                // Cập nhật trạng thái
-                await db.execute(
-                    'UPDATE attendances SET status = ? WHERE session_id = ? AND student_id = ?',
-                    [status, session_id, student_id]
-                );
-            } else {
-                // Tạo mới
-                await db.execute(
-                    'INSERT INTO attendances (session_id, student_id, status) VALUES (?, ?, ?)',
-                    [session_id, student_id, status]
-                );
-            }
-
-            res.json({ message: 'Attendance marked successfully' });
-        } catch (error) {
-            console.error('Mark attendance manual error:', error);
-            res.status(500).json({ error: 'Internal server error' });
         }
     }
 
@@ -908,6 +874,7 @@ class AttendanceController {
             SELECT 
                 ats.*,
                 c.name as class_name,
+                cs.class_id,
                 s.name as subject_name,
                 COUNT(a.id) as attendance_count
             FROM attendance_sessions ats
@@ -948,22 +915,22 @@ class AttendanceController {
                     t.full_name as teacher_name
                 FROM attendances a
                 JOIN attendance_sessions ats ON a.session_id = ats.id
-                JOIN schedules sch ON ats.schedule_id = sch.id
-                JOIN classes c ON sch.class_id = c.id
-                JOIN subjects s ON sch.subject_id = s.id
+                JOIN course_sections cs ON ats.course_section_id = cs.id
+                JOIN classes c ON cs.class_id = c.id
+                JOIN subjects s ON cs.subject_id = s.id
                 JOIN users u ON a.student_id = u.id
-                JOIN users t ON sch.teacher_id = t.id
+                JOIN users t ON cs.teacher_id = t.id
                 WHERE 1=1
             `;
             const params = [];
 
             if (class_id) {
-                query += ' AND sch.class_id = ?';
+                query += ' AND cs.class_id = ?';
                 params.push(class_id);
             }
 
             if (subject_id) {
-                query += ' AND sch.subject_id = ?';
+                query += ' AND cs.subject_id = ?';
                 params.push(subject_id);
             }
 
@@ -988,11 +955,261 @@ class AttendanceController {
 
             res.json({
                 message: 'Attendance history retrieved successfully',
-                history
+                data: history
             });
         } catch (error) {
             console.error('Get attendance history error:', error);
             res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Lấy attendance sessions cho course section (cần thiết cho TeacherAttendance.jsx)
+    async getCourseSectionAttendanceSessions(req, res) {
+        try {
+            const { course_section_id } = req.params;
+            const teacher_id = req.user.id;
+
+            // Kiểm tra teacher có quyền truy cập course section này không
+            const [courseSections] = await db.execute(
+                'SELECT * FROM course_sections WHERE id = ? AND teacher_id = ?',
+                [course_section_id, teacher_id]
+            );
+
+            if (courseSections.length === 0) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'You are not authorized to access this course section'
+                });
+            }
+
+            // Lấy danh sách attendance sessions
+            const [sessions] = await db.execute(`
+                SELECT 
+                    ats.*,
+                    c.name as class_name,
+                    c.code as class_code,
+                    s.name as subject_name,
+                    u.full_name as teacher_name,
+                    cs.name as course_section_name,
+                    cs.code as course_section_code,
+                    COUNT(a.id) as attendance_count
+                FROM attendance_sessions ats
+                JOIN course_sections cs ON ats.course_section_id = cs.id
+                JOIN classes c ON cs.class_id = c.id
+                JOIN subjects s ON cs.subject_id = s.id
+                JOIN users u ON cs.teacher_id = u.id
+                LEFT JOIN attendances a ON ats.id = a.session_id
+                WHERE ats.course_section_id = ?
+                GROUP BY ats.id
+                ORDER BY ats.session_date DESC, ats.start_time DESC
+            `, [course_section_id]);
+
+            res.json({
+                success: true,
+                message: 'Course section attendance sessions retrieved successfully',
+                data: sessions
+            });
+        } catch (error) {
+            console.error('Get course section attendance sessions error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy students trong course section (cần thiết cho TeacherAttendance.jsx)
+    async getCourseSectionStudents(req, res) {
+        try {
+            const { course_section_id } = req.params;
+            const teacher_id = req.user.id;
+
+            // Kiểm tra teacher có quyền truy cập course section này không
+            const [courseSections] = await db.execute(
+                'SELECT class_id FROM course_sections WHERE id = ? AND teacher_id = ?',
+                [course_section_id, teacher_id]
+            );
+
+            if (courseSections.length === 0) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'You are not authorized to access this course section'
+                });
+            }
+
+            const class_id = courseSections[0].class_id;
+
+            // Lấy danh sách students trong class
+            const [students] = await db.execute(`
+                SELECT 
+                    u.id,
+                    u.username,
+                    u.full_name,
+                    u.email,
+                    u.is_active,
+                    u.face_trained,
+                    cs.student_code
+                FROM users u
+                JOIN class_students cs ON u.id = cs.student_id
+                WHERE cs.class_id = ? AND u.role = 'student' AND u.is_active = TRUE
+                ORDER BY cs.student_code, u.full_name
+            `, [class_id]);
+
+            res.json({
+                success: true,
+                message: 'Course section students retrieved successfully',
+                data: students
+            });
+        } catch (error) {
+            console.error('Get course section students error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy course sections của teacher (cần thiết cho TeacherAttendance.jsx)
+    async getCourseSectionsByTeacher(req, res) {
+        try {
+            const { teacher_id } = req.params;
+
+            // Kiểm tra quyền truy cập (chỉ teacher có thể xem course sections của mình hoặc admin)
+            if (req.user.role !== 'admin' && req.user.id != teacher_id) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'You are not authorized to access this data'
+                });
+            }
+
+            const [courseSections] = await db.execute(`
+                SELECT 
+                    cs.*,
+                    c.name as class_name,
+                    c.code as class_code,
+                    s.name as subject_name,
+                    s.code as subject_code,
+                    u.full_name as teacher_name,
+                    COUNT(cls.student_id) as student_count
+                FROM course_sections cs
+                JOIN classes c ON cs.class_id = c.id
+                JOIN subjects s ON cs.subject_id = s.id
+                JOIN users u ON cs.teacher_id = u.id
+                LEFT JOIN class_students cls ON c.id = cls.class_id
+                WHERE cs.teacher_id = ? AND cs.is_active = TRUE
+                GROUP BY cs.id
+                ORDER BY cs.semester DESC, cs.academic_year DESC, c.name
+            `, [teacher_id]);
+
+            res.json({
+                success: true,
+                message: 'Teacher course sections retrieved successfully',
+                data: courseSections
+            });
+        } catch (error) {
+            console.error('Get course sections by teacher error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    }
+
+    // Lấy attendance records cho session cụ thể (cần thiết cho TeacherAttendance.jsx)
+    async getSessionAttendanceRecords(req, res) {
+        try {
+            const { session_id } = req.params;
+            const teacher_id = req.user.id;
+
+            // Kiểm tra session có tồn tại và teacher có quyền truy cập không
+            const [sessions] = await db.execute(`
+                SELECT ats.*, cs.teacher_id 
+                FROM attendance_sessions ats
+                JOIN course_sections cs ON ats.course_section_id = cs.id
+                WHERE ats.id = ?
+            `, [session_id]);
+
+            if (sessions.length === 0) {
+                return res.status(404).json({ 
+                    success: false,
+                    error: 'Attendance session not found' 
+                });
+            }
+
+            const session = sessions[0];
+            
+            // Kiểm tra quyền truy cập (chỉ teacher của course section hoặc admin)
+            if (req.user.role !== 'admin' && session.teacher_id != teacher_id) {
+                return res.status(403).json({ 
+                    success: false,
+                    error: 'You are not authorized to access this session' 
+                });
+            }
+
+            // Lấy attendance records cho session này
+            const [attendanceRecords] = await db.execute(`
+                SELECT 
+                    a.*,
+                    u.full_name as student_name,
+                    u.username as student_code,
+                    u.email as student_email,
+                    cs.student_code as class_student_code
+                FROM attendances a
+                JOIN users u ON a.student_id = u.id
+                LEFT JOIN class_students cs ON u.id = cs.student_id AND cs.class_id = (
+                    SELECT c.id FROM course_sections css 
+                    JOIN classes c ON css.class_id = c.id 
+                    WHERE css.id = ?
+                )
+                WHERE a.session_id = ?
+                ORDER BY cs.student_code, u.full_name
+            `, [session.course_section_id, session_id]);
+
+            // Lấy thông tin session details
+            const [sessionDetails] = await db.execute(`
+                SELECT 
+                    ats.*,
+                    cs.name as course_section_name,
+                    cs.code as course_section_code,
+                    c.name as class_name,
+                    c.code as class_code,
+                    s.name as subject_name,
+                    s.code as subject_code,
+                    u.full_name as teacher_name
+                FROM attendance_sessions ats
+                JOIN course_sections cs ON ats.course_section_id = cs.id
+                JOIN classes c ON cs.class_id = c.id
+                JOIN subjects s ON cs.subject_id = s.id
+                JOIN users u ON cs.teacher_id = u.id
+                WHERE ats.id = ?
+            `, [session_id]);
+
+            // Tính toán thống kê
+            const totalRecords = attendanceRecords.length;
+            const presentCount = attendanceRecords.filter(record => record.status === 'present').length;
+            const absentCount = totalRecords - presentCount;
+            const attendanceRate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0;
+
+            res.json({
+                success: true,
+                message: 'Session attendance records retrieved successfully',
+                data: {
+                    session: sessionDetails[0] || null,
+                    attendanceRecords: attendanceRecords,
+                    statistics: {
+                        total: totalRecords,
+                        present: presentCount,
+                        absent: absentCount,
+                        attendanceRate: attendanceRate
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Get session attendance records error:', error);
+            res.status(500).json({ 
+                success: false,
+                error: 'Internal server error' 
+            });
         }
     }
 }

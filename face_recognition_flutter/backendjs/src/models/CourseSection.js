@@ -262,7 +262,7 @@ class CourseSection {
         try {
             const [rows] = await db.execute(`
                 SELECT * FROM attendance_sessions 
-                WHERE course_section_id = ? AND is_active = TRUE
+                WHERE course_section_id = ?
                 ORDER BY session_date DESC, start_time DESC
             `, [courseSectionId]);
 

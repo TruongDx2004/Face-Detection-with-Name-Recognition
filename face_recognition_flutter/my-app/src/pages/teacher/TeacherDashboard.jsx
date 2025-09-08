@@ -457,7 +457,7 @@ const SessionDetailModal = ({ session, onClose, showNotification, onSessionEnd }
       const response = await ApiService.getSessionAttendance(session.id);
       if (response.success) {
         setAttendanceData(response.data);
-        console.log("ddd" + session);
+        console.log(session);
         const studentsResponse = await ApiService.getClassStudents(session.class_id);
         if (studentsResponse.success) {
           setAvailableStudents(studentsResponse.data.students || []);

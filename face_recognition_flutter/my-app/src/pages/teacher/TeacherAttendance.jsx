@@ -502,7 +502,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
     >
       <div style={styles.sessionHeader}>
         <div style={styles.sessionTitle}>
-          <h4>{session.title || `Buổi ${session.session_number || 'N/A'}`}</h4>
+          <h4>{session.title || `Buổi ${session.session_name || 'N/A'}`}</h4>
           <span style={{...styles.sessionStatus, color: status.color}}>
             {status.text}
           </span>
@@ -520,7 +520,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
               <i className="fas fa-play"></i>
             </button>
           )}
-          {(session.status === 'active' || session.is_active) && (
+          {(session.status === 'active' || session.is_active === 1) && (
             <button
               style={{...styles.actionButton, backgroundColor: '#ef4444'}}
               onClick={(e) => {
@@ -693,12 +693,12 @@ const CreateSessionModal = ({ show, onClose, onSubmit, classInfo }) => {
   return (
     <div style={styles.modalOverlay}>
       <div style={styles.modal}>
-        <div style={styles.modalHeader}>
+        {/* <div style={styles.modalHeader}>
           <h3>Tạo phiên điểm danh mới</h3>
           <button style={styles.closeButton} onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
-        </div>
+        </div> */}
         
         <form onSubmit={handleSubmit} style={styles.modalForm}>
           <div style={styles.formGroup}>
@@ -841,7 +841,6 @@ const TeacherAttendance = () => {
         return;
       }
       setUser(profileResponse.data);
-      console.log(user);
       const teacherId = profileResponse.data.id;
       
       // Get course sections for the current teacher
@@ -869,6 +868,7 @@ const TeacherAttendance = () => {
     try {
       setLoading(true);
       const response = await ApiService.getCourseSectionAttendanceSessions(courseSectionId);
+      console.log(response);
       if (response.success) {
         setAttendanceSessions(response.data || []);
       } else {
@@ -898,9 +898,10 @@ const TeacherAttendance = () => {
   const loadAttendanceRecords = async (sessionId) => {
     try {
       setLoading(true);
-      const response = await ApiService.getSessionAttendance(sessionId);
+      const response = await ApiService.getSessionAttendanceRecords(sessionId);
+      console.log('Attendance Records Response:', response);
       if (response.success) {
-        setAttendanceRecords(response.data || []);
+        setAttendanceRecords(response.data.attendanceRecords || []);
       } else {
         showNotification('Không thể tải dữ liệu điểm danh', 'error');
       }
@@ -1121,13 +1122,13 @@ const TeacherAttendance = () => {
               <i className="fas fa-calendar-check"></i>
               Phiên điểm danh - {selectedCourseSection.class_name || selectedCourseSection.name} ({attendanceSessions.length})
             </h2>
-            <button
+            {/* <button
               style={{ ...styles.button, ...styles.buttonPrimary }}
               onClick={() => setShowCreateModal(true)}
             >
               <i className="fas fa-plus"></i>
               Tạo phiên mới
-            </button>
+            </button> */}
           </div>
 
           {attendanceSessions.length === 0 ? (
@@ -1178,7 +1179,7 @@ const TeacherAttendance = () => {
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>
               <i className="fas fa-list-check"></i>
-              Chi tiết điểm danh - {selectedSession.title || `Buổi ${selectedSession.session_number}`}
+              Chi tiết điểm danh - {selectedSession.title || `Buổi ${selectedSession.session_name}`}
             </h2>
           </div>
           
