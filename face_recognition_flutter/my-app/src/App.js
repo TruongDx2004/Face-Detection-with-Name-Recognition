@@ -13,6 +13,7 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ScheduleManagement from './pages/ScheduleManagement';
 import ClassDetail from './pages/teacher/ClassDetail';
 import TeacherSchedules from './pages/teacher/TeacherSchedules';
+import TeacherAttendance from './pages/teacher/TeacherAttendance';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -38,7 +39,7 @@ function App() {
         <Route path="/teacher/classes" element={<ClassDetail />} />
         <Route path="/teacher/classes/:classId" element={<ClassDetail />} />
         <Route path="/teacher/schedules" element={<TeacherSchedules />} />
-
+        <Route path="/teacher/attendance" element={<TeacherAttendance />} />
       </Routes>
     </BrowserRouter>
   );
