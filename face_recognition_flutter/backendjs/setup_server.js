@@ -239,6 +239,142 @@ async function setupDatabase() {
                 image_path VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng bài tập
+            `CREATE TABLE IF NOT EXISTS assignments (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                course_section_id INT NOT NULL,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                assignment_type ENUM('homework', 'project', 'lab', 'essay') DEFAULT 'homework',
+                max_score DECIMAL(5,2) DEFAULT 10.00,
+                due_date DATETIME NOT NULL,
+                created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
+                instructions TEXT,
+                attachment_path VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng nộp bài tập của sinh viên
+            `CREATE TABLE IF NOT EXISTS assignment_submissions (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                assignment_id INT NOT NULL,
+                student_id INT NOT NULL,
+                submission_text TEXT,
+                attachment_path VARCHAR(255),
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                score DECIMAL(5,2) NULL,
+                feedback TEXT,
+                graded_at TIMESTAMP NULL,
+                graded_by INT NULL,
+                status ENUM('submitted', 'graded', 'late', 'missing') DEFAULT 'submitted',
+                UNIQUE KEY unique_submission (assignment_id, student_id),
+                FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+                FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
+            )`,
+
+            // Bảng bài kiểm tra/thi
+            `CREATE TABLE IF NOT EXISTS exams (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                course_section_id INT NOT NULL,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                exam_type ENUM('quiz', 'midterm', 'final', 'practical') DEFAULT 'quiz',
+                max_score DECIMAL(5,2) DEFAULT 10.00,
+                duration_minutes INT DEFAULT 60,
+                exam_date DATETIME NOT NULL,
+                start_time TIME NOT NULL,
+                end_time TIME NOT NULL,
+                is_active BOOLEAN DEFAULT TRUE,
+                instructions TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng câu hỏi thi
+            `CREATE TABLE IF NOT EXISTS exam_questions (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                exam_id INT NOT NULL,
+                question_text TEXT NOT NULL,
+                question_type ENUM('multiple_choice', 'true_false', 'short_answer', 'essay') DEFAULT 'multiple_choice',
+                points DECIMAL(4,2) DEFAULT 1.00,
+                question_order INT DEFAULT 1,
+                correct_answer TEXT,
+                options JSON NULL COMMENT 'For multiple choice questions',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng kết quả thi của sinh viên
+            `CREATE TABLE IF NOT EXISTS exam_results (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                exam_id INT NOT NULL,
+                student_id INT NOT NULL,
+                start_time TIMESTAMP NULL,
+                end_time TIMESTAMP NULL,
+                score DECIMAL(5,2) NULL,
+                total_score DECIMAL(5,2) NOT NULL,
+                status ENUM('not_started', 'in_progress', 'completed', 'graded') DEFAULT 'not_started',
+                submitted_at TIMESTAMP NULL,
+                graded_at TIMESTAMP NULL,
+                graded_by INT NULL,
+                UNIQUE KEY unique_exam_result (exam_id, student_id),
+                FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+                FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
+            )`,
+
+            // Bảng câu trả lời của sinh viên
+            `CREATE TABLE IF NOT EXISTS exam_answers (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                exam_result_id INT NOT NULL,
+                question_id INT NOT NULL,
+                student_answer TEXT,
+                is_correct BOOLEAN NULL,
+                points_earned DECIMAL(4,2) DEFAULT 0.00,
+                answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_answer (exam_result_id, question_id),
+                FOREIGN KEY (exam_result_id) REFERENCES exam_results(id) ON DELETE CASCADE,
+                FOREIGN KEY (question_id) REFERENCES exam_questions(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng sổ điểm tổng hợp
+            `CREATE TABLE IF NOT EXISTS gradebook (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                course_section_id INT NOT NULL,
+                student_id INT NOT NULL,
+                assignment_avg DECIMAL(5,2) DEFAULT 0.00,
+                exam_avg DECIMAL(5,2) DEFAULT 0.00,
+                attendance_score DECIMAL(5,2) DEFAULT 0.00,
+                final_score DECIMAL(5,2) DEFAULT 0.00,
+                letter_grade ENUM('A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F') NULL,
+                gpa_points DECIMAL(3,2) DEFAULT 0.00,
+                is_passed BOOLEAN DEFAULT FALSE,
+                calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_gradebook (course_section_id, student_id),
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE,
+                FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+
+            // Bảng cấu hình điểm số
+            `CREATE TABLE IF NOT EXISTS grade_configurations (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                course_section_id INT NOT NULL,
+                assignment_weight DECIMAL(5,2) DEFAULT 30.00 COMMENT 'Tỷ trọng điểm bài tập (%)',
+                exam_weight DECIMAL(5,2) DEFAULT 60.00 COMMENT 'Tỷ trọng điểm thi (%)',
+                attendance_weight DECIMAL(5,2) DEFAULT 10.00 COMMENT 'Tỷ trọng điểm chuyên cần (%)',
+                passing_score DECIMAL(5,2) DEFAULT 5.00 COMMENT 'Điểm đậu tối thiểu',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_grade_config (course_section_id),
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
             )`
         ];
 
