@@ -507,7 +507,7 @@ class ApiService {
         response,
         (data) {
           final List<dynamic> recordsList;
-          recordsList = data['attendance'] ?? data['data'] ?? [];
+          recordsList = data['attendance'] ?? data['data'] ?? data['records'] ?? [];
           return recordsList.map((item) => Attendance.fromJson(item)).toList();
         },
       );

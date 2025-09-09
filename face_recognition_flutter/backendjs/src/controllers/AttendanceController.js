@@ -617,6 +617,7 @@ class AttendanceController {
                     a.id,
                     a.status,
                     a.attendance_time as marked_at,
+                    a.session_id,
                     ats.session_name,
                     ats.session_date,
                     ats.start_time,

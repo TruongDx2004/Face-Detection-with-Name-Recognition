@@ -4,7 +4,7 @@ import 'package:logger/logger.dart';
 import '../../models/models.dart';
 import '../../models/attendance_models.dart';
 import '../../services/api_service.dart';
-import '../../utils/logout_helper.dart';
+import '../../utils/logout_helper.dart' as logout_helper;
 import 'face_capture_screen.dart';
 import 'student_schedule.dart';
 
@@ -186,7 +186,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
           IconButton(
-            onPressed: () => logout(context),
+            onPressed: () => logout_helper.logout(context),
             icon: const Icon(
               Icons.logout,
               color: Colors.white,
@@ -218,7 +218,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         final totalSubjects = schedules.length;
         final attendanceRate = attendanceHistory.isEmpty 
             ? 0.0 
-            : (attendanceHistory.where((a) => a.status == 'present').length / attendanceHistory.length * 100);
+            : (attendanceHistory.where((a) => a.status == AttendanceStatus.present).length / attendanceHistory.length * 100);
         final pendingSessions = activeSessions.length;
 
         return Row(
@@ -672,7 +672,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildActivityItem(Attendance attendance) {
-    final isPresent = attendance.status == 'present';
+    final isPresent = attendance.status == AttendanceStatus.present;
     final statusColor = isPresent ? const Color(0xFF4CAF50) : const Color(0xFFFF5722);
     final statusIcon = isPresent ? Icons.check_circle : Icons.cancel;
     final statusText = isPresent ? 'Có mặt' : 'Vắng mặt';
@@ -712,7 +712,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Điểm danh - ${attendance.sessionId}',
+                  'Điểm danh - ${attendance.sessionName ?? 'Phiên ${attendance.sessionId}'}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

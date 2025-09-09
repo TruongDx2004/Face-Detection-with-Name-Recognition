@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:location/location.dart' as loc;
 // ignore: unused_import
 import 'package:logger/logger.dart';
-final Logger _logger = Logger();
 
 /// Enum cho trạng thái điểm danh
 enum AttendanceStatus {
@@ -114,7 +113,6 @@ class AttendanceSession {
   String get subject => subjectName ?? '';
   
   factory AttendanceSession.fromJson(Map<String, dynamic> json) {
-    _logger.e('Lỗi khi khởi tạo json: $json');
     if (json['id'] == null ||
         json['course_section_id'] == null ||
         json['session_date'] == null ||
@@ -255,12 +253,10 @@ class Attendance {
       attendanceTime = DateTime.tryParse(json['marked_at'] as String);
     }
     
-    if (attendanceTime == null) {
-      attendanceTime = DateTime.now(); // fallback
-    }
+    attendanceTime ??= DateTime.now();
 
     return Attendance(
-      id: (json['id'] ?? 0) as int,
+      id: int.tryParse(json['id'].toString()) ?? 0,
       sessionId: (json['session_id'] ?? 0) as int,
       studentId: json['student_id'] != null ? (json['student_id'] as int) : 0,
       attendanceTime: attendanceTime,

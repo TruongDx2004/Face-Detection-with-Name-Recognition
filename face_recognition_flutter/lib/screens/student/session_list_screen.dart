@@ -93,84 +93,495 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          widget.courseSectionName,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: CustomScrollView(
+        slivers: [
+          // Modern app bar with gradient
+          SliverAppBar(
+            expandedHeight: 50,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: const Color(0xFF667eea),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                widget.courseSectionName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF667eea),
+                      Color(0xFF764ba2),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                onPressed: () {
+                  setState(() {
+                    _sessionsFuture = _fetchSessions(widget.courseSectionId);
+                  });
+                },
+                tooltip: 'Làm mới',
+              ),
+            ],
           ),
-        ),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () {
-              setState(() {
-                _sessionsFuture = _fetchSessions(widget.courseSectionId);
-              });
-            },
-            tooltip: 'Làm mới',
+          
+          // Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeaderInfo(),
+                  const SizedBox(height: 24),
+                  _buildSessionsList(),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: FutureBuilder<List<AttendanceSession>>(
-        future: _sessionsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Đang tải danh sách phiên điểm danh...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+    );
+  }
+
+  Widget _buildHeaderInfo() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.class_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Danh sách phiên điểm danh',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
                   ),
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return _buildErrorWidget(snapshot.error.toString());
-          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  _logger.i('Refreshing session list');
-                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
-                });
-              },
-              color: Colors.blue[600],
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  final session = snapshot.data![index];
-                  return _buildSessionCard(session);
-                },
-              ),
-            );
-          } else {
-            return _buildEmptyState();
-          }
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Chọn phiên để thực hiện điểm danh',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionsList() {
+    return FutureBuilder<List<AttendanceSession>>(
+      future: _sessionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingState();
+        } else if (snapshot.hasError) {
+          return _buildErrorWidget(snapshot.error.toString());
+        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          return _buildSessionsGrid(snapshot.data!);
+        } else {
+          return _buildEmptyState();
+        }
+      },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: const Column(
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Đang tải danh sách phiên điểm danh...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionsGrid(List<AttendanceSession> sessions) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {
+          _logger.i('Refreshing session list');
+          _sessionsFuture = _fetchSessions(widget.courseSectionId);
+        });
+      },
+      color: const Color(0xFF667eea),
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: sessions.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          final session = sessions[index];
+          return _buildModernSessionCard(session);
         },
       ),
     );
   }
 
-  /// Widget to build enhanced session card
+  /// Build modern session card
+  Widget _buildModernSessionCard(AttendanceSession session) {
+    final isActive = session.isActive;
+    final statusColor = isActive ? const Color(0xFF10B981) : const Color(0xFF6B7280);
+    final statusBgColor = isActive ? const Color(0xFFECFDF5) : const Color(0xFFF3F4F6);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: isActive ? () => _navigateToAttendance(session) : null,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isActive 
+                            ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                            : [const Color(0xFF6B7280), const Color(0xFF4B5563)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isActive ? Icons.play_circle_outline : Icons.pause_circle_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session.sessionName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatDate(session.sessionDate),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isActive ? 'Đang mở' : 'Đã đóng',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Session details
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        Icons.access_time_outlined,
+                        'Thời gian',
+                        '${session.startTime} - ${session.endTime ?? 'Chưa kết thúc'}',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        Icons.person_outline,
+                        'Giảng viên',
+                        session.teacherName ?? 'Chưa xác định',
+                      ),
+                      if (session.className != null) ...[
+                        const SizedBox(height: 8),
+                        _buildDetailRow(
+                          Icons.class_outlined,
+                          'Lớp học',
+                          session.className!,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                
+                if (isActive) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () => _navigateToAttendance(session),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.face_retouching_natural, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text(
+                            'Thực hiện điểm danh',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: const Color(0xFF6B7280),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$label:',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: Icon(
+              Icons.event_busy,
+              size: 40,
+              color: Colors.grey[400],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Không có phiên điểm danh',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Hiện tại chưa có phiên điểm danh nào cho môn học này.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 40,
+              color: Colors.red[400],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Đã xảy ra lỗi',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _sessionsFuture = _fetchSessions(widget.courseSectionId);
+              });
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Thử lại'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF667eea),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Widget to build enhanced session card (legacy)
+  // ignore: unused_element
   Widget _buildSessionCard(AttendanceSession session) {
     final bool canAttend = session.isActive;
     final DateTime now = DateTime.now();
@@ -444,188 +855,6 @@ class _SessionListScreenState extends State<SessionListScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8.0),
         border: Border.all(color: Colors.grey[200]!),
-      ),
-      // child: Row(
-      //   children: [
-      //     Icon(Icons.groups_rounded, size: 18, color: Colors.blue[600]),
-      //     const SizedBox(width: 8.0),
-      //     Text(
-      //       'Thống kê:',
-      //       style: TextStyle(
-      //         fontSize: 14.0,
-      //         color: Colors.grey[700],
-      //         fontWeight: FontWeight.w500,
-      //       ),
-      //     ),
-      //     const Spacer(),
-      //     if (session.totalStudents != null)
-      //       _buildStatChip(
-      //         'Tổng: ${session.totalStudents}',
-      //         Colors.blue[100]!,
-      //         Colors.blue[700]!,
-      //       ),
-      //     if (session.attendanceCount != null) ...[
-      //       const SizedBox(width: 8.0),
-      //       _buildStatChip(
-      //         'Đã điểm danh: ${session.attendanceCount}',
-      //         Colors.green[100]!,
-      //         Colors.green[700]!,
-      //       ),
-      //     ],
-      //   ],
-      // ),
-    );
-  }
-
-  // /// Widget to build stat chip
-  // Widget _buildStatChip(String text, Color bgColor, Color textColor) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-  //     decoration: BoxDecoration(
-  //       color: bgColor,
-  //       borderRadius: BorderRadius.circular(12.0),
-  //     ),
-  //     child: Text(
-  //       text,
-  //       style: TextStyle(
-  //         fontSize: 12.0,
-  //         fontWeight: FontWeight.w600,
-  //         color: textColor,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  /// Widget for empty state
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(40.0),
-              ),
-              child: Icon(
-                Icons.event_busy_rounded,
-                size: 40,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            const Text(
-              'Không có phiên điểm danh',
-              style: TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              'Hiện tại chưa có phiên điểm danh nào cho môn học này.',
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24.0),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
-                });
-              },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Làm mới'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 12.0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Widget for error state
-  Widget _buildErrorWidget(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(40.0),
-              ),
-              child: Icon(
-                Icons.error_rounded,
-                size: 40,
-                color: Colors.red[400],
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            const Text(
-              'Đã xảy ra lỗi',
-              style: TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              error,
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24.0),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
-                });
-              },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 12.0,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
