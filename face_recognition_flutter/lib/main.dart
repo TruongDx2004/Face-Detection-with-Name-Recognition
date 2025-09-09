@@ -8,8 +8,7 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Mặc dù không trực tiếp dùng ở đây, nhưng AuthService dùng nó
 import 'screens/login_screen.dart';
 import 'screens/student/student_dashboard.dart';
-import 'screens/teacher/teacher_dashboard.dart';
-import 'screens/admin/admin_dashboard.dart';
+//import 'screens/admin/admin_dashboard.dart';
 import 'services/auth_service.dart';
 import 'models/models.dart'; // Đảm bảo đã import các models như UserRole, User
 
@@ -74,10 +73,10 @@ class _MyAppState extends State<MyApp> {
           _initialScreen = StudentDashboardScreen(userId: userId);
           break;
         case UserRole.teacher:
-          _initialScreen = TeacherDashboardScreen(teacherId: userId);
+          //_initialScreen = TeacherDashboardScreen(teacherId: userId);
           break;
         case UserRole.admin:
-          _initialScreen = const AdminDashboardScreen();
+          //_initialScreen = const AdminDashboardScreen();
           break;
       }
     } else {
@@ -119,8 +118,8 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/student_dashboard': (context) => StudentDashboardScreen(userId: ModalRoute.of(context)!.settings.arguments as int),
-        '/teacher_dashboard': (context) => TeacherDashboardScreen(teacherId: ModalRoute.of(context)!.settings.arguments as int),
-        '/admin_dashboard': (context) => const AdminDashboardScreen(),
+        //'/teacher_dashboard': (context) => TeacherDashboardScreen(teacherId: ModalRoute.of(context)!.settings.arguments as int),
+        //'/admin_dashboard': (context) => const AdminDashboardScreen(),
       },
     );
   }

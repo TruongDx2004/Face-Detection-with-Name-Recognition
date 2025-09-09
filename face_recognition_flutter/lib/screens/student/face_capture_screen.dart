@@ -53,7 +53,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   bool _livenessCheckActive = false;
   int _currentChallengeIndex = 0;
   bool _challengeCompleted = false;
-  List<LivenessChallenge> _challenges = [];
+  final List<LivenessChallenge> _challenges = [];
 
   // Animation Controllers
   late AnimationController _pulseAnimationController;
@@ -80,7 +80,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   final LocationService _locationService = LocationService();
   
   // ignore: unused_field
-  bool _locationChecked = false;
+  final bool _locationChecked = false;
    // ignore: unused_field
   Map<String, dynamic>? _locationInfo;
 
@@ -207,7 +207,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
     ];
 
     _challenges.clear();
-    final challengeCount = 2; // Fixed 2 challenges + look straight
+    const challengeCount = 2; // Fixed 2 challenges + look straight
 
     final usedTypes = <LivenessChallengeType>{};
 
@@ -324,7 +324,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           _resetConsecutiveDetections(_challenges[_currentChallengeIndex].type);
         }
       } else {}
-    } catch (e) {
     } finally {
       if (mounted) {
         setState(() {

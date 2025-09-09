@@ -7,6 +7,8 @@ import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 
 class FaceRecognitionTestScreen extends StatefulWidget {
+  const FaceRecognitionTestScreen({super.key});
+
   @override
   _FaceRecognitionTestScreenState createState() => _FaceRecognitionTestScreenState();
 }

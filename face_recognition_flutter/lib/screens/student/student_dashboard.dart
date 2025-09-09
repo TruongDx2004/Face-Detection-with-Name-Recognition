@@ -52,7 +52,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
   /// Fetch schedules
   Future<List<Schedule>> _fetchSchedules() async {
     try {
-      final response = await ApiService().getStudentSchedules();
+      final response = await ApiService().getSchedules();
       if (response.success) {
         return response.data!;
       } else {
@@ -84,7 +84,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
   /// Fetch attendance history
   Future<List<Attendance>> _fetchAttendanceHistory() async {
     try {
-      final response = await ApiService().getAttendanceHistory();
+      final response = await ApiService().getMyAttendance();
       if (response.success) {
         return response.data!;
       } else {
@@ -103,8 +103,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
       MaterialPageRoute(
         builder: (context) => SessionListScreen(
           userId: widget.userId,
-          scheduleId: schedule.id,
-          scheduleName: '${schedule.subjectName} - ${schedule.className}',
+          courseSectionId: schedule.courseSectionId,
+          courseSectionName: '${schedule.subjectName ?? 'Môn học'} - ${schedule.className ?? 'Lớp'}',
           onAttendanceMarked: _refreshData,
         ),
       ),
@@ -127,15 +127,19 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
   /// Get weekday name in Vietnamese
   String _getWeekdayName(int weekday) {
     const weekdays = [
-      'Chủ nhật',
-      'Thứ hai', 
-      'Thứ ba',
-      'Thứ tư',
-      'Thứ năm',
-      'Thứ sáu',
-      'Thứ bảy'
+      '', // Index 0 - not used
+      'Thứ hai',    // Index 1 - Monday
+      'Thứ ba',     // Index 2 - Tuesday
+      'Thứ tư',     // Index 3 - Wednesday
+      'Thứ năm',    // Index 4 - Thursday
+      'Thứ sáu',    // Index 5 - Friday
+      'Thứ bảy',    // Index 6 - Saturday
+      'Chủ nhật'    // Index 7 - Sunday
     ];
-    return weekdays[weekday % 8 - 1];
+    if (weekday >= 1 && weekday <= 7) {
+      return weekdays[weekday];
+    }
+    return 'Không xác định';
   }
 
   @override
@@ -394,7 +398,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        schedule.subjectName,
+                        schedule.subjectName ?? 'Môn học',
                         style: const TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
@@ -404,13 +408,13 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                       const SizedBox(height: 8.0),
                       _buildInfoRow(
                         icon: Icons.class_rounded,
-                        text: schedule.className,
+                        text: schedule.className ?? 'Lớp',
                         color: Colors.grey[600]!,
                       ),
                       const SizedBox(height: 4.0),
                       _buildInfoRow(
                         icon: Icons.person_rounded,
-                        text: schedule.teacherName,
+                        text: schedule.teacherName ?? 'Giáo viên',
                         color: Colors.grey[600]!,
                       ),
                       const SizedBox(height: 4.0),
@@ -419,6 +423,14 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                         text: '${_getWeekdayName(schedule.weekday)}, ${schedule.startTime} - ${schedule.endTime}',
                         color: Colors.blue[600]!,
                       ),
+                      if (schedule.room != null) ...[
+                        const SizedBox(height: 4.0),
+                        _buildInfoRow(
+                          icon: Icons.location_on_rounded,
+                          text: schedule.room!,
+                          color: Colors.orange[600]!,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -485,7 +497,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        session.subject,
+                        session.subjectName ?? session.sessionName,
                         style: const TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
@@ -494,7 +506,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                       ),
                       const SizedBox(height: 4.0),
                       Text(
-                        session.className,
+                        session.className ?? 'Lớp',
                         style: TextStyle(
                           fontSize: 14.0,
                           color: Colors.grey[600],
@@ -509,18 +521,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                     vertical: 6.0,
                   ),
                   decoration: BoxDecoration(
-                    color: (!session.isActive) ? Colors.green[50] : Colors.grey[100],
+                    color: session.isActive ? Colors.green[50] : Colors.grey[100],
                     border: Border.all(
-                      color: (!session.isActive) ? Colors.green[200]! : Colors.grey[300]!,
+                      color: session.isActive ? Colors.green[200]! : Colors.grey[300]!,
                     ),
                     borderRadius: BorderRadius.circular(20.0),
                   ),
                   child: Text(
-                    (!session.isActive) ? 'Đang mở' : 'Đã đóng',
+                    session.isActive ? 'Đang mở' : 'Đã đóng',
                     style: TextStyle(
                       fontSize: 12.0,
                       fontWeight: FontWeight.w600,
-                      color: (!session.isActive) ? Colors.green[700] : Colors.grey[600],
+                      color: session.isActive ? Colors.green[700] : Colors.grey[600],
                     ),
                   ),
                 ),
@@ -555,7 +567,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: (!session.isActive) ? Colors.blue[600] : Colors.grey[400],
+                    backgroundColor: session.isActive ? Colors.blue[600] : Colors.grey[400],
                     foregroundColor: Colors.white,
                     elevation: 2,
                     shape: RoundedRectangleBorder(
@@ -566,10 +578,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                       vertical: 12.0,
                     ),
                   ),
-                  onPressed: (!session.isActive) ? () => _navigateToAttendance(session) : null,
-                  child: const Text(
-                    'Điểm danh',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  onPressed: session.isActive ? () => _navigateToAttendance(session) : null,
+                  child: Text(
+                    session.isActive ? 'Điểm danh' : 'Không khả dụng',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -626,7 +638,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    attendance.subjectName,
+                    attendance.subjectName ?? 'Môn học',
                     style: const TextStyle(
                       fontSize: 16.0,
                       fontWeight: FontWeight.bold,

@@ -7,15 +7,15 @@ import 'face_capture_screen.dart';
 
 class SessionListScreen extends StatefulWidget {
   final int userId;
-  final int scheduleId;
-  final String scheduleName;
+  final int courseSectionId;
+  final String courseSectionName;
   final VoidCallback onAttendanceMarked;
 
   const SessionListScreen({
     super.key,
     required this.userId,
-    required this.scheduleId,
-    required this.scheduleName,
+    required this.courseSectionId,
+    required this.courseSectionName,
     required this.onAttendanceMarked,
   });
 
@@ -30,30 +30,30 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   void initState() {
     super.initState();
-    _sessionsFuture = _fetchSessions(widget.scheduleId);
+    _sessionsFuture = _fetchSessions(widget.courseSectionId);
   }
 
-  /// Fetch sessions for the selected schedule
-  Future<List<AttendanceSession>> _fetchSessions(int scheduleId) async {
-  try {
-    // Gọi API để lấy tất cả các phiên điểm danh.
-    final response = await ApiService().getSessions();
-    if (response.success) {
-      // Lọc danh sách sessions để chỉ lấy những session có scheduleId phù hợp
-      final sessions = response.data!
-          .where((session) => session.scheduleId == scheduleId)
-          .toList();
-      _logger.i('Fetched ${sessions.length} sessions for scheduleId $scheduleId');
-      return sessions;
-    } else {
-      _logger.e('Failed to fetch sessions: ${response.message}');
-      return [];
+  /// Fetch sessions for the selected course section
+  Future<List<AttendanceSession>> _fetchSessions(int courseSectionId) async {
+    try {
+      // Gọi API để lấy tất cả các phiên điểm danh cho course section
+      final response = await ApiService().getSessions();
+      if (response.success) {
+        // Lọc danh sách sessions để chỉ lấy những session có courseSectionId phù hợp
+        final sessions = response.data!
+            .where((session) => session.courseSectionId == courseSectionId)
+            .toList();
+        _logger.i('Fetched ${sessions.length} sessions for courseSectionId $courseSectionId');
+        return sessions;
+      } else {
+        _logger.e('Failed to fetch sessions: ${response.message}');
+        return [];
+      }
+    } catch (e) {
+      _logger.e('Error fetching sessions: $e');
+      throw Exception('Failed to load sessions');
     }
-  } catch (e) {
-    _logger.e('Error fetching sessions: $e');
-    throw Exception('Failed to load sessions');
   }
-}
 
   /// Navigate to attendance screen
   void _navigateToAttendance(AttendanceSession session) {
@@ -66,7 +66,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             widget.onAttendanceMarked();
             // Refresh the session list after attendance
             setState(() {
-              _sessionsFuture = _fetchSessions(widget.scheduleId);
+              _sessionsFuture = _fetchSessions(widget.courseSectionId);
             });
           },
         ),
@@ -96,7 +96,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          widget.scheduleName,
+          widget.courseSectionName,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -115,7 +115,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               setState(() {
-                _sessionsFuture = _fetchSessions(widget.scheduleId);
+                _sessionsFuture = _fetchSessions(widget.courseSectionId);
               });
             },
             tooltip: 'Làm mới',
@@ -149,7 +149,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
               onRefresh: () async {
                 setState(() {
                   _logger.i('Refreshing session list');
-                  _sessionsFuture = _fetchSessions(widget.scheduleId);
+                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
                 });
               },
               color: Colors.blue[600],
@@ -236,7 +236,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              session.subject,
+                              session.sessionName,
                               style: const TextStyle(
                                 fontSize: 18.0,
                                 fontWeight: FontWeight.bold,
@@ -268,7 +268,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                       ),
                       const SizedBox(height: 4.0),
                       Text(
-                        session.className,
+                        session.className ?? "Chưa có tên",
                         style: TextStyle(
                           fontSize: 14.0,
                           color: Colors.grey[600],
@@ -314,7 +314,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                     value: session.teacherName ?? 'Chưa xác định',
                     color: Colors.green[600]!,
                   ),
-                  if (session.totalStudents != null || session.presentCount != null) ...[
+                  if (session.attendanceCount != null || session.totalStudents != null) ...[
                     const SizedBox(height: 12.0),
                     _buildAttendanceStats(session),
                   ],
@@ -464,10 +464,10 @@ class _SessionListScreenState extends State<SessionListScreen> {
               Colors.blue[100]!,
               Colors.blue[700]!,
             ),
-          if (session.presentCount != null) ...[
+          if (session.attendanceCount != null) ...[
             const SizedBox(width: 8.0),
             _buildStatChip(
-              'Có mặt: ${session.presentCount}',
+              'Đã điểm danh: ${session.attendanceCount}',
               Colors.green[100]!,
               Colors.green[700]!,
             ),
@@ -540,7 +540,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             ElevatedButton.icon(
               onPressed: () {
                 setState(() {
-                  _sessionsFuture = _fetchSessions(widget.scheduleId);
+                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
                 });
               },
               icon: const Icon(Icons.refresh_rounded),
@@ -607,7 +607,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             ElevatedButton.icon(
               onPressed: () {
                 setState(() {
-                  _sessionsFuture = _fetchSessions(widget.scheduleId);
+                  _sessionsFuture = _fetchSessions(widget.courseSectionId);
                 });
               },
               icon: const Icon(Icons.refresh_rounded),

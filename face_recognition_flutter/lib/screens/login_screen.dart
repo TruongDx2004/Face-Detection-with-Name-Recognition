@@ -1,12 +1,10 @@
 // lib/screens/login_screen.dart
-import 'package:face_attendance/screens/admin/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'student/student_dashboard.dart';
-import 'teacher/teacher_dashboard.dart';
 // import 'admin_dashboard_screen.dart'; // Màn hình admin dashboard
 
 class LoginScreen extends StatefulWidget {
@@ -46,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
-      final response = await ApiService().login(request);
+      final response = await ApiService().login(request.toJson());
 
       if (response.success && response.data != null) {
         _logger.i('Đăng nhập thành công. Token: ${response.data!.token}');
@@ -90,17 +88,17 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else if (user.role == UserRole.teacher) {
       _logger.d('Navigating to Teacher Dashboard for teacher ID: ${user.id}');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => TeacherDashboardScreen(teacherId: user.id), // Dùng user.id! để đảm bảo không null
-        ),
-      );
+      // Navigator.of(context).pushReplacement(
+      //   MaterialPageRoute(
+      //     builder: (context) => TeacherDashboardScreen(teacherId: user.id), // Dùng user.id! để đảm bảo không null
+      //   ),
+      // );
     } else if (user.role == UserRole.admin) {
       _logger.d('Navigating to Admin Dashboard.');
       // BỎ COMMENT DÒNG NÀY ĐỂ KÍCH HOẠT ĐIỀU HƯỚNG TỚI ADMIN DASHBOARD
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
-      );
+      // Navigator.of(context).pushReplacement(
+      //   MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+      // );
       _showSnackBar('Đăng nhập thành công với quyền Admin', Colors.green);
     }
   }
