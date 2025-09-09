@@ -445,56 +445,56 @@ class _SessionListScreenState extends State<SessionListScreen> {
         borderRadius: BorderRadius.circular(8.0),
         border: Border.all(color: Colors.grey[200]!),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.groups_rounded, size: 18, color: Colors.blue[600]),
-          const SizedBox(width: 8.0),
-          Text(
-            'Thống kê:',
-            style: TextStyle(
-              fontSize: 14.0,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          if (session.totalStudents != null)
-            _buildStatChip(
-              'Tổng: ${session.totalStudents}',
-              Colors.blue[100]!,
-              Colors.blue[700]!,
-            ),
-          if (session.attendanceCount != null) ...[
-            const SizedBox(width: 8.0),
-            _buildStatChip(
-              'Đã điểm danh: ${session.attendanceCount}',
-              Colors.green[100]!,
-              Colors.green[700]!,
-            ),
-          ],
-        ],
-      ),
+      // child: Row(
+      //   children: [
+      //     Icon(Icons.groups_rounded, size: 18, color: Colors.blue[600]),
+      //     const SizedBox(width: 8.0),
+      //     Text(
+      //       'Thống kê:',
+      //       style: TextStyle(
+      //         fontSize: 14.0,
+      //         color: Colors.grey[700],
+      //         fontWeight: FontWeight.w500,
+      //       ),
+      //     ),
+      //     const Spacer(),
+      //     if (session.totalStudents != null)
+      //       _buildStatChip(
+      //         'Tổng: ${session.totalStudents}',
+      //         Colors.blue[100]!,
+      //         Colors.blue[700]!,
+      //       ),
+      //     if (session.attendanceCount != null) ...[
+      //       const SizedBox(width: 8.0),
+      //       _buildStatChip(
+      //         'Đã điểm danh: ${session.attendanceCount}',
+      //         Colors.green[100]!,
+      //         Colors.green[700]!,
+      //       ),
+      //     ],
+      //   ],
+      // ),
     );
   }
 
-  /// Widget to build stat chip
-  Widget _buildStatChip(String text, Color bgColor, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12.0,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-    );
-  }
+  // /// Widget to build stat chip
+  // Widget _buildStatChip(String text, Color bgColor, Color textColor) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+  //     decoration: BoxDecoration(
+  //       color: bgColor,
+  //       borderRadius: BorderRadius.circular(12.0),
+  //     ),
+  //     child: Text(
+  //       text,
+  //       style: TextStyle(
+  //         fontSize: 12.0,
+  //         fontWeight: FontWeight.w600,
+  //         color: textColor,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   /// Widget for empty state
   Widget _buildEmptyState() {

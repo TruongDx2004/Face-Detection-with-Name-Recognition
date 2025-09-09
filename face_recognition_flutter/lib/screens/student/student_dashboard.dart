@@ -1,71 +1,48 @@
-// lib/screens/student_dashboard.dart
-import 'package:face_attendance/models/subject.dart';
-import 'package:face_attendance/utils/logout_helper.dart';
+// lib/screens/student/student_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../models/models.dart';
 import '../../models/attendance_models.dart';
 import '../../services/api_service.dart';
+import '../../utils/logout_helper.dart';
 import 'face_capture_screen.dart';
-import 'session_list_screen.dart';
+import 'student_schedule.dart';
 
-class StudentDashboardScreen extends StatefulWidget {
+class StudentDashboard extends StatefulWidget {
   final int userId;
+  final String userName;
 
-  const StudentDashboardScreen({super.key, required this.userId});
+  const StudentDashboard({
+    super.key, 
+    required this.userId,
+    required this.userName,
+  });
 
   @override
-  State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
+  State<StudentDashboard> createState() => _StudentDashboardState();
 }
 
-class _StudentDashboardScreenState extends State<StudentDashboardScreen>
-    with SingleTickerProviderStateMixin {
+class _StudentDashboardState extends State<StudentDashboard> {
   final Logger _logger = Logger();
-  late TabController _tabController;
   
-  late Future<List<Schedule>> _schedulesFuture;
   late Future<List<AttendanceSession>> _activeSessionsFuture;
   late Future<List<Attendance>> _attendanceHistoryFuture;
+  late Future<List<Schedule>> _schedulesFuture;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _refreshData();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  /// Refresh data for all tabs
   void _refreshData() {
     setState(() {
-      _schedulesFuture = _fetchSchedules();
       _activeSessionsFuture = _fetchActiveSessions();
       _attendanceHistoryFuture = _fetchAttendanceHistory();
+      _schedulesFuture = _fetchSchedules();
     });
   }
 
-  /// Fetch schedules
-  Future<List<Schedule>> _fetchSchedules() async {
-    try {
-      final response = await ApiService().getSchedules();
-      if (response.success) {
-        return response.data!;
-      } else {
-        _logger.e('Failed to fetch schedules: ${response.message}');
-        return [];
-      }
-    } catch (e) {
-      _logger.e('Error fetching schedules: $e');
-      throw Exception('Failed to load schedules');
-    }
-  }
-
-  /// Fetch active sessions
   Future<List<AttendanceSession>> _fetchActiveSessions() async {
     try {
       final response = await ApiService().getActiveSessions();
@@ -77,11 +54,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
       }
     } catch (e) {
       _logger.e('Error fetching active sessions: $e');
-      throw Exception('Failed to load active sessions');
+      return [];
     }
   }
 
-  /// Fetch attendance history
   Future<List<Attendance>> _fetchAttendanceHistory() async {
     try {
       final response = await ApiService().getMyAttendance();
@@ -93,762 +69,744 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
       }
     } catch (e) {
       _logger.e('Error fetching attendance history: $e');
-      throw Exception('Failed to load attendance history');
+      return [];
     }
   }
 
-  /// Navigate to session list for a schedule
-  void _navigateToSessionList(Schedule schedule) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SessionListScreen(
-          userId: widget.userId,
-          courseSectionId: schedule.courseSectionId,
-          courseSectionName: '${schedule.subjectName ?? 'Môn học'} - ${schedule.className ?? 'Lớp'}',
-          onAttendanceMarked: _refreshData,
-        ),
-      ),
-    );
-  }
-
-  /// Navigate to attendance screen
-  void _navigateToAttendance(AttendanceSession session) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FaceCaptureScreen(
-          userId: widget.userId,
-          sessionId: session.id,
-          onFaceTrained: _refreshData,
-        ),
-      ),
-    );
-  }
-
-  /// Get weekday name in Vietnamese
-  String _getWeekdayName(int weekday) {
-    const weekdays = [
-      '', // Index 0 - not used
-      'Thứ hai',    // Index 1 - Monday
-      'Thứ ba',     // Index 2 - Tuesday
-      'Thứ tư',     // Index 3 - Wednesday
-      'Thứ năm',    // Index 4 - Thursday
-      'Thứ sáu',    // Index 5 - Friday
-      'Thứ bảy',    // Index 6 - Saturday
-      'Chủ nhật'    // Index 7 - Sunday
-    ];
-    if (weekday >= 1 && weekday <= 7) {
-      return weekdays[weekday];
+  Future<List<Schedule>> _fetchSchedules() async {
+    try {
+      final response = await ApiService().getSchedules();
+      if (response.success) {
+        return response.data!;
+      } else {
+        _logger.e('Failed to fetch schedules: ${response.message}');
+        return [];
+      }
+    } catch (e) {
+      _logger.e('Error fetching schedules: $e');
+      return [];
     }
-    return 'Không xác định';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 120,
-              floating: false,
-              pinned: true,
-              elevation: 0,
-              backgroundColor: Colors.blue[600],
-              flexibleSpace: FlexibleSpaceBar(
-                title: const Text(
-                  'Bảng điều khiển sinh viên',
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            _refreshData();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 24),
+                _buildQuickStats(),
+                const SizedBox(height: 24),
+                _buildMainFeatures(),
+                const SizedBox(height: 24),
+                _buildRecentActivity(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF667eea).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Icon(
+              Icons.person,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Xin chào!',
                   style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.userName,
+                  style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.blue[400]!,
-                        Colors.blue[600]!,
-                      ],
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  'Học sinh',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
                   ),
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                  onPressed: _refreshData,
-                  tooltip: 'Làm mới',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                  onPressed: () => logout(context),
-                  tooltip: 'Đăng xuất',
                 ),
               ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(60),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: Colors.blue[600],
-                    indicatorWeight: 3,
-                    labelColor: Colors.blue[600],
-                    unselectedLabelColor: Colors.grey[500],
-                    labelStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    tabs: const [
-                      Tab(
-                        icon: Icon(Icons.schedule_rounded, size: 20),
-                        text: 'Thời khóa biểu',
-                      ),
-                      Tab(
-                        icon: Icon(Icons.class_rounded, size: 20),
-                        text: 'Phiên điểm danh',
-                      ),
-                      Tab(
-                        icon: Icon(Icons.history_rounded, size: 20),
-                        text: 'Lịch sử',
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+          ),
+          IconButton(
+            onPressed: () => logout(context),
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([
+        _activeSessionsFuture,
+        _attendanceHistoryFuture,
+        _schedulesFuture,
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildStatsLoading();
+        }
+
+        final activeSessions = snapshot.data?[0] as List<AttendanceSession>? ?? [];
+        final attendanceHistory = snapshot.data?[1] as List<Attendance>? ?? [];
+        final schedules = snapshot.data?[2] as List<Schedule>? ?? [];
+
+        // Tính toán thống kê
+        final totalSubjects = schedules.length;
+        final attendanceRate = attendanceHistory.isEmpty 
+            ? 0.0 
+            : (attendanceHistory.where((a) => a.status == 'present').length / attendanceHistory.length * 100);
+        final pendingSessions = activeSessions.length;
+
+        return Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.book,
+                title: 'Môn học',
+                value: totalSubjects.toString(),
+                color: const Color(0xFF4CAF50),
               ),
             ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.check_circle,
+                title: 'Tỷ lệ điểm danh',
+                value: '${attendanceRate.toStringAsFixed(1)}%',
+                color: const Color(0xFF2196F3),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.schedule,
+                title: 'Phiên chờ',
+                value: pendingSessions.toString(),
+                color: const Color(0xFFFF9800),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatsLoading() {
+    return Row(
+      children: [
+        Expanded(child: _buildStatCardLoading()),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatCardLoading()),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatCardLoading()),
+      ],
+    );
+  }
+
+  Widget _buildStatCardLoading() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: 60,
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainFeatures() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Chức năng chính',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2D3748),
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.1,
           children: [
-            _buildSchedulesTab(),
-            _buildActiveSessionsTab(),
-            _buildAttendanceHistoryTab(),
+            _buildFeatureCard(
+              icon: Icons.schedule,
+              title: 'Lịch học',
+              subtitle: 'Xem thời khóa biểu',
+              color: const Color(0xFF667eea),
+              onTap: () => _navigateToSchedule(),
+            ),
+            _buildFeatureCard(
+              icon: Icons.face,
+              title: 'Điểm danh',
+              subtitle: 'Điểm danh khuôn mặt',
+              color: const Color(0xFF4CAF50),
+              onTap: () => _navigateToAttendance(),
+            ),
+            _buildFeatureCard(
+              icon: Icons.assignment,
+              title: 'Bài tập',
+              subtitle: 'Quản lý bài tập',
+              color: const Color(0xFFFF9800),
+              onTap: () => _navigateToAssignments(),
+            ),
+            _buildFeatureCard(
+              icon: Icons.grade,
+              title: 'Điểm số',
+              subtitle: 'Xem kết quả học tập',
+              color: const Color(0xFFE91E63),
+              onTap: () => _navigateToGrades(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Widget for Schedules tab
-  Widget _buildSchedulesTab() {
-    return FutureBuilder<List<Schedule>>(
-      future: _schedulesFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        } else if (snapshot.hasError) {
-          return _buildErrorWidget('Lỗi: ${snapshot.error}');
-        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async => _refreshData(),
-            color: Colors.blue[600],
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final schedule = snapshot.data![index];
-                return _buildScheduleCard(schedule);
-              },
+  Widget _buildRecentActivity() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Hoạt động gần đây',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
             ),
-          );
-        } else {
-          return _buildEmptyState(
-            icon: Icons.schedule_rounded,
-            title: 'Không có thời khóa biểu',
-            subtitle: 'Hiện tại chưa có lịch học nào được xếp cho bạn.',
-          );
-        }
-      },
+            TextButton(
+              onPressed: () => _navigateToAttendanceHistory(),
+              child: const Text(
+                'Xem tất cả',
+                style: TextStyle(
+                  color: Color(0xFF667eea),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<List<Attendance>>(
+          future: _attendanceHistoryFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildActivityLoading();
+            }
+
+            if (snapshot.hasError) {
+              return _buildActivityError();
+            }
+
+            final attendanceList = snapshot.data ?? [];
+            if (attendanceList.isEmpty) {
+              return _buildEmptyActivity();
+            }
+
+            // Lấy 3 hoạt động gần đây nhất
+            final recentActivities = attendanceList.take(3).toList();
+
+            return Column(
+              children: recentActivities
+                  .map((attendance) => _buildActivityItem(attendance))
+                  .toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 
-  /// Widget for Active Sessions tab
-  Widget _buildActiveSessionsTab() {
-    return FutureBuilder<List<AttendanceSession>>(
-      future: _activeSessionsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        } else if (snapshot.hasError) {
-          return _buildErrorWidget('Lỗi: ${snapshot.error}');
-        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async => _refreshData(),
-            color: Colors.blue[600],
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final session = snapshot.data![index];
-                return _buildSessionCard(session);
-              },
-            ),
-          );
-        } else {
-          return _buildEmptyState(
-            icon: Icons.class_rounded,
-            title: 'Không có phiên điểm danh',
-            subtitle: 'Hiện không có phiên điểm danh nào đang mở.',
-          );
-        }
-      },
+  Widget _buildActivityLoading() {
+    return Column(
+      children: List.generate(
+        3,
+        (index) => Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 80,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  /// Widget for Attendance History tab
-  Widget _buildAttendanceHistoryTab() {
-    return FutureBuilder<List<Attendance>>(
-      future: _attendanceHistoryFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        } else if (snapshot.hasError) {
-          return _buildErrorWidget('Lỗi: ${snapshot.error}');
-        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async => _refreshData(),
-            color: Colors.blue[600],
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final attendance = snapshot.data![index];
-                return _buildAttendanceHistoryCard(attendance);
-              },
-            ),
-          );
-        } else {
-          return _buildEmptyState(
-            icon: Icons.history_rounded,
-            title: 'Không có lịch sử điểm danh',
-            subtitle: 'Chưa có bản ghi điểm danh nào.',
-          );
-        }
-      },
-    );
-  }
-
-  /// Widget to build schedule card with enhanced design
-  Widget _buildScheduleCard(Schedule schedule) {
+  Widget _buildActivityError() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16.0),
-          onTap: () => _navigateToSessionList(schedule),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Không thể tải hoạt động',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyActivity() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.history,
+            color: Colors.grey[400],
+            size: 48,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Chưa có hoạt động nào',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityItem(Attendance attendance) {
+    final isPresent = attendance.status == 'present';
+    final statusColor = isPresent ? const Color(0xFF4CAF50) : const Color(0xFFFF5722);
+    final statusIcon = isPresent ? Icons.check_circle : Icons.cancel;
+    final statusText = isPresent ? 'Có mặt' : 'Vắng mặt';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              statusIcon,
+              color: statusColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue[400]!, Colors.blue[600]!],
-                    ),
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: const Icon(
-                    Icons.book_rounded,
-                    size: 30,
-                    color: Colors.white,
+                Text(
+                  'Điểm danh - ${attendance.sessionId}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
-                const SizedBox(width: 16.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        schedule.subjectName ?? 'Môn học',
-                        style: const TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8.0),
-                      _buildInfoRow(
-                        icon: Icons.class_rounded,
-                        text: schedule.className ?? 'Lớp',
-                        color: Colors.grey[600]!,
-                      ),
-                      const SizedBox(height: 4.0),
-                      _buildInfoRow(
-                        icon: Icons.person_rounded,
-                        text: schedule.teacherName ?? 'Giáo viên',
-                        color: Colors.grey[600]!,
-                      ),
-                      const SizedBox(height: 4.0),
-                      _buildInfoRow(
-                        icon: Icons.access_time_rounded,
-                        text: '${_getWeekdayName(schedule.weekday)}, ${schedule.startTime} - ${schedule.endTime}',
-                        color: Colors.blue[600]!,
-                      ),
-                      if (schedule.room != null) ...[
-                        const SizedBox(height: 4.0),
-                        _buildInfoRow(
-                          icon: Icons.location_on_rounded,
-                          text: schedule.room!,
-                          color: Colors.orange[600]!,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  child: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
+                const SizedBox(height: 4),
+                Text(
+                  attendance.attendanceTime.toString().split(' ')[0],
+                  style: TextStyle(
+                    fontSize: 12,
                     color: Colors.grey[600],
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Widget to build session card with enhanced design
-  Widget _buildSessionCard(AttendanceSession session) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              statusText,
+              style: TextStyle(
+                fontSize: 12,
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green[400]!, Colors.green[600]!],
-                    ),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    size: 26,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 16.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session.subjectName ?? session.sessionName,
-                        style: const TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4.0),
-                      Text(
-                        session.className ?? 'Lớp',
-                        style: TextStyle(
-                          fontSize: 14.0,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 6.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: session.isActive ? Colors.green[50] : Colors.grey[100],
-                    border: Border.all(
-                      color: session.isActive ? Colors.green[200]! : Colors.grey[300]!,
-                    ),
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                  child: Text(
-                    session.isActive ? 'Đang mở' : 'Đã đóng',
-                    style: TextStyle(
-                      fontSize: 12.0,
-                      fontWeight: FontWeight.w600,
-                      color: session.isActive ? Colors.green[700] : Colors.grey[600],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInfoRow(
-                        icon: Icons.person_rounded,
-                        text: session.teacherName ?? 'Chưa xác định',
-                        color: Colors.grey[600]!,
-                      ),
-                      const SizedBox(height: 4.0),
-                      _buildInfoRow(
-                        icon: Icons.calendar_today_rounded,
-                        text: '${session.sessionDate.day}/${session.sessionDate.month}/${session.sessionDate.year}',
-                        color: Colors.grey[600]!,
-                      ),
-                      const SizedBox(height: 4.0),
-                      _buildInfoRow(
-                        icon: Icons.access_time_rounded,
-                        text: session.startTime,
-                        color: Colors.blue[600]!,
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: session.isActive ? Colors.blue[600] : Colors.grey[400],
-                    foregroundColor: Colors.white,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 12.0,
-                    ),
-                  ),
-                  onPressed: session.isActive ? () => _navigateToAttendance(session) : null,
-                  child: Text(
-                    session.isActive ? 'Điểm danh' : 'Không khả dụng',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+    );
+  }
+
+  // Navigation methods
+  void _navigateToSchedule() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StudentScheduleScreen(userId: widget.userId),
       ),
     );
   }
 
-  /// Widget to build attendance history card with enhanced design
-  Widget _buildAttendanceHistoryCard(Attendance attendance) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: attendance.status.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(
-                  color: attendance.status.color.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                attendance.status == AttendanceStatus.present
-                    ? Icons.check_circle_rounded
-                    : attendance.status == AttendanceStatus.late
-                        ? Icons.watch_later_rounded
-                        : Icons.cancel_rounded,
-                size: 26,
-                color: attendance.status.color,
-              ),
-            ),
-            const SizedBox(width: 16.0),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    attendance.subjectName ?? 'Môn học',
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10.0,
-                      vertical: 4.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: attendance.status.color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    child: Text(
-                      attendance.status.displayName,
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.w600,
-                        color: attendance.status.color,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    '${attendance.attendanceTime.day}/${attendance.attendanceTime.month}/${attendance.attendanceTime.year} - ${attendance.attendanceTime.hour}:${attendance.attendanceTime.minute.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontSize: 14.0,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (attendance.confidenceScore != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 4.0,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Text(
-                  '${(attendance.confidenceScore! * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 12.0,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Helper widget for building info rows
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String text,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 6.0),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14.0,
-              color: color,
+  void _navigateToAttendance() {
+    // Navigate to active sessions for attendance
+    _activeSessionsFuture.then((sessions) {
+      if (sessions.isNotEmpty) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => FaceCaptureScreen(
+              userId: widget.userId,
+              sessionId: sessions.first.id,
+              onFaceTrained: _refreshData,
             ),
           ),
-        ),
-      ],
-    );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hiện tại không có phiên điểm danh nào đang hoạt động'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    });
   }
 
-  /// Widget for empty state
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(40.0),
-              ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24.0),
-            ElevatedButton.icon(
-              onPressed: _refreshData,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Làm mới'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 12.0,
-                ),
-              ),
-            ),
-          ],
-        ),
+  void _navigateToAssignments() {
+    // TODO: Implement assignments screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chức năng bài tập đang được phát triển'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
 
-  /// Widget for error state
-  Widget _buildErrorWidget(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(40.0),
-              ),
-              child: Icon(
-                Icons.error_rounded,
-                size: 40,
-                color: Colors.red[400],
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            Text(
-              'Đã xảy ra lỗi',
-              style: const TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8.0),
-            Text(
-              error,
-              style: TextStyle(
-                fontSize: 14.0,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24.0),
-            ElevatedButton.icon(
-              onPressed: _refreshData,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 12.0,
-                ),
-              ),
-            ),
-          ],
-        ),
+  void _navigateToGrades() {
+    // TODO: Implement grades screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chức năng điểm số đang được phát triển'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _navigateToAttendanceHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => StudentScheduleScreen(userId: widget.userId),
       ),
     );
   }

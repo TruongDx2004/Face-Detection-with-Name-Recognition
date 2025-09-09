@@ -16,9 +16,12 @@ class AuthController {
 
             // Get user from database
             const [rows] = await db.execute(
-                'SELECT id, username, full_name, email, role, is_active, face_trained, created_at, password_hash FROM users WHERE username = ? AND is_active = TRUE',
-                [username]
+                `SELECT id, username, full_name, email, role, is_active, face_trained, created_at, password_hash
+                    FROM users 
+                    WHERE (username = ? OR email = ?) AND is_active = TRUE`,
+                [username, username]
             );
+
 
             if (rows.length === 0) {
                 return res.status(401).json({ error: 'Invalid credentials' });

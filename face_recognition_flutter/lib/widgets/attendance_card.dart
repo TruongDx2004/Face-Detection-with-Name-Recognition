@@ -1,6 +1,5 @@
 // lib/widgets/attendance_card.dart
 import 'package:flutter/material.dart';
-import '../models/attendance_models.dart';
 
 class AttendanceCard extends StatelessWidget {
   final String studentName;

@@ -581,6 +581,8 @@ class AttendanceController {
                     c.name as class_name,
                     u.full_name as teacher_name,
                     cs.name as course_section_name,
+                    ats.course_section_id,
+                    ats.is_active,
                     CASE WHEN a.id IS NOT NULL THEN a.status ELSE 'not_marked' END as attendance_status
                 FROM attendance_sessions ats
                 JOIN course_sections cs ON ats.course_section_id = cs.id
@@ -783,86 +785,7 @@ class AttendanceController {
         }
     }
 
-    // Lấy sessions đang active cho student
-    async getActiveSessions(req, res) {
-        try {
-            const student_id = req.user.id;
 
-            const [sessions] = await db.execute(`
-                SELECT 
-                    ats.*,
-                    c.name as class_name,
-                    s.name as subject_name,
-                    u.full_name as teacher_name
-                FROM attendance_sessions ats
-                JOIN schedules sch ON ats.schedule_id = sch.id
-                JOIN classes c ON sch.class_id = c.id
-                JOIN subjects s ON sch.subject_id = s.id
-                JOIN users u ON sch.teacher_id = u.id
-                JOIN class_students cs ON c.id = cs.class_id
-                WHERE cs.student_id = ? AND ats.is_active = TRUE
-                ORDER BY ats.session_date DESC, ats.start_time DESC
-            `, [student_id]);
-
-            res.json({
-                message: 'Active sessions retrieved successfully',
-                sessions
-            });
-        } catch (error) {
-            console.error('Get active sessions error:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    }
-
-    // Lấy lịch sử điểm danh của student
-    async getMyAttendance(req, res) {
-        try {
-            const student_id = req.user.id;
-            const { page = 1, limit = 20 } = req.query;
-            const offset = (page - 1) * limit;
-
-            const [attendances] = await db.execute(`
-                SELECT 
-                    a.*,
-                    ats.session_date,
-                    ats.start_time,
-                    c.name as class_name,
-                    s.name as subject_name,
-                    u.full_name as teacher_name
-                FROM attendances a
-                JOIN attendance_sessions ats ON a.session_id = ats.id
-                JOIN schedules sch ON ats.schedule_id = sch.id
-                JOIN classes c ON sch.class_id = c.id
-                JOIN subjects s ON sch.subject_id = s.id
-                JOIN users u ON sch.teacher_id = u.id
-                WHERE a.student_id = ?
-                ORDER BY ats.session_date DESC, ats.start_time DESC
-                LIMIT ${limit} OFFSET ${offset}
-            `, [student_id]);
-
-            // Get total count
-            const [countResult] = await db.execute(
-                'SELECT COUNT(*) as total FROM attendances WHERE student_id = ?',
-                [student_id]
-            );
-
-            res.json({
-                message: 'Attendance history retrieved successfully',
-                attendances,
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total: countResult[0].total,
-                    totalPages: Math.ceil(countResult[0].total / limit)
-                }
-            });
-        } catch (error) {
-            console.error('Get my attendance error:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    }
-
-    // Lấy sessions của teacher
     // Lấy sessions của teacher
     async getMySessions(req, res) {
         try {
@@ -985,22 +908,24 @@ class AttendanceController {
             // Lấy danh sách attendance sessions
             const [sessions] = await db.execute(`
                 SELECT 
-                    ats.*,
-                    c.name as class_name,
-                    c.code as class_code,
+                    ats.id,
+                    ats.session_name,
+                    ats.session_date,
+                    ats.start_time,
+                    ats.end_time,
                     s.name as subject_name,
+                    c.name as class_name,
                     u.full_name as teacher_name,
                     cs.name as course_section_name,
-                    cs.code as course_section_code,
-                    COUNT(a.id) as attendance_count
+                    CASE WHEN a.id IS NOT NULL THEN a.status ELSE 'not_marked' END as attendance_status
                 FROM attendance_sessions ats
                 JOIN course_sections cs ON ats.course_section_id = cs.id
-                JOIN classes c ON cs.class_id = c.id
                 JOIN subjects s ON cs.subject_id = s.id
+                JOIN classes c ON cs.class_id = c.id
                 JOIN users u ON cs.teacher_id = u.id
-                LEFT JOIN attendances a ON ats.id = a.session_id
-                WHERE ats.course_section_id = ?
-                GROUP BY ats.id
+                LEFT JOIN attendances a ON ats.id = a.session_id AND a.student_id = ?
+                WHERE cs.class_id IN (${placeholders}) 
+                AND ats.is_active = TRUE
                 ORDER BY ats.session_date DESC, ats.start_time DESC
             `, [course_section_id]);
 
@@ -1083,23 +1008,32 @@ class AttendanceController {
             }
 
             const [courseSections] = await db.execute(`
-                SELECT 
-                    cs.*,
-                    c.name as class_name,
-                    c.code as class_code,
-                    s.name as subject_name,
-                    s.code as subject_code,
-                    u.full_name as teacher_name,
-                    COUNT(cls.student_id) as student_count
-                FROM course_sections cs
-                JOIN classes c ON cs.class_id = c.id
-                JOIN subjects s ON cs.subject_id = s.id
-                JOIN users u ON cs.teacher_id = u.id
-                LEFT JOIN class_students cls ON c.id = cls.class_id
-                WHERE cs.teacher_id = ? AND cs.is_active = TRUE
-                GROUP BY cs.id
-                ORDER BY cs.semester DESC, cs.academic_year DESC, c.name
-            `, [teacher_id]);
+            SELECT 
+                cs.id,
+                cs.name,
+                cs.code,
+                cs.semester,
+                cs.academic_year,
+                cs.max_students,
+                cs.description,
+                cs.is_active,
+                c.name AS class_name,
+                c.code AS class_code,
+                s.name AS subject_name,
+                s.code AS subject_code,
+                u.full_name AS teacher_name,
+                COUNT(DISTINCT cls.student_id) AS student_count
+            FROM course_sections cs
+            JOIN classes c ON cs.class_id = c.id
+            JOIN subjects s ON cs.subject_id = s.id
+            JOIN users u ON cs.teacher_id = u.id
+            LEFT JOIN class_students cls ON cls.class_id = c.id
+            WHERE cs.teacher_id = ? AND cs.is_active = TRUE
+            GROUP BY cs.id, cs.name, cs.code, cs.semester, cs.academic_year, 
+                     cs.max_students, cs.description, cs.is_active,
+                     c.name, c.code, s.name, s.code, u.full_name
+            ORDER BY cs.semester DESC, cs.academic_year DESC, c.name
+        `, [teacher_id]);
 
             res.json({
                 success: true,
@@ -1114,6 +1048,7 @@ class AttendanceController {
             });
         }
     }
+
 
     // Lấy attendance records cho session cụ thể (cần thiết cho TeacherAttendance.jsx)
     async getSessionAttendanceRecords(req, res) {
@@ -1130,19 +1065,19 @@ class AttendanceController {
             `, [session_id]);
 
             if (sessions.length === 0) {
-                return res.status(404).json({ 
+                return res.status(404).json({
                     success: false,
-                    error: 'Attendance session not found' 
+                    error: 'Attendance session not found'
                 });
             }
 
             const session = sessions[0];
-            
+
             // Kiểm tra quyền truy cập (chỉ teacher của course section hoặc admin)
             if (req.user.role !== 'admin' && session.teacher_id != teacher_id) {
-                return res.status(403).json({ 
+                return res.status(403).json({
                     success: false,
-                    error: 'You are not authorized to access this session' 
+                    error: 'You are not authorized to access this session'
                 });
             }
 
@@ -1206,9 +1141,9 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Get session attendance records error:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 success: false,
-                error: 'Internal server error' 
+                error: 'Internal server error'
             });
         }
     }

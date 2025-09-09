@@ -70,7 +70,7 @@ class _MyAppState extends State<MyApp> {
 
       switch (userRole) {
         case UserRole.student:
-          _initialScreen = StudentDashboardScreen(userId: userId);
+          _initialScreen = StudentDashboard(userId: userId, userName: 'Student');
           break;
         case UserRole.teacher:
           //_initialScreen = TeacherDashboardScreen(teacherId: userId);
@@ -117,7 +117,7 @@ class _MyAppState extends State<MyApp> {
       // Bạn có thể thêm các named routes ở đây nếu muốn sử dụng chúng
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/student_dashboard': (context) => StudentDashboardScreen(userId: ModalRoute.of(context)!.settings.arguments as int),
+        '/student_dashboard': (context) => StudentDashboard(userId: ModalRoute.of(context)!.settings.arguments as int, userName: 'Student'),
         //'/teacher_dashboard': (context) => TeacherDashboardScreen(teacherId: ModalRoute.of(context)!.settings.arguments as int),
         //'/admin_dashboard': (context) => const AdminDashboardScreen(),
       },
