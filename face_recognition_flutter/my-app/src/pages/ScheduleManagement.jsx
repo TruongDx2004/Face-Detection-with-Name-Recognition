@@ -68,16 +68,16 @@ const ScheduleCard = ({ scheduleData, onEditSchedule, onDeleteSchedule }) => {
 
       <div style={courseManagementStyles.courseCardBody}>
         <div style={courseManagementStyles.courseBadges}>
-          <span style={{ 
-            ...courseManagementStyles.courseBadge, 
+          <span style={{
+            ...courseManagementStyles.courseBadge,
             ...courseManagementStyles.semesterBadge,
             background: '#3b82f6',
             color: 'white'
           }}>
             {getWeekdayName(scheduleData.weekday)}
           </span>
-          <span style={{ 
-            ...courseManagementStyles.courseBadge, 
+          <span style={{
+            ...courseManagementStyles.courseBadge,
             ...courseManagementStyles.yearBadge,
             background: '#10b981',
             color: 'white'
@@ -85,8 +85,8 @@ const ScheduleCard = ({ scheduleData, onEditSchedule, onDeleteSchedule }) => {
             {formatTime(scheduleData.start_time)} - {formatTime(scheduleData.end_time)}
           </span>
           {scheduleData.room && (
-            <span style={{ 
-              ...courseManagementStyles.courseBadge, 
+            <span style={{
+              ...courseManagementStyles.courseBadge,
               ...courseManagementStyles.studentsBadge,
               background: '#f59e0b',
               color: 'white'
@@ -183,7 +183,7 @@ const WeeklyScheduleView = ({ schedules }) => {
               {groupedSchedules[day.key].length} tiết
             </span>
           </div>
-          
+
           <div style={{ padding: '1rem' }}>
             {groupedSchedules[day.key].length === 0 ? (
               <div style={{
@@ -304,19 +304,19 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.course_section_id) {
       newErrors.course_section_id = 'Vui lòng chọn lớp học phần';
     }
-    
+
     if (!formData.start_time) {
       newErrors.start_time = 'Giờ bắt đầu không được để trống';
     }
-    
+
     if (!formData.end_time) {
       newErrors.end_time = 'Giờ kết thúc không được để trống';
     }
-    
+
     if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
       newErrors.end_time = 'Giờ kết thúc phải sau giờ bắt đầu';
     }
@@ -380,8 +380,9 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
               step="1"
               style={courseManagementStyles.formInput}
               value={formData.start_time}
-              onChange={(e) => handleInputChange('start_time', e.target.value + ':00')}
+              onChange={(e) => handleInputChange('start_time', e.target.value)}
             />
+
             {errors.start_time && <div style={courseManagementStyles.formError}>{errors.start_time}</div>}
           </div>
 
@@ -394,8 +395,9 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
               step="1"
               style={courseManagementStyles.formInput}
               value={formData.end_time}
-              onChange={(e) => handleInputChange('end_time', e.target.value + ':00')}
+              onChange={(e) => handleInputChange('end_time', e.target.value)}
             />
+
             {errors.end_time && <div style={courseManagementStyles.formError}>{errors.end_time}</div>}
           </div>
         </div>
@@ -595,10 +597,10 @@ const ScheduleManagement = () => {
         schedule.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         schedule.room?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesCourseSection = !courseSectionFilter || 
+      const matchesCourseSection = !courseSectionFilter ||
         schedule.course_section_id == courseSectionFilter;
-      
-      const matchesWeekday = !weekdayFilter || 
+
+      const matchesWeekday = !weekdayFilter ||
         schedule.weekday == weekdayFilter;
 
       return matchesSearch && matchesCourseSection && matchesWeekday;
@@ -807,7 +809,7 @@ const ScheduleManagement = () => {
                   </button>
                 )}
               </div>
-              
+
               <select
                 value={courseSectionFilter}
                 onChange={(e) => setCourseSectionFilter(e.target.value)}

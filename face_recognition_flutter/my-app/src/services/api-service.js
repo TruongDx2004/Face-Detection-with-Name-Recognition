@@ -171,7 +171,7 @@ class ApiService {
         return await this.makeRequest('POST', '/attendance/mark-attendance-manual', {
             session_id: sessionId,
             student_id: studentId,
-            status
+            status: status
         });
     }
 

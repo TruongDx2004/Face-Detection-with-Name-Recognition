@@ -647,6 +647,7 @@ const ClassSelector = ({
     const classStudents = students.filter(s => s.class_id === classId);
     const classSchedules = schedules.filter(s => s.class_id === classId);
     const classSessions = sessions.filter(s => s.class_id === classId);
+    console.log(schedules);
 
     return {
       studentCount: classStudents.length,
@@ -1251,6 +1252,7 @@ const ClassDetail = () => {
     const scheduleSessions = sessions.filter(
       s => s.schedule_id === scheduleId && s.class_id === classData.id
     );
+    console.log(sessions);
     return {
       total: scheduleSessions.length,
       active: scheduleSessions.filter(s => s.is_active).length,

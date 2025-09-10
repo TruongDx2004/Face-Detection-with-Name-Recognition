@@ -71,7 +71,7 @@ class SubjectController {
     // Tạo subject mới
     async createSubject(req, res) {
         try {
-            const { name, code, description, credits = 3 } = req.body.name.name;
+            const { name, code, description, credits = 3 } = req.body.name;
             
             // Validation
             if (!name || !code) {

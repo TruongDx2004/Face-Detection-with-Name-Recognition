@@ -543,10 +543,10 @@ const SessionDetailModal = ({ session, onClose, showNotification, onSessionEnd }
         {attendanceData && (
           <div>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-              {session.is_active && <button style={{ ...styles.button, ...styles.buttonDanger }} onClick={handleEndSession}><i className="fas fa-stop"></i>Kết thúc phiên</button>}
+              {session.is_active === 1 && <button style={{ ...styles.button, ...styles.buttonDanger }} onClick={handleEndSession}><i className="fas fa-stop"></i>Kết thúc phiên</button>}
               <button style={{ ...styles.button, ...styles.buttonWarning }} onClick={handleExportExcel}><i className="fas fa-file-excel"></i>Xuất Excel</button>
             </div>
-            {session.is_active && (
+            {session.is_active === 1 && (
               <div style={{ marginBottom: '20px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                 <h4 style={{ margin: '0 0 12px 0', color: '#374151' }}>Điểm danh thủ công</h4>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'end' }}>

@@ -109,20 +109,26 @@ class AttendanceController {
         try {
             const { class_id, teacher_id, is_active } = req.query;
             let query = `
-                SELECT 
-                    ats.*,
-                    c.name AS class_name,
-                    s.name AS subject_name,
-                    u.full_name AS teacher_name,
-                    cs.name AS course_section_name,
-                    cs.code AS course_section_code
-                FROM attendance_sessions ats
-                JOIN course_sections cs ON ats.course_section_id = cs.id
-                JOIN classes c ON cs.class_id = c.id
-                JOIN subjects s ON cs.subject_id = s.id
-                JOIN users u ON cs.teacher_id = u.id
-                WHERE 1=1
-            `;
+            SELECT 
+                ats.*,
+                c.name AS class_name,
+                cs.class_id,
+                s.name AS subject_name,
+                u.full_name AS teacher_name,
+                cs.name AS course_section_name,
+                cs.code AS course_section_code,
+                sch.id AS schedule_id,
+                sch.start_time AS schedule_start_time,
+                sch.end_time AS schedule_end_time,
+                sch.room AS schedule_room
+            FROM attendance_sessions ats
+            JOIN course_sections cs ON ats.course_section_id = cs.id
+            JOIN classes c ON cs.class_id = c.id
+            JOIN subjects s ON cs.subject_id = s.id
+            JOIN users u ON cs.teacher_id = u.id
+            LEFT JOIN schedules sch ON cs.id = sch.course_section_id
+            WHERE 1=1
+        `;
             const params = [];
 
             if (class_id) {
@@ -152,6 +158,7 @@ class AttendanceController {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+
 
     // Điểm danh bằng nhận diện khuôn mặt
     async markAttendanceByFace(req, res) {
@@ -515,11 +522,11 @@ class AttendanceController {
             );
 
             if (sessions.length === 0) {
-                return res.status(404).json({ error: 'Session not found or not authorized' });
+                return res.status(404).json({ error: 'Không tìm thấy phiên hợp lệ' });
             }
 
             if (!sessions[0].is_active) {
-                return res.status(400).json({ error: 'Session is not active' });
+                return res.status(400).json({ error: 'Phiên không hoạt động' });
             }
 
             // Kiểm tra student đã điểm danh chưa

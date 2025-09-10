@@ -300,7 +300,7 @@ class ScheduleController {
 
             if (conflicts.length > 0) {
                 return responseHelper.error(res,
-                    `Time conflict detected with course "${conflicts[0].course_name}" on the same day`, 400);
+                    `Thời điểm hiện tại đã có lịch học "${conflicts[0].course_name}"`, 400);
             }
 
             // Check for teacher conflicts
@@ -456,7 +456,7 @@ class ScheduleController {
 
                 if (conflicts.length > 0) {
                     return responseHelper.error(res,
-                        `Time conflict detected with course "${conflicts[0].course_name}" on the same day`, 400);
+                        `Thời điểm hiện tại đã có lịch học "${conflicts[0].course_name}"`, 400);
                 }
 
                 // Check teacher conflicts
@@ -712,7 +712,7 @@ class ScheduleController {
 
                 if (conflicts.length > 0) {
                     result.status = 'failure';
-                    result.message = `Time conflict detected with course "${conflicts[0].course_name}"`;
+                    result.message = `Đã có lịch học "${conflicts[0].course_name}"`;
                     importResults.push(result);
                     continue;
                 }
