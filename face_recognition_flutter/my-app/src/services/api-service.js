@@ -405,6 +405,45 @@ class ApiService {
         return await this.makeRequest('GET', `/course-sections/class/${classId}`, null, params);
     }
 
+    // ============ ASSIGNMENT ENDPOINTS ============
+    async getAssignments(params = {}) {
+        return await this.makeRequest('GET', '/assignments', null, params);
+    }
+
+    async getAssignment(id) {
+        return await this.makeRequest('GET', `/assignments/${id}`);
+    }
+
+    async createAssignment(assignmentData) {
+        if (assignmentData instanceof FormData) {
+            return await this.makeMultipartRequest('POST', '/assignments', assignmentData);
+        }
+        return await this.makeRequest('POST', '/assignments', assignmentData);
+    }
+
+    async updateAssignment(id, assignmentData) {
+        if (assignmentData instanceof FormData) {
+            return await this.makeMultipartRequest('PUT', `/assignments/${id}`, assignmentData);
+        }
+        return await this.makeRequest('PUT', `/assignments/${id}`, assignmentData);
+    }
+
+    async deleteAssignment(id) {
+        return await this.makeRequest('DELETE', `/assignments/${id}`);
+    }
+
+    async getAssignmentSubmissions(assignmentId, params = {}) {
+        return await this.makeRequest('GET', `/assignments/${assignmentId}/submissions`, null, params);
+    }
+
+    async gradeSubmission(submissionId, gradeData) {
+        return await this.makeRequest('PUT', `/assignments/submissions/${submissionId}/grade`, gradeData);
+    }
+
+    async getTeacherCourseSections() {
+        return await this.makeRequest('GET', '/course-sections/teacher');
+    }
+
     // ============ UTILITY METHODS ============
     async testConnection() {
         return await this.makeRequest('GET', '/');

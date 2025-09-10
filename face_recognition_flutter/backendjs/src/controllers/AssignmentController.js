@@ -1,6 +1,6 @@
 const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
-const { responseHelper } = require('../utils/responseHelper');
+const ResponseHelper = require('../utils/responseHelper');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -56,7 +56,7 @@ class AssignmentController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const assignmentId = await Assignment.create({
@@ -71,11 +71,37 @@ class AssignmentController {
             });
 
             const assignment = await Assignment.getById(assignmentId);
-            responseHelper.success(res, assignment, 'Assignment created successfully', 201);
+            ResponseHelper.success(res, assignment, 'Assignment created successfully', 201);
 
         } catch (error) {
             console.error('Create assignment error:', error);
-            responseHelper.error(res, 'Failed to create assignment', 500);
+            ResponseHelper.error(res, 'Failed to create assignment', 500);
+        }
+    }
+
+    // Lấy tất cả bài tập của giáo viên
+    static async getTeacherAssignments(req, res) {
+        try {
+            const teacherId = req.user.id;
+            
+            // Kiểm tra quyền giáo viên
+            if (req.user.role !== 'teacher') {
+                return ResponseHelper.error(res, 'Access denied. Teacher role required.', 403);
+            }
+
+            // Lấy filters từ query parameters
+            const filters = {};
+            if (req.query.status) filters.status = req.query.status;
+            if (req.query.assignment_type) filters.assignment_type = req.query.assignment_type;
+            if (req.query.course_section_id) filters.course_section_id = parseInt(req.query.course_section_id);
+
+            const assignments = await Assignment.getByTeacher(teacherId, filters);
+
+            ResponseHelper.success(res, assignments, 'Teacher assignments retrieved successfully');
+
+        } catch (error) {
+            console.error('Get teacher assignments error:', error);
+            ResponseHelper.error(res, 'Failed to retrieve teacher assignments', 500);
         }
     }
 
@@ -85,11 +111,11 @@ class AssignmentController {
             const { courseSectionId } = req.params;
             const assignments = await Assignment.getByCourseSection(courseSectionId);
 
-            responseHelper.success(res, assignments, 'Assignments retrieved successfully');
+            ResponseHelper.success(res, assignments, 'Assignments retrieved successfully');
 
         } catch (error) {
             console.error('Get assignments error:', error);
-            responseHelper.error(res, 'Failed to retrieve assignments', 500);
+            ResponseHelper.error(res, 'Failed to retrieve assignments', 500);
         }
     }
 
@@ -100,14 +126,14 @@ class AssignmentController {
             const assignment = await Assignment.getById(id);
 
             if (!assignment) {
-                return responseHelper.error(res, 'Assignment not found', 404);
+                return ResponseHelper.error(res, 'Assignment not found', 404);
             }
 
-            responseHelper.success(res, assignment, 'Assignment retrieved successfully');
+            ResponseHelper.success(res, assignment, 'Assignment retrieved successfully');
 
         } catch (error) {
             console.error('Get assignment error:', error);
-            responseHelper.error(res, 'Failed to retrieve assignment', 500);
+            ResponseHelper.error(res, 'Failed to retrieve assignment', 500);
         }
     }
 
@@ -119,7 +145,7 @@ class AssignmentController {
 
             // Kiểm tra quyền
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             if (req.file) {
@@ -128,15 +154,15 @@ class AssignmentController {
 
             const updated = await Assignment.update(id, updateData);
             if (!updated) {
-                return responseHelper.error(res, 'Assignment not found', 404);
+                return ResponseHelper.error(res, 'Assignment not found', 404);
             }
 
             const assignment = await Assignment.getById(id);
-            responseHelper.success(res, assignment, 'Assignment updated successfully');
+            ResponseHelper.success(res, assignment, 'Assignment updated successfully');
 
         } catch (error) {
             console.error('Update assignment error:', error);
-            responseHelper.error(res, 'Failed to update assignment', 500);
+            ResponseHelper.error(res, 'Failed to update assignment', 500);
         }
     }
 
@@ -147,19 +173,19 @@ class AssignmentController {
 
             // Kiểm tra quyền
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const deleted = await Assignment.delete(id);
             if (!deleted) {
-                return responseHelper.error(res, 'Assignment not found', 404);
+                return ResponseHelper.error(res, 'Assignment not found', 404);
             }
 
-            responseHelper.success(res, null, 'Assignment deleted successfully');
+            ResponseHelper.success(res, null, 'Assignment deleted successfully');
 
         } catch (error) {
             console.error('Delete assignment error:', error);
-            responseHelper.error(res, 'Failed to delete assignment', 500);
+            ResponseHelper.error(res, 'Failed to delete assignment', 500);
         }
     }
 
@@ -172,7 +198,7 @@ class AssignmentController {
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
-                return responseHelper.error(res, 'Only students can submit assignments', 403);
+                return ResponseHelper.error(res, 'Only students can submit assignments', 403);
             }
 
             const submissionId = await AssignmentSubmission.create({
@@ -183,11 +209,11 @@ class AssignmentController {
             });
 
             const submission = await AssignmentSubmission.getById(submissionId);
-            responseHelper.success(res, submission, 'Assignment submitted successfully', 201);
+            ResponseHelper.success(res, submission, 'Assignment submitted successfully', 201);
 
         } catch (error) {
             console.error('Submit assignment error:', error);
-            responseHelper.error(res, 'Failed to submit assignment', 500);
+            ResponseHelper.error(res, 'Failed to submit assignment', 500);
         }
     }
 
@@ -198,15 +224,15 @@ class AssignmentController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const submissions = await AssignmentSubmission.getByAssignment(assignmentId);
-            responseHelper.success(res, submissions, 'Submissions retrieved successfully');
+            ResponseHelper.success(res, submissions, 'Submissions retrieved successfully');
 
         } catch (error) {
             console.error('Get submissions error:', error);
-            responseHelper.error(res, 'Failed to retrieve submissions', 500);
+            ResponseHelper.error(res, 'Failed to retrieve submissions', 500);
         }
     }
 
@@ -218,20 +244,20 @@ class AssignmentController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const graded = await AssignmentSubmission.grade(submissionId, score, feedback, req.user.id);
             if (!graded) {
-                return responseHelper.error(res, 'Submission not found', 404);
+                return ResponseHelper.error(res, 'Submission not found', 404);
             }
 
             const submission = await AssignmentSubmission.getById(submissionId);
-            responseHelper.success(res, submission, 'Assignment graded successfully');
+            ResponseHelper.success(res, submission, 'Assignment graded successfully');
 
         } catch (error) {
             console.error('Grade submission error:', error);
-            responseHelper.error(res, 'Failed to grade assignment', 500);
+            ResponseHelper.error(res, 'Failed to grade assignment', 500);
         }
     }
 
@@ -242,15 +268,15 @@ class AssignmentController {
             const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
 
             if (!studentId) {
-                return responseHelper.error(res, 'Student ID is required', 400);
+                return ResponseHelper.error(res, 'Student ID is required', 400);
             }
 
             const assignments = await Assignment.getStudentAssignments(studentId, courseSectionId);
-            responseHelper.success(res, assignments, 'Student assignments retrieved successfully');
+            ResponseHelper.success(res, assignments, 'Student assignments retrieved successfully');
 
         } catch (error) {
             console.error('Get student assignments error:', error);
-            responseHelper.error(res, 'Failed to retrieve student assignments', 500);
+            ResponseHelper.error(res, 'Failed to retrieve student assignments', 500);
         }
     }
 
@@ -260,15 +286,15 @@ class AssignmentController {
             const teacherId = req.user.id;
 
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const stats = await Assignment.getTeacherAssignmentStats(teacherId);
-            responseHelper.success(res, stats, 'Teacher assignment stats retrieved successfully');
+            ResponseHelper.success(res, stats, 'Teacher assignment stats retrieved successfully');
 
         } catch (error) {
             console.error('Get teacher stats error:', error);
-            responseHelper.error(res, 'Failed to retrieve teacher stats', 500);
+            ResponseHelper.error(res, 'Failed to retrieve teacher stats', 500);
         }
     }
 
@@ -278,15 +304,15 @@ class AssignmentController {
             const teacherId = req.user.id;
 
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const submissions = await AssignmentSubmission.getUngraded(teacherId);
-            responseHelper.success(res, submissions, 'Ungraded submissions retrieved successfully');
+            ResponseHelper.success(res, submissions, 'Ungraded submissions retrieved successfully');
 
         } catch (error) {
             console.error('Get ungraded error:', error);
-            responseHelper.error(res, 'Failed to retrieve ungraded submissions', 500);
+            ResponseHelper.error(res, 'Failed to retrieve ungraded submissions', 500);
         }
     }
 }

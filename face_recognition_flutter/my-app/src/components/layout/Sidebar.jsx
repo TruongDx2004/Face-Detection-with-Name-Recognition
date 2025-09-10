@@ -106,7 +106,8 @@ const Sidebar = ({ items = [] }) => {
     { id: 'classes', label: 'Quản lý lớp', icon: 'fas fa-users', path: '/teacher/classes' },
     { id: 'schedules', label: 'Lịch dạy', icon: 'fas fa-calendar', path: '/teacher/schedules' },
     { id: 'attendance', label: 'Điểm danh', icon: 'fas fa-clipboard-check', path: '/teacher/attendance' },
-    { id: 'reports', label: 'Báo cáo', icon: 'fas fa-chart-bar', path: '/teacher/reports' }
+    { id: 'assignments', label: 'Bài tập', icon: 'fas fa-tasks', path: '/teacher/assignments' },
+    { id: 'reports', label: 'Báo cáo', icon: 'fas fa-chart-bar', path: '/teacher/reports' },
   ];
 
   const menuItems = items.length > 0 ? items : defaultItems;

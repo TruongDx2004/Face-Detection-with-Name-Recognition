@@ -349,6 +349,68 @@ router.get('/student/:courseSectionId', authenticateToken, AssignmentController.
 
 /**
  * @swagger
+ * /assignments:
+ *   get:
+ *     summary: Get all assignments for teacher
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, closed, draft]
+ *         description: Filter by assignment status
+ *       - in: query
+ *         name: assignment_type
+ *         schema:
+ *           type: string
+ *           enum: [homework, project, lab, essay]
+ *         description: Filter by assignment type
+ *       - in: query
+ *         name: course_section_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by course section ID
+ *     responses:
+ *       200:
+ *         description: Teacher assignments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Assignment'
+ *                       - type: object
+ *                         properties:
+ *                           course_name:
+ *                             type: string
+ *                           subject_name:
+ *                             type: string
+ *                           class_name:
+ *                             type: string
+ *                           submission_count:
+ *                             type: integer
+ *                           graded_count:
+ *                             type: integer
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: Access denied - Teacher role required
+ *       500:
+ *         description: Server error
+ */
+router.get('/', authenticateToken, AssignmentController.getTeacherAssignments);
+
+/**
+ * @swagger
  * /assignments/teacher/stats:
  *   get:
  *     summary: Get teacher assignment statistics

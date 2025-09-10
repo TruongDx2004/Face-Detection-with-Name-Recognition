@@ -14,6 +14,9 @@ import ScheduleManagement from './pages/ScheduleManagement';
 import ClassDetail from './pages/teacher/ClassDetail';
 import TeacherSchedules from './pages/teacher/TeacherSchedules';
 import TeacherAttendance from './pages/teacher/TeacherAttendance';
+import TeacherAssignments from './pages/teacher/TeacherAssignments';
+import AssignmentForm from './pages/teacher/AssignmentForm';
+import AssignmentDetail from './pages/teacher/AssignmentDetail';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -40,6 +43,10 @@ function App() {
         <Route path="/teacher/classes/:classId" element={<ClassDetail />} />
         <Route path="/teacher/schedules" element={<TeacherSchedules />} />
         <Route path="/teacher/attendance" element={<TeacherAttendance />} />
+        <Route path="/teacher/assignments" element={<TeacherAssignments />} />
+        <Route path="/teacher/assignments/new" element={<AssignmentForm />} />
+        <Route path="/teacher/assignments/:id" element={<AssignmentDetail />} />
+        <Route path="/teacher/assignments/:id/edit" element={<AssignmentForm />} />
       </Routes>
     </BrowserRouter>
   );

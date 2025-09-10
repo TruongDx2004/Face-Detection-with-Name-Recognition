@@ -6,8 +6,9 @@ const Notification = ({ notification, onRemove }) => {
   
   useEffect(() => {
     setTimeout(() => setShow(true), 100);
+    
   }, []);
-
+  
   const getIcon = (type) => {
     const icons = {
       'success': 'fas fa-check-circle',
