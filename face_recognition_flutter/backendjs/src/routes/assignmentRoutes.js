@@ -1,89 +1,18 @@
 const express = require('express');
-const { AssignmentController, uploadAssignment } = require('../controllers/AssignmentController');
-const { authenticateToken } = require('../middleware/auth');
+const AssignmentController = require('../controllers/AssignmentController');
+const { authenticateToken, authorize } = require('../middleware/auth');
+const { USER_ROLES } = require('../config/constants');
+
 const router = express.Router();
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     Assignment:
- *       type: object
- *       required:
- *         - course_section_id
- *         - title
- *         - due_date
- *       properties:
- *         id:
- *           type: integer
- *           description: Assignment ID
- *         course_section_id:
- *           type: integer
- *           description: Course section ID
- *         title:
- *           type: string
- *           description: Assignment title
- *         description:
- *           type: string
- *           description: Assignment description
- *         assignment_type:
- *           type: string
- *           enum: [homework, project, lab, essay]
- *           description: Type of assignment
- *         max_score:
- *           type: number
- *           format: float
- *           description: Maximum score for assignment
- *         due_date:
- *           type: string
- *           format: date-time
- *           description: Assignment due date
- *         instructions:
- *           type: string
- *           description: Assignment instructions
- *         attachment_path:
- *           type: string
- *           description: Path to attachment file
- *     
- *     AssignmentSubmission:
- *       type: object
- *       required:
- *         - assignment_id
- *         - student_id
- *       properties:
- *         id:
- *           type: integer
- *           description: Submission ID
- *         assignment_id:
- *           type: integer
- *           description: Assignment ID
- *         student_id:
- *           type: integer
- *           description: Student ID
- *         submission_text:
- *           type: string
- *           description: Text submission
- *         attachment_path:
- *           type: string
- *           description: Path to submitted file
- *         score:
- *           type: number
- *           format: float
- *           description: Graded score
- *         feedback:
- *           type: string
- *           description: Teacher feedback
- *         status:
- *           type: string
- *           enum: [submitted, graded, late, missing]
- *           description: Submission status
- */
+// Middleware: Yêu cầu authentication cho tất cả routes
+router.use(authenticateToken);
 
 /**
  * @swagger
  * /assignments:
  *   post:
- *     summary: Create a new assignment
+ *     summary: Create a new assignment (Teacher only)
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
@@ -93,9 +22,98 @@ const router = express.Router();
  *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required:
+ *               - course_section_id
+ *               - title
+ *               - due_date
  *             properties:
  *               course_section_id:
  *                 type: integer
+ *                 description: ID của lớp học phần
+ *               title:
+ *                 type: string
+ *                 description: Tiêu đề bài tập
+ *               description:
+ *                 type: string
+ *                 description: Mô tả bài tập
+ *               assignment_type:
+ *                 type: string
+ *                 enum: [homework, project, lab, essay]
+ *                 default: homework
+ *               max_score:
+ *                 type: number
+ *                 default: 10
+ *                 description: Điểm tối đa
+ *               due_date:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Hạn nộp bài
+ *               instructions:
+ *                 type: string
+ *                 description: Hướng dẫn làm bài
+ *               attachment:
+ *                 type: string
+ *                 format: binary
+ *                 description: File đính kèm
+ *     responses:
+ *       201:
+ *         description: Assignment created successfully
+ *       400:
+ *         description: Validation error
+ *       403:
+ *         description: Access denied
+ */
+router.post('/', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.uploadMiddleware, 
+    AssignmentController.createAssignment
+);
+
+/**
+ * @swagger
+ * /assignments/{id}:
+ *   get:
+ *     summary: Get assignment details
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Assignment ID
+ *     responses:
+ *       200:
+ *         description: Assignment details retrieved successfully
+ *       404:
+ *         description: Assignment not found
+ */
+router.get('/:id', AssignmentController.getAssignmentById);
+
+/**
+ * @swagger
+ * /assignments/{id}:
+ *   put:
+ *     summary: Update assignment (Teacher only)
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Assignment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
  *               title:
  *                 type: string
  *               description:
@@ -114,105 +132,24 @@ const router = express.Router();
  *                 type: string
  *                 format: binary
  *     responses:
- *       201:
- *         description: Assignment created successfully
- *       403:
- *         description: Access denied
- */
-router.post('/', authenticateToken, uploadAssignment, AssignmentController.createAssignment);
-
-/**
- * @swagger
- * /assignments/course-section/{courseSectionId}:
- *   get:
- *     summary: Get assignments by course section
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: courseSectionId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Assignments retrieved successfully
- */
-router.get('/course-section/:courseSectionId', authenticateToken, AssignmentController.getAssignmentsByCourseSection);
-
-/**
- * @swagger
- * /assignments/{id}:
- *   get:
- *     summary: Get assignment by ID
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Assignment retrieved successfully
- *       404:
- *         description: Assignment not found
- */
-router.get('/:id', authenticateToken, AssignmentController.getAssignmentById);
-
-/**
- * @swagger
- * /assignments/{id}:
- *   put:
- *     summary: Update assignment
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               assignment_type:
- *                 type: string
- *               max_score:
- *                 type: number
- *               due_date:
- *                 type: string
- *                 format: date-time
- *               instructions:
- *                 type: string
- *               attachment:
- *                 type: string
- *                 format: binary
- *     responses:
  *       200:
  *         description: Assignment updated successfully
  *       404:
  *         description: Assignment not found
+ *       403:
+ *         description: Access denied
  */
-router.put('/:id', authenticateToken, uploadAssignment, AssignmentController.updateAssignment);
+router.put('/:id', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.uploadMiddleware, 
+    AssignmentController.updateAssignment
+);
 
 /**
  * @swagger
  * /assignments/{id}:
  *   delete:
- *     summary: Delete assignment
+ *     summary: Delete assignment (Teacher only)
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
@@ -222,111 +159,25 @@ router.put('/:id', authenticateToken, uploadAssignment, AssignmentController.upd
  *         required: true
  *         schema:
  *           type: integer
+ *         description: Assignment ID
  *     responses:
  *       200:
  *         description: Assignment deleted successfully
  *       404:
  *         description: Assignment not found
- */
-router.delete('/:id', authenticateToken, AssignmentController.deleteAssignment);
-
-/**
- * @swagger
- * /assignments/{assignmentId}/submit:
- *   post:
- *     summary: Submit assignment (student)
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: assignmentId
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               submission_text:
- *                 type: string
- *               attachment:
- *                 type: string
- *                 format: binary
- *     responses:
- *       201:
- *         description: Assignment submitted successfully
  *       403:
  *         description: Access denied
  */
-router.post('/:assignmentId/submit', authenticateToken, uploadAssignment, AssignmentController.submitAssignment);
-
-/**
- * @swagger
- * /assignments/{assignmentId}/submissions:
- *   get:
- *     summary: Get assignment submissions (teacher)
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: assignmentId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Submissions retrieved successfully
- *       403:
- *         description: Access denied
- */
-router.get('/:assignmentId/submissions', authenticateToken, AssignmentController.getSubmissions);
-
-/**
- * @swagger
- * /assignments/submissions/{submissionId}/grade:
- *   post:
- *     summary: Grade assignment submission
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: submissionId
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - score
- *             properties:
- *               score:
- *                 type: number
- *                 format: float
- *               feedback:
- *                 type: string
- *     responses:
- *       200:
- *         description: Assignment graded successfully
- *       404:
- *         description: Submission not found
- */
-router.post('/submissions/:submissionId/grade', authenticateToken, AssignmentController.gradeSubmission);
+router.delete('/:id', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.deleteAssignment
+);
 
 /**
  * @swagger
  * /assignments/student/{courseSectionId}:
  *   get:
- *     summary: Get student assignments
+ *     summary: Get assignments for student by course section
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
@@ -336,31 +187,68 @@ router.post('/submissions/:submissionId/grade', authenticateToken, AssignmentCon
  *         required: true
  *         schema:
  *           type: integer
- *       - in: query
- *         name: studentId
- *         schema:
- *           type: integer
- *         description: Student ID (for teachers)
+ *         description: Course Section ID
  *     responses:
  *       200:
- *         description: Student assignments retrieved successfully
+ *         description: List of assignments with submission status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       title:
+ *                         type: string
+ *                       due_date:
+ *                         type: string
+ *                         format: date-time
+ *                       submission:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           status:
+ *                             type: string
+ *                           score:
+ *                             type: number
+ *                             nullable: true
+ *       403:
+ *         description: Not enrolled in course section
  */
-router.get('/student/:courseSectionId', authenticateToken, AssignmentController.getStudentAssignments);
+router.get('/student/:courseSectionId', 
+    authorize(USER_ROLES.STUDENT), 
+    AssignmentController.getStudentAssignments
+);
 
 /**
  * @swagger
- * /assignments:
+ * /assignments/teacher/{teacherId}:
  *   get:
- *     summary: Get all assignments for teacher
+ *     summary: Get assignments created by teacher
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Teacher ID
  *       - in: query
  *         name: status
  *         schema:
  *           type: string
- *           enum: [active, closed, draft]
+ *           enum: [active, closed]
  *         description: Filter by assignment status
  *       - in: query
  *         name: assignment_type
@@ -372,103 +260,261 @@ router.get('/student/:courseSectionId', authenticateToken, AssignmentController.
  *         name: course_section_id
  *         schema:
  *           type: integer
- *         description: Filter by course section ID
+ *         description: Filter by course section
  *     responses:
  *       200:
- *         description: Teacher assignments retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     allOf:
- *                       - $ref: '#/components/schemas/Assignment'
- *                       - type: object
- *                         properties:
- *                           course_name:
- *                             type: string
- *                           subject_name:
- *                             type: string
- *                           class_name:
- *                             type: string
- *                           submission_count:
- *                             type: integer
- *                           graded_count:
- *                             type: integer
- *                 message:
- *                   type: string
- *       403:
- *         description: Access denied - Teacher role required
- *       500:
- *         description: Server error
- */
-router.get('/', authenticateToken, AssignmentController.getTeacherAssignments);
-
-/**
- * @swagger
- * /assignments/teacher/stats:
- *   get:
- *     summary: Get teacher assignment statistics
- *     tags: [Assignments]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Teacher stats retrieved successfully
+ *         description: List of teacher's assignments with statistics
  *       403:
  *         description: Access denied
  */
-router.get('/teacher/stats', authenticateToken, AssignmentController.getTeacherStats);
+router.get('/teacher/:teacherId', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.getTeacherAssignments
+);
 
 /**
  * @swagger
- * /assignments/ungraded:
- *   get:
- *     summary: Get ungraded submissions
+ * /assignments/submit:
+ *   post:
+ *     summary: Submit assignment (Student only)
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assignment_id
+ *               - student_id
+ *             properties:
+ *               assignment_id:
+ *                 type: integer
+ *                 description: ID của bài tập
+ *               student_id:
+ *                 type: integer
+ *                 description: ID của sinh viên
+ *               submission_text:
+ *                 type: string
+ *                 description: Nội dung bài làm
+ *               attachment:
+ *                 type: string
+ *                 format: binary
+ *                 description: File bài làm
  *     responses:
- *       200:
- *         description: Ungraded submissions retrieved successfully
+ *       201:
+ *         description: Assignment submitted successfully
+ *       400:
+ *         description: Validation error or assignment overdue
  *       403:
- *         description: Access denied
+ *         description: Access denied or not enrolled
+ *       404:
+ *         description: Assignment not found
  */
-router.get('/ungraded', authenticateToken, AssignmentController.getUngraded);
+router.post('/submit', 
+    authorize(USER_ROLES.STUDENT), 
+    AssignmentController.uploadMiddleware, 
+    AssignmentController.submitAssignment
+);
 
 /**
  * @swagger
- * /assignments/files/uploads/assignments/{filename}:
+ * /assignments/{assignmentId}/submissions/{studentId}:
  *   get:
- *     summary: Download assignment attachment file
+ *     summary: Get specific assignment submission
  *     tags: [Assignments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: filename
+ *         name: assignmentId
  *         required: true
  *         schema:
- *           type: string
- *         description: The filename to download
+ *           type: integer
+ *         description: Assignment ID
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Student ID
  *     responses:
  *       200:
- *         description: File downloaded successfully
- *         content:
- *           application/octet-stream:
- *             schema:
- *               type: string
- *               format: binary
+ *         description: Assignment submission details
  *       404:
- *         description: File not found
+ *         description: Submission not found
  *       403:
  *         description: Access denied
  */
-router.get('/files/uploads/assignments/:filename', authenticateToken, AssignmentController.downloadFile);
+router.get('/:assignmentId/submissions/:studentId', AssignmentController.getSubmission);
+
+/**
+ * @swagger
+ * /assignments/{assignmentId}/submissions:
+ *   get:
+ *     summary: Get all submissions for an assignment (Teacher only)
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: assignmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Assignment ID
+ *     responses:
+ *       200:
+ *         description: List of submissions for the assignment
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Assignment not found
+ */
+router.get('/:assignmentId/submissions', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.getAssignmentSubmissions
+);
+
+/**
+ * @swagger
+ * /assignments/submissions/{submissionId}/grade:
+ *   put:
+ *     summary: Grade assignment submission (Teacher only)
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: submissionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Submission ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - score
+ *             properties:
+ *               score:
+ *                 type: number
+ *                 minimum: 0
+ *                 description: Điểm số
+ *               feedback:
+ *                 type: string
+ *                 description: Nhận xét của giáo viên
+ *     responses:
+ *       200:
+ *         description: Assignment graded successfully
+ *       400:
+ *         description: Invalid score
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Submission not found
+ */
+router.put('/submissions/:submissionId/grade', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.gradeSubmission
+);
+
+/**
+ * @swagger
+ * /assignments/submissions/student/{studentId}:
+ *   get:
+ *     summary: Get all submissions by student
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Student ID
+ *     responses:
+ *       200:
+ *         description: List of student's submissions
+ *       403:
+ *         description: Access denied
+ */
+router.get('/submissions/student/:studentId', AssignmentController.getStudentSubmissions);
+
+/**
+ * @swagger
+ * /assignments/submissions/ungraded/{teacherId}:
+ *   get:
+ *     summary: Get ungraded submissions for teacher
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Teacher ID
+ *     responses:
+ *       200:
+ *         description: List of ungraded submissions
+ *       403:
+ *         description: Access denied
+ */
+router.get('/submissions/ungraded/:teacherId', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.getUngradedSubmissions
+);
+
+/**
+ * @swagger
+ * /assignments/teacher/{teacherId}/stats:
+ *   get:
+ *     summary: Get assignment statistics for teacher
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teacherId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Teacher ID
+ *     responses:
+ *       200:
+ *         description: Assignment statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total_assignments:
+ *                       type: integer
+ *                     total_submissions:
+ *                       type: integer
+ *                     avg_score:
+ *                       type: number
+ *                     graded_count:
+ *                       type: integer
+ *       403:
+ *         description: Access denied
+ */
+router.get('/teacher/:teacherId/stats', 
+    authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), 
+    AssignmentController.getTeacherAssignmentStats
+);
 
 module.exports = router;

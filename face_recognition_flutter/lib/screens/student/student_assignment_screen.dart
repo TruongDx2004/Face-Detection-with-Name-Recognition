@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../../models/models.dart';
 import '../../models/assignment_models.dart';
 import '../../services/api_service.dart';
+import 'assignment_detail_screen.dart';
 
 class StudentAssignmentScreen extends StatefulWidget {
   final int userId;
@@ -659,40 +660,47 @@ class _CourseAssignmentsScreenState extends State<CourseAssignmentsScreen> {
     }
   }
 
-  /// Format date for display
-  String _formatDate(DateTime date) {
-    final months = [
-      'Tháng 1',
-      'Tháng 2',
-      'Tháng 3',
-      'Tháng 4',
-      'Tháng 5',
-      'Tháng 6',
-      'Tháng 7',
-      'Tháng 8',
-      'Tháng 9',
-      'Tháng 10',
-      'Tháng 11',
-      'Tháng 12'
-    ];
+  /// Format date for display (Vietnam timezone)
+String _formatDate(DateTime date) {
+  // Chuyển về VN (UTC+7)
+  final vnDate = date.toUtc().add(const Duration(hours: 7));
 
-    final weekdays = [
-      'Chủ nhật',
-      'Thứ hai',
-      'Thứ ba',
-      'Thứ tư',
-      'Thứ năm',
-      'Thứ sáu',
-      'Thứ bảy'
-    ];
+  final months = [
+    'Tháng 1',
+    'Tháng 2',
+    'Tháng 3',
+    'Tháng 4',
+    'Tháng 5',
+    'Tháng 6',
+    'Tháng 7',
+    'Tháng 8',
+    'Tháng 9',
+    'Tháng 10',
+    'Tháng 11',
+    'Tháng 12'
+  ];
 
-    return '${weekdays[date.weekday % 7]}, ${date.day} ${months[date.month - 1]} ${date.year}';
-  }
+  final weekdays = [
+    'Chủ nhật',
+    'Thứ hai',
+    'Thứ ba',
+    'Thứ tư',
+    'Thứ năm',
+    'Thứ sáu',
+    'Thứ bảy'
+  ];
 
-  /// Format time for display
-  String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
+  return '${weekdays[vnDate.weekday % 7]}, ${vnDate.day} ${months[vnDate.month - 1]} ${vnDate.year}';
+}
+
+/// Format time for display (Vietnam timezone)
+String _formatTime(DateTime time) {
+  // Chuyển về VN (UTC+7)
+  final vnTime = time.toUtc().add(const Duration(hours: 7));
+
+  return '${vnTime.hour.toString().padLeft(2, '0')}:${vnTime.minute.toString().padLeft(2, '0')}';
+}
+
 
   /// Get assignment status color
   Color _getAssignmentStatusColor(
@@ -737,25 +745,46 @@ class _CourseAssignmentsScreenState extends State<CourseAssignmentsScreen> {
   }
 
   /// Navigate to assignment detail
-  void _navigateToAssignmentDetail(Assignment assignment) {
-    // TODO: Implement assignment detail screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Mở chi tiết bài tập: ${assignment.title}'),
-        backgroundColor: const Color(0xFF667eea),
-      ),
-    );
+  void _navigateToAssignmentDetail(Assignment assignment) async {
+    // Get current submission for this assignment
+    AssignmentSubmission? submission;
+    try {
+      final response = await ApiService().getAssignmentSubmission(
+        assignment.id,
+        widget.userId,
+      );
+      if (response.success) {
+        submission = response.data;
+      }
+    } catch (e) {
+      _logger.e('Error getting submission: $e');
+    }
+
+    if (mounted) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AssignmentDetailScreen(
+            assignment: assignment,
+            userId: widget.userId,
+            submission: submission,
+          ),
+        ),
+      );
+
+      // Refresh data if submission was successful
+      if (result == true) {
+        setState(() {
+          _loadData();
+        });
+      }
+    }
   }
 
   /// Submit assignment
-  void _submitAssignment(Assignment assignment) {
-    // TODO: Implement assignment submission
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Nộp bài tập: ${assignment.title}'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _submitAssignment(Assignment assignment) async {
+    // Navigate to assignment detail screen for submission
+    _navigateToAssignmentDetail(assignment);
   }
 
   /// View assignment result

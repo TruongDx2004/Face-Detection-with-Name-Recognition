@@ -51,7 +51,7 @@ class Assignment {
       createdDate: DateTime.parse(json['created_date'] ?? DateTime.now().toIso8601String()),
       isActive: (json['is_active'] as int) == 1,
       instructions: json['instructions'],
-      attachmentPath: json['attachment_path'],
+      attachmentPath: json['attachment_path'] as String?,
       courseName: json['course_name'],
       subjectName: json['subject_name'],
       className: json['class_name'],
@@ -142,7 +142,7 @@ class AssignmentSubmission {
       submittedAt: json['submitted_at'] != null 
           ? DateTime.parse(json['submitted_at']) 
           : null,
-      score: json['score']?.toDouble(),
+      score: double.tryParse(json['score'].toString()),
       status: json['status'] ?? 'pending',
       feedback: json['feedback'],
       submissionText: json['submission_text'],

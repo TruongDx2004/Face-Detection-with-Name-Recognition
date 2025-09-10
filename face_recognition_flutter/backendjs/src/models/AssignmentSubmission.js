@@ -112,19 +112,30 @@ class AssignmentSubmission {
     }
 
     // Lấy bài nộp của sinh viên theo course section
-    static async getStudentSubmissions(studentId, courseSectionId) {
-        const [rows] = await pool.execute(
-            `SELECT asub.*, 
+    static async getStudentSubmissions(studentId, courseSectionId = null) {
+        let query = `SELECT asub.*, 
                     a.title as assignment_title,
                     a.max_score,
                     a.due_date,
-                    a.assignment_type
+                    a.assignment_type,
+                    cs.name as course_name,
+                    s.name as subject_name
             FROM assignment_submissions asub
             JOIN assignments a ON asub.assignment_id = a.id
-            WHERE asub.student_id = ? AND a.course_section_id = ?
-            ORDER BY a.due_date DESC`,
-            [studentId, courseSectionId]
-        );
+            JOIN course_sections cs ON a.course_section_id = cs.id
+            JOIN subjects s ON cs.subject_id = s.id
+            WHERE asub.student_id = ?`;
+        
+        const params = [studentId];
+        
+        if (courseSectionId) {
+            query += ` AND a.course_section_id = ?`;
+            params.push(courseSectionId);
+        }
+        
+        query += ` ORDER BY a.due_date DESC`;
+        
+        const [rows] = await pool.execute(query, params);
         return rows.map(row => new AssignmentSubmission(row));
     }
 

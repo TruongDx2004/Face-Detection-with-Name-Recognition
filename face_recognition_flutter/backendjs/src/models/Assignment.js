@@ -106,7 +106,7 @@ class Assignment {
                     } else if (key === "is_active") {
                         // convert boolean -> tinyint
                         fields.push("is_active = ?");
-                        values.push(value == true ? 1 : 0);
+                        values.push(value === "true" ? 1 : 0);
                     } else {
                         fields.push(`${key} = ?`);
                         values.push(value);
@@ -145,18 +145,40 @@ class Assignment {
     static async getStudentAssignments(studentId, courseSectionId) {
         const [rows] = await pool.execute(
             `SELECT a.*, 
+                    cs.name as course_name,
+                    s.name as subject_name,
                     asub.id as submission_id,
                     asub.submitted_at,
                     asub.score,
                     asub.status as submission_status,
-                    asub.feedback
+                    asub.feedback,
+                    asub.submission_text,
+                    asub.attachment_path as submission_attachment_path
             FROM assignments a
+            JOIN course_sections cs ON a.course_section_id = cs.id
+            JOIN subjects s ON cs.subject_id = s.id
             LEFT JOIN assignment_submissions asub ON a.id = asub.assignment_id AND asub.student_id = ?
             WHERE a.course_section_id = ? AND a.is_active = TRUE
             ORDER BY a.due_date ASC`,
             [studentId, courseSectionId]
         );
-        return rows;
+        
+        // Transform rows to include submission data properly
+        return rows.map(row => {
+            const assignment = new Assignment(row);
+            return {
+                ...assignment,
+                submission: row.submission_id ? {
+                    id: row.submission_id,
+                    submitted_at: row.submitted_at,
+                    score: row.score,
+                    status: row.submission_status,
+                    feedback: row.feedback,
+                    submission_text: row.submission_text,
+                    attachment_path: row.submission_attachment_path
+                } : null
+            };
+        });
     }
 
     // Lấy tất cả bài tập của giáo viên

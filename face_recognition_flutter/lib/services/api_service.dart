@@ -1145,33 +1145,90 @@ class ApiService {
     }
   }
 
-  /// Submit assignment
+  /// Submit assignment with file upload
   Future<ApiResponse<AssignmentSubmission>> submitAssignment({
     required int assignmentId,
     required int studentId,
     String? submissionText,
-    String? attachmentPath,
+    File? attachmentFile,
   }) async {
     try {
-      final data = {
-        'assignment_id': assignmentId,
-        'student_id': studentId,
-        'submission_text': submissionText,
-        'attachment_path': attachmentPath,
-      };
+      if (attachmentFile != null) {
+        // Submit with file upload
+        final request = http.MultipartRequest(
+          'POST',
+          Uri.parse('$baseUrl/assignments/submit'),
+        );
 
+        // Add headers
+        final token = _authService.currentToken;
+        if (token != null) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+
+        // Add fields
+        request.fields['assignment_id'] = assignmentId.toString();
+        request.fields['student_id'] = studentId.toString();
+        if (submissionText != null) {
+          request.fields['submission_text'] = submissionText;
+        }
+
+        // Add file
+        final mimeType = lookupMimeType(attachmentFile.path) ?? 'application/octet-stream';
+        final multipartFile = await http.MultipartFile.fromPath(
+          'attachment',
+          attachmentFile.path,
+          contentType: MediaType.parse(mimeType),
+        );
+        request.files.add(multipartFile);
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+
+        return _handleResponse<AssignmentSubmission>(response, (json) {
+          return AssignmentSubmission.fromJson(json);
+        });
+      } else {
+        // Submit without file
+        final data = {
+          'assignment_id': assignmentId,
+          'student_id': studentId,
+          'submission_text': submissionText,
+        };
+
+        final response = await _makeRequest(
+          'POST',
+          '/assignments/submit',
+          body: data,
+        );
+
+        return _handleResponse<AssignmentSubmission>(response, (json) {
+          return AssignmentSubmission.fromJson(json);
+        });
+      }
+    } catch (e) {
+      _logger.e('Error submitting assignment: $e');
+      return ApiResponse.error('Failed to submit assignment: $e');
+    }
+  }
+
+  /// Get assignment submission by assignment and student
+  Future<ApiResponse<AssignmentSubmission>> getAssignmentSubmission(
+    int assignmentId,
+    int studentId,
+  ) async {
+    try {
       final response = await _makeRequest(
-        'POST',
-        '/assignments/submit',
-        body: data,
+        'GET',
+        '/assignments/$assignmentId/submissions/$studentId',
       );
 
       return _handleResponse<AssignmentSubmission>(response, (json) {
         return AssignmentSubmission.fromJson(json);
       });
     } catch (e) {
-      _logger.e('Error submitting assignment: $e');
-      return ApiResponse.error('Failed to submit assignment: $e');
+      _logger.e('Error getting assignment submission: $e');
+      return ApiResponse.error('Failed to get assignment submission: $e');
     }
   }
 
