@@ -444,6 +444,28 @@ class ApiService {
         return await this.makeRequest('GET', '/course-sections/teacher');
     }
 
+    // Download assignment file
+    async downloadAssignmentFile(filename) {
+        try {
+            const url = `${this.baseUrl}/assignments/files/${filename}`;
+            const headers = this.getHeaders();
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to download file');
+            }
+
+            return response.blob();
+        } catch (error) {
+            console.error('Download file error:', error);
+            throw error;
+        }
+    }
+
     // ============ UTILITY METHODS ============
     async testConnection() {
         return await this.makeRequest('GET', '/');

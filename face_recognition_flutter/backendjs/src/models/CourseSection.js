@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { success } = require('../utils/responseHelper');
 
 class CourseSection {
     constructor(data) {
@@ -307,6 +308,71 @@ class CourseSection {
             throw new Error(`Error getting course sections by class: ${error.message}`);
         }
     }
+
+    // Lấy course sections theo student
+    static async getByStudent(studentId, page = 1, limit = 10) {
+        try {
+            const offset = (page - 1) * limit;
+
+            // Gắn trực tiếp limit và offset vào query
+            const [courseSections] = await db.execute(`
+            SELECT
+                cs.id,
+                cs.name,
+                cs.code,
+                cs.semester,
+                cs.academic_year,
+                cs.max_students,
+                cs.description,
+                cs.is_active,
+                cs.created_at,
+                cs.updated_at,
+                c.name AS class_name,
+                s.name AS subject_name,
+                s.code AS subject_code,
+                s.credits,
+                u.full_name AS teacher_name,
+                COUNT(DISTINCT cs_student.student_id) AS student_count
+            FROM course_sections cs
+            INNER JOIN classes c ON cs.class_id = c.id
+            INNER JOIN class_students cs_student ON c.id = cs_student.class_id
+            LEFT JOIN subjects s ON cs.subject_id = s.id
+            LEFT JOIN users u ON cs.teacher_id = u.id
+            WHERE cs_student.student_id = ? AND cs.is_active = TRUE
+            GROUP BY cs.id
+            ORDER BY cs.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+        `, [studentId]);
+
+            // Query tổng số course sections
+            const [countRows] = await db.execute(`
+            SELECT COUNT(DISTINCT cs.id) AS total
+            FROM course_sections cs
+            INNER JOIN classes c ON cs.class_id = c.id
+            INNER JOIN class_students cs_student ON c.id = cs_student.class_id
+            WHERE cs_student.student_id = ? AND cs.is_active = TRUE
+        `, [studentId]);
+
+            const total = countRows[0].total;
+            const totalPages = Math.ceil(total / limit);
+
+            return {
+                course_sections: courseSections,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages
+                },
+                success: true
+            };
+        } catch (error) {
+            console.error('Error getting course sections by student:', error);
+            throw new Error('Failed to fetch course sections for student.');
+        }
+    }
+
+
 }
 
 module.exports = CourseSection;

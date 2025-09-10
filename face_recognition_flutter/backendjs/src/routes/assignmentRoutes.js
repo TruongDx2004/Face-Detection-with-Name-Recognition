@@ -441,4 +441,34 @@ router.get('/teacher/stats', authenticateToken, AssignmentController.getTeacherS
  */
 router.get('/ungraded', authenticateToken, AssignmentController.getUngraded);
 
+/**
+ * @swagger
+ * /assignments/files/uploads/assignments/{filename}:
+ *   get:
+ *     summary: Download assignment attachment file
+ *     tags: [Assignments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The filename to download
+ *     responses:
+ *       200:
+ *         description: File downloaded successfully
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: File not found
+ *       403:
+ *         description: Access denied
+ */
+router.get('/files/uploads/assignments/:filename', authenticateToken, AssignmentController.downloadFile);
+
 module.exports = router;

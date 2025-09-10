@@ -104,6 +104,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             elevation: 0,
             backgroundColor: const Color(0xFF667eea),
             flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
               title: Text(
                 widget.courseSectionName,
                 style: const TextStyle(

@@ -450,4 +450,68 @@ router.get('/teacher/:teacherId', auth, CourseSectionController.getCourseSection
  */
 router.get('/class/:classId', auth, CourseSectionController.getCourseSectionsByClass);
 
+/**
+ * @swagger
+ * /api/course-sections/student/{studentId}:
+ *   get:
+ *     summary: Get course sections by student
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: studentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Student ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Student course sections retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     course_sections:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/CourseSection'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
+ *       404:
+ *         description: Student not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/student/:studentId', auth, CourseSectionController.getCourseSectionsByStudent);
+
 module.exports = router;

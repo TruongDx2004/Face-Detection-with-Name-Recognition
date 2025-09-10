@@ -5,6 +5,7 @@ import 'package:face_attendance/models/class.dart';
 import 'package:face_attendance/models/register_request.dart';
 import 'package:face_attendance/models/student.dart';
 import 'package:face_attendance/models/subject.dart';
+import 'package:face_attendance/models/course_section.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';
@@ -38,6 +39,61 @@ class ApiService {
   }
 
   // ============ HELPER METHODS ============
+
+  Future<ApiResponse<List<T>>> _handleListResponse<T>(
+    http.Response response,
+    T Function(Map<String, dynamic>) fromJson,
+  ) async {
+    _logger.d('Response Status: ${response.statusCode}');
+    _logger.d('Response Body: ${response.body}');
+
+    try {
+      final dynamic responseData = jsonDecode(response.body);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final String message;
+        final dynamic dataRaw;
+
+        if (responseData is Map<String, dynamic>) {
+          message = responseData['message'] ?? 'Success';
+          dataRaw = responseData['data'] ?? responseData;
+        } else {
+          message = 'Success';
+          dataRaw = responseData;
+        }
+
+        _logger.d('Response Data: $dataRaw');
+
+        // Handle List response
+        if (dataRaw is List) {
+          final List<T> items = dataRaw
+              .map((item) => fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+          return ApiResponse.success(items, message: message);
+        } else {
+          return ApiResponse.error(
+              'Expected list response but got: ${dataRaw.runtimeType}');
+        }
+      } else {
+        final errorMessage = responseData is Map<String, dynamic> &&
+                responseData['detail'] is List
+            ? (responseData['detail'] as List)
+                .map((e) => e['msg'] ?? e.toString())
+                .join(', ')
+            : responseData is Map<String, dynamic>
+                ? (responseData['detail'] ??
+                    responseData['error'] ??
+                    responseData['message'] ??
+                    'Unknown error occurred')
+                : 'Unknown error occurred';
+        return ApiResponse.error(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      _logger.e('Error parsing response: $e');
+      return ApiResponse.error('Failed to parse response: $e',
+          statusCode: response.statusCode);
+    }
+  }
 
   Future<ApiResponse<T>> _handleResponse<T>(
     http.Response response,
@@ -507,7 +563,8 @@ class ApiService {
         response,
         (data) {
           final List<dynamic> recordsList;
-          recordsList = data['attendance'] ?? data['data'] ?? data['records'] ?? [];
+          recordsList =
+              data['attendance'] ?? data['data'] ?? data['records'] ?? [];
           return recordsList.map((item) => Attendance.fromJson(item)).toList();
         },
       );
@@ -1050,6 +1107,315 @@ class ApiService {
     } catch (e) {
       _logger.e('Test connection error: $e');
       return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  // ============ ASSIGNMENT ENDPOINTS ============
+
+  Future<ApiResponse<List<Assignment>>> getStudentAssignments(
+      int courseSectionId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/assignments/student/$courseSectionId');
+
+      return _handleListResponse<Assignment>(
+        response,
+        (json) => Assignment.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting student assignments: $e');
+      return ApiResponse.error('Failed to get assignments: ${e.toString()}');
+    }
+  }
+
+  /// Get student submissions
+  Future<ApiResponse<List<AssignmentSubmission>>> getStudentSubmissions(
+      int studentId) async {
+    try {
+      final response = await _makeRequest(
+          'GET', '/assignments/submissions/student/$studentId');
+
+      return _handleListResponse<AssignmentSubmission>(
+        response,
+        (json) => AssignmentSubmission.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting student submissions: $e');
+      return ApiResponse.error('Failed to get submissions: $e');
+    }
+  }
+
+  /// Submit assignment
+  Future<ApiResponse<AssignmentSubmission>> submitAssignment({
+    required int assignmentId,
+    required int studentId,
+    String? submissionText,
+    String? attachmentPath,
+  }) async {
+    try {
+      final data = {
+        'assignment_id': assignmentId,
+        'student_id': studentId,
+        'submission_text': submissionText,
+        'attachment_path': attachmentPath,
+      };
+
+      final response = await _makeRequest(
+        'POST',
+        '/assignments/submit',
+        body: data,
+      );
+
+      return _handleResponse<AssignmentSubmission>(response, (json) {
+        return AssignmentSubmission.fromJson(json);
+      });
+    } catch (e) {
+      _logger.e('Error submitting assignment: $e');
+      return ApiResponse.error('Failed to submit assignment: $e');
+    }
+  }
+
+  /// Get assignment details
+  Future<ApiResponse<Assignment>> getAssignmentDetails(int assignmentId) async {
+    try {
+      final response = await _makeRequest(
+        'GET',
+        '/assignments/$assignmentId',
+      );
+
+      return _handleResponse<Assignment>(response, (json) {
+        return Assignment.fromJson(json);
+      });
+    } catch (e) {
+      _logger.e('Error getting assignment details: $e');
+      return ApiResponse.error('Failed to get assignment details: $e');
+    }
+  }
+
+  // ============ QUIZ ENDPOINTS ============
+
+  /// Get quizzes for student by course section
+  Future<ApiResponse<List<Quiz>>> getStudentQuizzes(int courseSectionId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/quizzes/student/$courseSectionId');
+      return _handleResponse<List<Quiz>>(response, (jsonList) {
+        return (jsonList as List).map((json) => Quiz.fromJson(json)).toList();
+      });
+    } catch (e) {
+      _logger.e('Error getting student quizzes: $e');
+      return ApiResponse.error('Failed to get quizzes: $e');
+    }
+  }
+
+  /// Start quiz attempt
+  Future<ApiResponse<QuizAttempt>> startQuizAttempt({
+    required int quizId,
+    required int studentId,
+  }) async {
+    try {
+      final data = {'quiz_id': quizId, 'student_id': studentId};
+      final response = await _makeRequest('POST', '/quizzes/start', body: data);
+      return _handleResponse<QuizAttempt>(
+          response, (json) => QuizAttempt.fromJson(json));
+    } catch (e) {
+      _logger.e('Error starting quiz attempt: $e');
+      return ApiResponse.error('Failed to start quiz: $e');
+    }
+  }
+
+  /// Submit quiz attempt
+  Future<ApiResponse<QuizAttempt>> submitQuizAttempt({
+    required int attemptId,
+    required Map<String, dynamic> answers,
+  }) async {
+    try {
+      final data = {'attempt_id': attemptId, 'answers': answers};
+      final response =
+          await _makeRequest('POST', '/quizzes/submit', body: data);
+      return _handleResponse<QuizAttempt>(
+          response, (json) => QuizAttempt.fromJson(json));
+    } catch (e) {
+      _logger.e('Error submitting quiz attempt: $e');
+      return ApiResponse.error('Failed to submit quiz: $e');
+    }
+  }
+
+  /// Get quiz attempt details
+  Future<ApiResponse<QuizAttempt>> getQuizAttempt(int attemptId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/quizzes/attempts/$attemptId');
+      return _handleResponse<QuizAttempt>(
+          response, (json) => QuizAttempt.fromJson(json));
+    } catch (e) {
+      _logger.e('Error getting quiz attempt: $e');
+      return ApiResponse.error('Failed to get quiz attempt: $e');
+    }
+  }
+
+  // ============ COURSE SECTION ENDPOINTS ============
+
+  /// Get course sections for student
+  /// Get course sections for student
+  Future<ApiResponse<List<CourseSection>>> getStudentCourseSections(
+      int studentId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/course-sections/student/$studentId');
+
+      return _handleResponse<List<CourseSection>>(
+        response,
+        (data) {
+          // Lấy danh sách course_sections từ response
+          final List<dynamic> sectionsList = data['course_sections'] ?? [];
+          return sectionsList
+              .map((item) =>
+                  CourseSection.fromJson(item as Map<String, dynamic>))
+              .toList();
+        },
+      );
+    } catch (e) {
+      _logger.e('Error getting student course sections: $e');
+      return ApiResponse.error('Failed to get course sections: $e');
+    }
+  }
+
+  /// Get all course sections
+  Future<ApiResponse<List<CourseSection>>> getCourseSections() async {
+    try {
+      final response = await _makeRequest('GET', '/course-sections');
+
+      return _handleListResponse<CourseSection>(
+        response,
+        (json) => CourseSection.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting course sections: $e');
+      return ApiResponse.error('Failed to get course sections: $e');
+    }
+  }
+
+  /// Get course section details
+  Future<ApiResponse<CourseSection>> getCourseSectionDetails(
+      int courseSectionId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/course-sections/$courseSectionId');
+
+      return _handleResponse<CourseSection>(
+        response,
+        (json) => CourseSection.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting course section details: $e');
+      return ApiResponse.error('Failed to get course section details: $e');
+    }
+  }
+
+  // ============ EXAM ENDPOINTS ============
+
+  /// Get exams for student by course section
+  Future<ApiResponse<List<Exam>>> getStudentExams(int courseSectionId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/exams/student/$courseSectionId');
+
+      return _handleListResponse<Exam>(
+        response,
+        (json) => Exam.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting student exams: $e');
+      return ApiResponse.error('Failed to get exams: $e');
+    }
+  }
+
+  /// Get student exam results
+  Future<ApiResponse<List<ExamResult>>> getStudentExamResults(
+      int studentId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/exams/results/student/$studentId');
+
+      return _handleListResponse<ExamResult>(
+        response,
+        (json) => ExamResult.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting student exam results: $e');
+      return ApiResponse.error('Failed to get exam results: $e');
+    }
+  }
+
+  /// Start exam attempt
+  Future<ApiResponse<ExamResult>> startExamAttempt({
+    required int examId,
+    required int studentId,
+  }) async {
+    try {
+      final data = {'exam_id': examId, 'student_id': studentId};
+      final response = await _makeRequest('POST', '/exams/start', body: data);
+      return _handleResponse<ExamResult>(
+          response, (json) => ExamResult.fromJson(json));
+    } catch (e) {
+      _logger.e('Error starting exam attempt: $e');
+      return ApiResponse.error('Failed to start exam: $e');
+    }
+  }
+
+  /// Submit exam attempt
+  Future<ApiResponse<ExamResult>> submitExamAttempt({
+    required int examId,
+    required int studentId,
+    required List<ExamAnswer> answers,
+  }) async {
+    try {
+      final data = {
+        'exam_id': examId,
+        'student_id': studentId,
+        'answers': answers.map((answer) => answer.toJson()).toList(),
+      };
+      final response = await _makeRequest('POST', '/exams/submit', body: data);
+      return _handleResponse<ExamResult>(
+          response, (json) => ExamResult.fromJson(json));
+    } catch (e) {
+      _logger.e('Error submitting exam attempt: $e');
+      return ApiResponse.error('Failed to submit exam: $e');
+    }
+  }
+
+  /// Get exam details
+  Future<ApiResponse<Exam>> getExamDetails(int examId) async {
+    try {
+      final response = await _makeRequest(
+        'GET',
+        '/exams/$examId',
+      );
+
+      return _handleResponse<Exam>(response, (json) {
+        return Exam.fromJson(json);
+      });
+    } catch (e) {
+      _logger.e('Error getting exam details: $e');
+      return ApiResponse.error('Failed to get exam details: $e');
+    }
+  }
+
+  /// Get exam result details
+  Future<ApiResponse<ExamResult>> getExamResult(int resultId) async {
+    try {
+      final response = await _makeRequest(
+        'GET',
+        '/exams/results/$resultId',
+      );
+
+      return _handleResponse<ExamResult>(response, (json) {
+        return ExamResult.fromJson(json);
+      });
+    } catch (e) {
+      _logger.e('Error getting exam result: $e');
+      return ApiResponse.error('Failed to get exam result: $e');
     }
   }
 

@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../utils/logout_helper.dart' as logout_helper;
 import 'face_capture_screen.dart';
 import 'student_schedule.dart';
+import 'student_assignment_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   final int userId;
@@ -784,23 +785,84 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   void _navigateToAssignments() {
-    // TODO: Implement assignments screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chức năng bài tập đang được phát triển'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    // Điều hướng đến màn hình bài tập và kiểm tra
+    _schedulesFuture.then((schedules) {
+      if (schedules.isNotEmpty) {
+        final firstSchedule = schedules.first;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => StudentAssignmentScreen(
+              userId: widget.userId,
+              courseSectionId: firstSchedule.id,
+              courseSectionName: firstSchedule.subjectName ?? 'Học phần',
+            ),
+          ),
+        );
+      } else {
+        // Nếu không có schedule, sử dụng giá trị mặc định
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => StudentAssignmentScreen(
+              userId: widget.userId,
+              courseSectionId: 1,
+              courseSectionName: 'Bài tập & Kiểm tra',
+            ),
+          ),
+        );
+      }
+    }).catchError((error) {
+      // Nếu có lỗi, vẫn điều hướng với giá trị mặc định
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => StudentAssignmentScreen(
+            userId: widget.userId,
+            courseSectionId: 1,
+            courseSectionName: 'Bài tập & Kiểm tra',
+          ),
+        ),
+      );
+    });
   }
 
   void _navigateToGrades() {
-    // TODO: Implement grades screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chức năng điểm số đang được phát triển'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    // Điều hướng đến màn hình bài tập và kiểm tra
+    // Sử dụng courseSectionId mặc định hoặc lấy từ schedule đầu tiên
+    _schedulesFuture.then((schedules) {
+      if (schedules.isNotEmpty) {
+        final firstSchedule = schedules.first;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => StudentAssignmentScreen(
+              userId: widget.userId,
+              courseSectionId: firstSchedule.id, // Sử dụng schedule ID làm course section ID
+              courseSectionName: firstSchedule.subjectName ?? 'Học phần',
+            ),
+          ),
+        );
+      } else {
+        // Nếu không có schedule, sử dụng giá trị mặc định
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => StudentAssignmentScreen(
+              userId: widget.userId,
+              courseSectionId: 1, // Giá trị mặc định
+              courseSectionName: 'Bài tập & Kiểm tra',
+            ),
+          ),
+        );
+      }
+    }).catchError((error) {
+      // Nếu có lỗi, vẫn điều hướng với giá trị mặc định
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => StudentAssignmentScreen(
+            userId: widget.userId,
+            courseSectionId: 1,
+            courseSectionName: 'Bài tập & Kiểm tra',
+          ),
+        ),
+      );
+    });
   }
 
   void _navigateToAttendanceHistory() {

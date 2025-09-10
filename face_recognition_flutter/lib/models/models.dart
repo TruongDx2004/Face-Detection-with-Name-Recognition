@@ -8,6 +8,9 @@ export 'course_section.dart';
 // Attendance related models
 export 'attendance_models.dart';
 
+// Assignment related models
+export 'assignment_models.dart';
+
 // Request/Response models
 export 'login_request.dart';
 export 'login_response.dart';

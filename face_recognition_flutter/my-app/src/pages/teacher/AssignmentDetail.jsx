@@ -814,7 +814,24 @@ const AssignmentDetail = () => {
                         <div style={styles.infoLabel}>Tệp đính kèm</div>
                         <button
                             style={{ ...styles.button, ...styles.buttonSecondary }}
-                            onClick={() => window.open(assignment.attachment_path, '_blank')}
+                            onClick={async () => {
+                                try {
+                                    const filename = assignment.attachment_path.split('/').pop();
+                                    const blob = await ApiService.downloadAssignmentFile(filename);
+                                    
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = filename;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    window.URL.revokeObjectURL(url);
+                                    document.body.removeChild(a);
+                                } catch (error) {
+                                    console.error('Download error:', error);
+                                    showNotification('Lỗi khi tải file', 'error');
+                                }
+                            }}
                         >
                             <i className="fas fa-download"></i>
                             Tải xuống

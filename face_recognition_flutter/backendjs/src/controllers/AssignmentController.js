@@ -1,6 +1,6 @@
 const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
-const ResponseHelper = require('../utils/responseHelper');
+const ResponseHelper = require('../utils/ResponseHelper');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -102,6 +102,69 @@ class AssignmentController {
         } catch (error) {
             console.error('Get teacher assignments error:', error);
             ResponseHelper.error(res, 'Failed to retrieve teacher assignments', 500);
+        }
+    }
+
+    // Download assignment file
+    static async downloadFile(req, res) {
+        try {
+            const { filename } = req.params;
+            const filePath = path.join('uploads/assignments', filename);
+
+            // Check if file exists
+            try {
+                await fs.access(filePath);
+            } catch (error) {
+                return ResponseHelper.error(res, 'File not found', 404);
+            }
+
+            // Security check: ensure filename doesn't contain path traversal
+            if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+                return ResponseHelper.error(res, 'Invalid filename', 400);
+            }
+
+            // Set appropriate headers
+            const ext = path.extname(filename).toLowerCase();
+            let contentType = 'application/octet-stream';
+            
+            switch (ext) {
+                case '.pdf':
+                    contentType = 'application/pdf';
+                    break;
+                case '.doc':
+                    contentType = 'application/msword';
+                    break;
+                case '.docx':
+                    contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                    break;
+                case '.txt':
+                    contentType = 'text/plain';
+                    break;
+                case '.jpg':
+                case '.jpeg':
+                    contentType = 'image/jpeg';
+                    break;
+                case '.png':
+                    contentType = 'image/png';
+                    break;
+                case '.zip':
+                    contentType = 'application/zip';
+                    break;
+                case '.rar':
+                    contentType = 'application/x-rar-compressed';
+                    break;
+            }
+
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            
+            // Stream the file
+            const fileStream = require('fs').createReadStream(filePath);
+            fileStream.pipe(res);
+
+        } catch (error) {
+            console.error('Download file error:', error);
+            ResponseHelper.error(res, 'Failed to download file', 500);
         }
     }
 

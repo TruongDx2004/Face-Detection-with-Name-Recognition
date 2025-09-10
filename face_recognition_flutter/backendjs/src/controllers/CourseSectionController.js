@@ -262,6 +262,27 @@ class CourseSectionController {
             return ResponseHelper.error(res, error.message, 500);
         }
     }
+
+    // Lấy course sections theo student
+    static async getCourseSectionsByStudent(req, res) {
+        try {
+            const { studentId } = req.params;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+
+            // Kiểm tra student có tồn tại không
+            const student = await User.findById(studentId);
+            if (!student || student.role !== 'student') {
+                return ResponseHelper.error(res, 'Student not found', 404);
+            }
+
+            const result = await CourseSection.getByStudent(studentId, page, limit);
+            
+            return ResponseHelper.success(res, result, 'Student course sections retrieved successfully');
+        } catch (error) {
+            return ResponseHelper.error(res, error.message, 500);
+        }
+    }
 }
 
 module.exports = CourseSectionController;

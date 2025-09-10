@@ -328,7 +328,7 @@ const TeacherAssignments = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [assignments, setAssignments] = useState([]);
-    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('active');
     const [currentTime, setCurrentTime] = useState(new Date());
     const [currentUser, setCurrentUser] = useState(null);
 

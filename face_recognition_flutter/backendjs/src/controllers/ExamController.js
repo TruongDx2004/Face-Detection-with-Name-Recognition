@@ -2,7 +2,7 @@ const Exam = require('../models/Exam');
 const ExamQuestion = require('../models/ExamQuestion');
 const ExamResult = require('../models/ExamResult');
 const ExamAnswer = require('../models/ExamAnswer');
-const { responseHelper } = require('../utils/responseHelper');
+const ResponseHelper = require('../utils/responseHelper');
 
 class ExamController {
     // Tạo bài kiểm tra mới
@@ -24,7 +24,7 @@ class ExamController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             // Tạo bài thi
@@ -47,11 +47,11 @@ class ExamController {
             }
 
             const exam = await Exam.getById(examId);
-            responseHelper.success(res, exam, 'Exam created successfully', 201);
+            ResponseHelper.success(res, exam, 'Exam created successfully', 201);
 
         } catch (error) {
             console.error('Create exam error:', error);
-            responseHelper.error(res, 'Failed to create exam', 500);
+            ResponseHelper.error(res, 'Failed to create exam', 500);
         }
     }
 
@@ -61,11 +61,11 @@ class ExamController {
             const { courseSectionId } = req.params;
             const exams = await Exam.getByCourseSection(courseSectionId);
 
-            responseHelper.success(res, exams, 'Exams retrieved successfully');
+            ResponseHelper.success(res, exams, 'Exams retrieved successfully');
 
         } catch (error) {
             console.error('Get exams error:', error);
-            responseHelper.error(res, 'Failed to retrieve exams', 500);
+            ResponseHelper.error(res, 'Failed to retrieve exams', 500);
         }
     }
 
@@ -76,18 +76,18 @@ class ExamController {
             const exam = await Exam.getById(id);
 
             if (!exam) {
-                return responseHelper.error(res, 'Exam not found', 404);
+                return ResponseHelper.error(res, 'Exam not found', 404);
             }
 
             // Lấy câu hỏi (ẩn đáp án nếu là sinh viên)
             const includeAnswers = req.user.role === 'teacher' || req.user.role === 'admin';
             const questions = await ExamQuestion.getByExam(id, includeAnswers);
 
-            responseHelper.success(res, { ...exam, questions }, 'Exam retrieved successfully');
+            ResponseHelper.success(res, { ...exam, questions }, 'Exam retrieved successfully');
 
         } catch (error) {
             console.error('Get exam error:', error);
-            responseHelper.error(res, 'Failed to retrieve exam', 500);
+            ResponseHelper.error(res, 'Failed to retrieve exam', 500);
         }
     }
 
@@ -99,20 +99,20 @@ class ExamController {
 
             // Kiểm tra quyền
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const updated = await Exam.update(id, updateData);
             if (!updated) {
-                return responseHelper.error(res, 'Exam not found', 404);
+                return ResponseHelper.error(res, 'Exam not found', 404);
             }
 
             const exam = await Exam.getById(id);
-            responseHelper.success(res, exam, 'Exam updated successfully');
+            ResponseHelper.success(res, exam, 'Exam updated successfully');
 
         } catch (error) {
             console.error('Update exam error:', error);
-            responseHelper.error(res, 'Failed to update exam', 500);
+            ResponseHelper.error(res, 'Failed to update exam', 500);
         }
     }
 
@@ -123,19 +123,19 @@ class ExamController {
 
             // Kiểm tra quyền
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const deleted = await Exam.delete(id);
             if (!deleted) {
-                return responseHelper.error(res, 'Exam not found', 404);
+                return ResponseHelper.error(res, 'Exam not found', 404);
             }
 
-            responseHelper.success(res, null, 'Exam deleted successfully');
+            ResponseHelper.success(res, null, 'Exam deleted successfully');
 
         } catch (error) {
             console.error('Delete exam error:', error);
-            responseHelper.error(res, 'Failed to delete exam', 500);
+            ResponseHelper.error(res, 'Failed to delete exam', 500);
         }
     }
 
@@ -147,13 +147,13 @@ class ExamController {
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
-                return responseHelper.error(res, 'Only students can take exams', 403);
+                return ResponseHelper.error(res, 'Only students can take exams', 403);
             }
 
             // Kiểm tra xem có thể làm bài không
             const { canTake, reason, exam } = await Exam.canTakeExam(examId, studentId);
             if (!canTake) {
-                return responseHelper.error(res, reason, 400);
+                return ResponseHelper.error(res, reason, 400);
             }
 
             // Tính tổng điểm
@@ -163,7 +163,7 @@ class ExamController {
             // Bắt đầu làm bài
             const resultId = await ExamResult.startExam(examId, studentId, totalScore);
 
-            responseHelper.success(res, {
+            ResponseHelper.success(res, {
                 result_id: resultId,
                 exam: exam,
                 questions: questions,
@@ -172,7 +172,7 @@ class ExamController {
 
         } catch (error) {
             console.error('Start exam error:', error);
-            responseHelper.error(res, error.message || 'Failed to start exam', 500);
+            ResponseHelper.error(res, error.message || 'Failed to start exam', 500);
         }
     }
 
@@ -184,7 +184,7 @@ class ExamController {
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             await ExamAnswer.saveAnswer({
@@ -193,11 +193,11 @@ class ExamController {
                 student_answer
             });
 
-            responseHelper.success(res, null, 'Answer saved successfully');
+            ResponseHelper.success(res, null, 'Answer saved successfully');
 
         } catch (error) {
             console.error('Save answer error:', error);
-            responseHelper.error(res, 'Failed to save answer', 500);
+            ResponseHelper.error(res, 'Failed to save answer', 500);
         }
     }
 
@@ -209,7 +209,7 @@ class ExamController {
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             // Lưu tất cả câu trả lời
@@ -220,15 +220,15 @@ class ExamController {
             // Nộp bài
             const submitted = await ExamResult.submitExam(resultId);
             if (!submitted) {
-                return responseHelper.error(res, 'Failed to submit exam', 400);
+                return ResponseHelper.error(res, 'Failed to submit exam', 400);
             }
 
             const result = await ExamResult.getById(resultId);
-            responseHelper.success(res, result, 'Exam submitted successfully');
+            ResponseHelper.success(res, result, 'Exam submitted successfully');
 
         } catch (error) {
             console.error('Submit exam error:', error);
-            responseHelper.error(res, 'Failed to submit exam', 500);
+            ResponseHelper.error(res, 'Failed to submit exam', 500);
         }
     }
 
@@ -239,15 +239,15 @@ class ExamController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const results = await ExamResult.getByExam(examId);
-            responseHelper.success(res, results, 'Exam results retrieved successfully');
+            ResponseHelper.success(res, results, 'Exam results retrieved successfully');
 
         } catch (error) {
             console.error('Get exam results error:', error);
-            responseHelper.error(res, 'Failed to retrieve exam results', 500);
+            ResponseHelper.error(res, 'Failed to retrieve exam results', 500);
         }
     }
 
@@ -258,22 +258,22 @@ class ExamController {
             const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
 
             if (!studentId) {
-                return responseHelper.error(res, 'Student ID is required', 400);
+                return ResponseHelper.error(res, 'Student ID is required', 400);
             }
 
             const result = await ExamResult.getByExamAndStudent(examId, studentId);
             if (!result) {
-                return responseHelper.error(res, 'Exam result not found', 404);
+                return ResponseHelper.error(res, 'Exam result not found', 404);
             }
 
             // Lấy câu trả lời
             const answers = await ExamAnswer.getByExamResult(result.id);
 
-            responseHelper.success(res, { ...result, answers }, 'Exam result retrieved successfully');
+            ResponseHelper.success(res, { ...result, answers }, 'Exam result retrieved successfully');
 
         } catch (error) {
             console.error('Get student exam result error:', error);
-            responseHelper.error(res, 'Failed to retrieve exam result', 500);
+            ResponseHelper.error(res, 'Failed to retrieve exam result', 500);
         }
     }
 
@@ -285,7 +285,7 @@ class ExamController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             // Chấm điểm từng câu nếu có
@@ -302,11 +302,11 @@ class ExamController {
             }
 
             const result = await ExamResult.getById(resultId);
-            responseHelper.success(res, result, 'Exam graded successfully');
+            ResponseHelper.success(res, result, 'Exam graded successfully');
 
         } catch (error) {
             console.error('Grade exam error:', error);
-            responseHelper.error(res, 'Failed to grade exam', 500);
+            ResponseHelper.error(res, 'Failed to grade exam', 500);
         }
     }
 
@@ -315,17 +315,16 @@ class ExamController {
         try {
             const { courseSectionId } = req.params;
             const studentId = req.user.role === 'student' ? req.user.id : req.query.studentId;
-
             if (!studentId) {
-                return responseHelper.error(res, 'Student ID is required', 400);
+                return ResponseHelper.error(res, 'Student ID is required', 400);
             }
-
+            console.log(studentId + " AAA " + courseSectionId)
             const exams = await Exam.getStudentExams(studentId, courseSectionId);
-            responseHelper.success(res, exams, 'Student exams retrieved successfully');
+            ResponseHelper.success(res, exams, 'Student exams retrieved successfully');
 
         } catch (error) {
             console.error('Get student exams error:', error);
-            responseHelper.error(res, 'Failed to retrieve student exams', 500);
+            ResponseHelper.error(res, 'Failed to retrieve student exams', 500);
         }
     }
 
@@ -336,15 +335,15 @@ class ExamController {
 
             // Kiểm tra quyền giáo viên
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const stats = await ExamResult.getExamStatistics(examId);
-            responseHelper.success(res, stats, 'Exam statistics retrieved successfully');
+            ResponseHelper.success(res, stats, 'Exam statistics retrieved successfully');
 
         } catch (error) {
             console.error('Get exam statistics error:', error);
-            responseHelper.error(res, 'Failed to retrieve exam statistics', 500);
+            ResponseHelper.error(res, 'Failed to retrieve exam statistics', 500);
         }
     }
 
@@ -356,15 +355,15 @@ class ExamController {
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const timeCheck = await ExamResult.checkTimeLimit(resultId, parseInt(duration_minutes));
-            responseHelper.success(res, timeCheck, 'Time check completed');
+            ResponseHelper.success(res, timeCheck, 'Time check completed');
 
         } catch (error) {
             console.error('Check time limit error:', error);
-            responseHelper.error(res, 'Failed to check time limit', 500);
+            ResponseHelper.error(res, 'Failed to check time limit', 500);
         }
     }
 
@@ -374,15 +373,15 @@ class ExamController {
             const teacherId = req.user.id;
 
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return responseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Access denied', 403);
             }
 
             const results = await ExamResult.getUngraded(teacherId);
-            responseHelper.success(res, results, 'Ungraded exams retrieved successfully');
+            ResponseHelper.success(res, results, 'Ungraded exams retrieved successfully');
 
         } catch (error) {
             console.error('Get ungraded error:', error);
-            responseHelper.error(res, 'Failed to retrieve ungraded exams', 500);
+            ResponseHelper.error(res, 'Failed to retrieve ungraded exams', 500);
         }
     }
 }
