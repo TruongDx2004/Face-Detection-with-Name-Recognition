@@ -566,7 +566,7 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
                 const SizedBox(width: 16),
 
                 // Time display
-                Container(
+                SizedBox(
                   width: 70,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,9 +857,9 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
               ),
             ),
             const SizedBox(height: 24.0),
-            Text(
+            const Text(
               'Đã xảy ra lỗi',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,

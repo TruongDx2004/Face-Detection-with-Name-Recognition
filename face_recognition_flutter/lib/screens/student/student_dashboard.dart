@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../models/models.dart';
-import '../../models/attendance_models.dart';
 import '../../services/api_service.dart';
 import '../../utils/logout_helper.dart' as logout_helper;
 import 'face_capture_screen.dart';

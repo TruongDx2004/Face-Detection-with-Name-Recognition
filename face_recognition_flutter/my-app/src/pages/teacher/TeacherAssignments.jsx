@@ -347,7 +347,7 @@ const TeacherAssignments = () => {
             const user = await ApiService.getProfile();
             setCurrentUser(user.data);
 
-            const response = await ApiService.getAssignments();
+            const response = await ApiService.getTeacherAssignments(user.data.id);
             console.log(response);
             if (response.success) {
                 setAssignments(response.data || []);

@@ -410,6 +410,10 @@ class ApiService {
         return await this.makeRequest('GET', '/assignments', null, params);
     }
 
+    async getTeacherAssignments(teacherId) {
+        return await this.makeRequest('GET', `/assignments/teacher/${teacherId}`);
+    }
+
     async getAssignment(id) {
         return await this.makeRequest('GET', `/assignments/${id}`);
     }
@@ -449,7 +453,7 @@ class ApiService {
         try {
             const url = `${this.baseUrl}/assignments/files/${filename}`;
             const headers = this.getHeaders();
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: headers

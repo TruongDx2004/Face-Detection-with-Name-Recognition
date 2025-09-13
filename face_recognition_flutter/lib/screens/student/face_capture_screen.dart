@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:async';
 import 'package:face_attendance/services/ml_kit_face_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';

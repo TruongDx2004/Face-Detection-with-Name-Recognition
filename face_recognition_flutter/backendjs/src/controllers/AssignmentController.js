@@ -220,7 +220,7 @@ class AssignmentController {
                         values.push(dayjs(value).format("YYYY-MM-DD HH:mm:ss"));
                     } else if (key === "is_active") {
                         fields.push("is_active = ?");
-                        values.push(value == true ? 1 : 0);
+                        values.push(value == "true" ? 1 : 0);
                     } else {
                         fields.push(`${key} = ?`);
                         values.push(value);
@@ -341,7 +341,7 @@ class AssignmentController {
                 JOIN course_sections cs ON a.course_section_id = cs.id
                 JOIN subjects s ON cs.subject_id = s.id
                 LEFT JOIN assignment_submissions asub ON a.id = asub.assignment_id AND asub.student_id = ?
-                WHERE a.course_section_id = ? AND a.is_active = TRUE
+                WHERE a.course_section_id = ?
                 ORDER BY a.due_date ASC`,
                 [student_id, courseSectionId]
             );
@@ -710,7 +710,7 @@ class AssignmentController {
             const { teacherId } = req.params;
             const current_user_id = req.user.id;
             const user_role = req.user.role;
-
+            console.log('Teacher ID:', teacherId, 'Current User ID:', current_user_id, 'User Role:', user_role);
             // Chỉ teacher hoặc admin mới có thể xem
             if (user_role !== 'admin' && parseInt(teacherId) !== current_user_id) {
                 return res.status(403).json({
@@ -732,7 +732,7 @@ class AssignmentController {
                 JOIN subjects s ON cs.subject_id = s.id
                 JOIN classes c ON cs.class_id = c.id
                 LEFT JOIN assignment_submissions asub ON a.id = asub.assignment_id
-                WHERE cs.teacher_id = ? AND a.is_active = TRUE
+                WHERE cs.teacher_id = ?
             `;
 
             const params = [teacherId];

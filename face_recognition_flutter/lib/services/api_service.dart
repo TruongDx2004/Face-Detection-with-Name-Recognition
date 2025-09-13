@@ -1,11 +1,7 @@
 // lib/services/api_service_new.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:face_attendance/models/class.dart';
 import 'package:face_attendance/models/register_request.dart';
-import 'package:face_attendance/models/student.dart';
-import 'package:face_attendance/models/subject.dart';
-import 'package:face_attendance/models/course_section.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';

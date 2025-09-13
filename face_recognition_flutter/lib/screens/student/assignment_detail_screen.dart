@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../../models/assignment_models.dart';
 import '../../services/api_service.dart';
-import '../../widgets/loading_dialog.dart';
 
 class AssignmentDetailScreen extends StatefulWidget {
   final Assignment assignment;

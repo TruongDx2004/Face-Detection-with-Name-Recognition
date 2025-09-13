@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../models/models.dart';
-import '../../models/assignment_models.dart';
 import '../../services/api_service.dart';
 import 'assignment_detail_screen.dart';
 
