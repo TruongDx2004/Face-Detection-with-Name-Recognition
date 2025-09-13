@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const dayjs = require('dayjs'); // cài bằng npm install dayjs
 
 class Exam {
     constructor(data) {
@@ -84,20 +85,49 @@ class Exam {
     }
 
     // Cập nhật bài kiểm tra
+
     static async update(id, updateData) {
+        const allowedFields = [
+            'course_section_id',
+            'title',
+            'description',
+            'exam_type',
+            'max_score',
+            'duration_minutes',
+            'exam_date',
+            'start_time',
+            'end_time',
+            'instructions',
+            'is_active'
+        ];
+
         const fields = [];
         const values = [];
 
         Object.keys(updateData).forEach(key => {
-            if (updateData[key] !== undefined) {
+            if (allowedFields.includes(key) && updateData[key] !== undefined) {
+                let value = updateData[key];
+
+                // Chuẩn hóa exam_date thành YYYY-MM-DD
+                if (key === 'exam_date') {
+                    value = dayjs(value).format('YYYY-MM-DD');
+                }
+
+                // Nếu muốn lưu luôn giờ thì format: 'YYYY-MM-DD HH:mm:ss'
+                // value = dayjs(value).format('YYYY-MM-DD HH:mm:ss');
+
                 fields.push(`${key} = ?`);
-                values.push(updateData[key]);
+                values.push(value);
             }
         });
+
+        // Luôn cập nhật updated_at
+        fields.push('updated_at = CURRENT_TIMESTAMP');
 
         if (fields.length === 0) return false;
 
         values.push(id);
+
         const [result] = await pool.execute(
             `UPDATE exams SET ${fields.join(', ')} WHERE id = ?`,
             values
@@ -105,6 +135,8 @@ class Exam {
 
         return result.affectedRows > 0;
     }
+
+
 
     // Xóa bài kiểm tra (soft delete)
     static async delete(id) {

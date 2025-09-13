@@ -5,7 +5,6 @@ const safeParseJSON = (value) => {
         try {
             return JSON.parse(value);
         } catch (err) {
-            console.error('JSON parse error:', value, err.message);
             // fallback: tách theo dấu phẩy nếu không phải JSON
             return typeof value === 'string' ? value.split(',') : value;
         }
@@ -78,6 +77,55 @@ class ExamQuestion {
 
             await connection.commit();
             return questionIds;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // Thay thế tất cả câu hỏi của một bài thi (xóa cũ, thêm mới)
+    static async replaceMultiple(examId, questions) {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Bước 1: Xóa tất cả câu hỏi cũ của bài thi
+            await connection.execute(
+                'DELETE FROM exam_questions WHERE exam_id = ?',
+                [examId]
+            );
+
+            // Bước 2: Thêm tất cả câu hỏi mới
+            const questionIds = [];
+            for (let i = 0; i < questions.length; i++) {
+                const question = questions[i];
+                const optionsJson = question.options ? JSON.stringify(question.options) : null;
+
+                const [result] = await connection.execute(
+                    `INSERT INTO exam_questions 
+                    (exam_id, question_text, question_type, points, question_order, correct_answer, options) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        examId,
+                        question.question_text,
+                        question.question_type || 'multiple_choice',
+                        question.points || 1.00,
+                        question.question_order || (i + 1),
+                        question.correct_answer,
+                        optionsJson
+                    ]
+                );
+                questionIds.push(result.insertId);
+            }
+
+            await connection.commit();
+            return {
+                success: true,
+                questionIds: questionIds,
+                message: `Đã thay thế thành công ${questionIds.length} câu hỏi cho bài thi ${examId}`
+            };
         } catch (error) {
             await connection.rollback();
             throw error;

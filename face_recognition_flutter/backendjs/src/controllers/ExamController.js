@@ -95,26 +95,34 @@ class ExamController {
     static async updateExam(req, res) {
         try {
             const { id } = req.params;
-            const updateData = req.body;
+            const { questions, ...examData } = req.body;
 
             // Kiểm tra quyền
             if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
-                return ResponseHelper.error(res, 'Access denied', 403);
+                return ResponseHelper.error(res, 'Truy cập bị từ chối', 403);
             }
 
-            const updated = await Exam.update(id, updateData);
+            // Cập nhật exam
+            const updated = await Exam.update(id, examData);
             if (!updated) {
-                return ResponseHelper.error(res, 'Exam not found', 404);
+                return ResponseHelper.error(res, 'Không tìm thấy dữ liệu', 404);
+            }
+
+            // Nếu có danh sách câu hỏi thì cập nhật
+            if (questions && questions.length > 0) {
+                await ExamQuestion.replaceMultiple(id, questions);
+                // bạn có thể viết hàm replaceMultiple = xóa cũ, thêm mới
             }
 
             const exam = await Exam.getById(id);
-            ResponseHelper.success(res, exam, 'Exam updated successfully');
+            ResponseHelper.success(res, exam, 'Câp nhật thành công');
 
         } catch (error) {
             console.error('Update exam error:', error);
             ResponseHelper.error(res, 'Failed to update exam', 500);
         }
     }
+
 
     // Xóa bài kiểm tra
     static async deleteExam(req, res) {
@@ -382,6 +390,62 @@ class ExamController {
         } catch (error) {
             console.error('Get ungraded error:', error);
             ResponseHelper.error(res, 'Failed to retrieve ungraded exams', 500);
+        }
+    }
+
+    // Thay thế tất cả câu hỏi của bài thi (dành cho Word import)
+    static async replaceExamQuestions(req, res) {
+        try {
+            const { examId } = req.params;
+            const { questions } = req.body;
+
+            // Kiểm tra quyền
+            if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+                return ResponseHelper.error(res, 'Truy cập bị từ chối', 403);
+            }
+
+            // Kiểm tra bài thi có tồn tại không
+            const exam = await Exam.getById(examId);
+            if (!exam) {
+                return ResponseHelper.error(res, 'Không tìm thấy bài thi', 404);
+            }
+
+            // Kiểm tra danh sách câu hỏi
+            if (!questions || !Array.isArray(questions) || questions.length === 0) {
+                return ResponseHelper.error(res, 'Danh sách câu hỏi không hợp lệ', 400);
+            }
+
+            // Validate từng câu hỏi
+            for (let i = 0; i < questions.length; i++) {
+                const question = questions[i];
+                if (!question.question_text || !question.question_text.trim()) {
+                    return ResponseHelper.error(res, `Câu hỏi ${i + 1}: Nội dung câu hỏi không được trống`, 400);
+                }
+                if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
+                    return ResponseHelper.error(res, `Câu hỏi ${i + 1}: Phải có ít nhất 2 đáp án`, 400);
+                }
+                if (!question.correct_answer || !question.correct_answer.trim()) {
+                    return ResponseHelper.error(res, `Câu hỏi ${i + 1}: Chưa có đáp án đúng`, 400);
+                }
+            }
+
+            // Thay thế câu hỏi
+            const result = await ExamQuestion.replaceMultiple(examId, questions);
+
+            // Cập nhật tổng điểm của bài thi
+            const totalPoints = questions.reduce((sum, q) => sum + (parseFloat(q.points) || 1), 0);
+            await Exam.update(examId, { max_score: totalPoints });
+
+            ResponseHelper.success(res, {
+                examId: examId,
+                questionsCount: questions.length,
+                totalPoints: totalPoints,
+                questionIds: result.questionIds
+            }, `Đã thay thế thành công ${questions.length} câu hỏi cho bài thi`);
+
+        } catch (error) {
+            console.error('Replace exam questions error:', error);
+            ResponseHelper.error(res, error.message || 'Không thể thay thế câu hỏi', 500);
         }
     }
 }

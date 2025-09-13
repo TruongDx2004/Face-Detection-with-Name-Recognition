@@ -267,6 +267,94 @@ router.put('/:id', authenticateToken, ExamController.updateExam);
 
 /**
  * @swagger
+ * /exams/{examId}/questions/replace:
+ *   post:
+ *     summary: Replace all questions for an exam (for Word import)
+ *     tags: [Exams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: examId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Exam ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - questions
+ *             properties:
+ *               questions:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - question_text
+ *                     - options
+ *                     - correct_answer
+ *                   properties:
+ *                     question_text:
+ *                       type: string
+ *                       description: Question text
+ *                     question_type:
+ *                       type: string
+ *                       enum: [multiple_choice, true_false, short_answer, essay]
+ *                       default: multiple_choice
+ *                     points:
+ *                       type: number
+ *                       format: float
+ *                       default: 1.0
+ *                     options:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Answer options for multiple choice questions
+ *                     correct_answer:
+ *                       type: string
+ *                       description: Correct answer
+ *     responses:
+ *       200:
+ *         description: Questions replaced successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     examId:
+ *                       type: integer
+ *                     questionsCount:
+ *                       type: integer
+ *                     totalPoints:
+ *                       type: number
+ *                     questionIds:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request data
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Exam not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/:examId/questions/replace', authenticateToken, ExamController.replaceExamQuestions);
+
+/**
+ * @swagger
  * /exams/{id}:
  *   delete:
  *     summary: Delete exam

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import mammoth from 'mammoth';
 
 const styles = {
     importSection: {
@@ -158,75 +159,111 @@ const WordQuestionImporter = ({ onQuestionsImported, onClose }) => {
     const parseWordFile = async (file) => {
         setLoading(true);
         try {
-            // Simulated parsing - in real implementation, you would use mammoth.js or similar
-            // to extract text from Word document
-            const text = await readFileAsText(file);
-            const questions = parseQuestionsFromText(text);
+            const arrayBuffer = await readFileAsArrayBuffer(file);
+            
+            // Extract HTML to preserve formatting like bold text
+            const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+            const htmlContent = htmlResult.value;
+            
+            // Also extract plain text for fallback
+            const textResult = await mammoth.extractRawText({ arrayBuffer });
+            const plainText = textResult.value;
+            
+            if (htmlResult.messages && htmlResult.messages.length > 0) {
+                console.warn('Mammoth parsing warnings:', htmlResult.messages);
+            }
+            
+            const questions = parseQuestionsFromHTML(htmlContent, plainText);
+            if (questions.length === 0) {
+                setError('Không tìm thấy câu hỏi nào trong file. Vui lòng kiểm tra định dạng file theo hướng dẫn.');
+                return;
+            }
+            
             setPreviewQuestions(questions);
         } catch (err) {
-            setError('Không thể đọc file Word. Vui lòng kiểm tra định dạng file.');
+            setError('Không thể đọc file Word. Vui lòng kiểm tra định dạng file hoặc thử lại.');
             console.error('Error parsing Word file:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const readFileAsText = (file) => {
+    const readFileAsArrayBuffer = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.onerror = reject;
-            
-            // For demo purposes, reading as text
-            // In real implementation, use mammoth.js for proper Word parsing
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
         });
     };
 
-    const parseQuestionsFromText = (text) => {
+    const parseQuestionsFromHTML = (htmlContent, plainText) => {
         const questions = [];
-        const lines = text.split('\n').filter(line => line.trim());
+        
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Get all paragraphs from HTML
+        const paragraphs = tempDiv.querySelectorAll('p');
+        const htmlLines = Array.from(paragraphs).map(p => ({
+            text: p.textContent.trim(),
+            html: p.innerHTML,
+            isBold: p.querySelector('strong, b') !== null
+        })).filter(line => line.text.length > 0);
+        
+        // Fallback to plain text if HTML parsing fails
+        if (htmlLines.length === 0) {
+            return parseQuestionsFromText(plainText);
+        }
         
         let currentQuestion = null;
         let questionNumber = 0;
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+        for (let i = 0; i < htmlLines.length; i++) {
+            const lineData = htmlLines[i];
+            const line = lineData.text;
             
-            // Detect question start (e.g., "Câu 1:", "Question 1:", etc.)
-            const questionMatch = line.match(/^(câu|question)\s*(\d+)[:\.]?\s*(.*)/i);
+            // Detect question start with various patterns
+            const questionMatch = line.match(/^(?:câu|question|c[aâ]u)\s*(\d+)[:.)\-]?\s*(.*)/i);
             
             if (questionMatch) {
-                // Save previous question if exists
-                if (currentQuestion) {
+                // Save previous question if exists and is valid
+                if (currentQuestion && currentQuestion.question_text && currentQuestion.options.length >= 2) {
+                    // Set first option as correct answer if none was detected
+                    if (!currentQuestion.correct_answer && currentQuestion.options.length > 0) {
+                        currentQuestion.correct_answer = currentQuestion.options[0];
+                    }
                     questions.push(currentQuestion);
                 }
                 
                 questionNumber++;
                 currentQuestion = {
                     id: Date.now() + questionNumber,
-                    question_text: questionMatch[3] || '',
+                    question_text: questionMatch[2] || '',
                     question_type: 'multiple_choice',
                     points: 1,
                     question_order: questionNumber,
                     options: [],
                     correct_answer: ''
                 };
-            } else if (currentQuestion && line) {
-                // Check if this is an option (A., B., C., D. or a., b., c., d.)
-                const optionMatch = line.match(/^([A-Da-d])[.\)]?\s*(.*)/);
+            } else if (currentQuestion) {
+                // Check if this is an option with various patterns
+                const optionMatch = line.match(/^([A-Da-d])[.)\-]?\s*(.*)/i);
                 
                 if (optionMatch) {
-                    const optionText = optionMatch[2];
-                    currentQuestion.options.push(optionText);
+                    const optionText = optionMatch[2].trim();
                     
-                    // Check if this option is bold (indicating correct answer)
-                    // In real implementation, you would check actual formatting
-                    if (optionText.includes('**') || optionText.toUpperCase() === optionText) {
-                        currentQuestion.correct_answer = optionText.replace(/\*\*/g, '');
+                    if (optionText) {
+                        currentQuestion.options.push(optionText);
+                        
+                        // Check if this option contains bold text (correct answer)
+                        if (containsBoldText(lineData.html, optionText)) {
+                            currentQuestion.correct_answer = optionText;
+                        }
                     }
-                } else {
-                    // Continue question text
+                } else if (line && !line.match(/^[A-Da-d][.)\-]/i)) {
+                    // Continue question text if it doesn't look like an option
                     if (currentQuestion.question_text) {
                         currentQuestion.question_text += ' ' + line;
                     } else {
@@ -236,12 +273,117 @@ const WordQuestionImporter = ({ onQuestionsImported, onClose }) => {
             }
         }
         
-        // Add last question
-        if (currentQuestion) {
+        // Add last question if valid
+        if (currentQuestion && currentQuestion.question_text && currentQuestion.options.length >= 2) {
+            // Set first option as correct answer if none was detected
+            if (!currentQuestion.correct_answer && currentQuestion.options.length > 0) {
+                currentQuestion.correct_answer = currentQuestion.options[0];
+            }
             questions.push(currentQuestion);
         }
         
         return questions;
+    };
+
+    const parseQuestionsFromText = (text) => {
+        const questions = [];
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        let currentQuestion = null;
+        let questionNumber = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // Detect question start with various patterns
+            const questionMatch = line.match(/^(?:câu|question|c[aâ]u)\s*(\d+)[:.)\-]?\s*(.*)/i);
+            
+            if (questionMatch) {
+                // Save previous question if exists and is valid
+                if (currentQuestion && currentQuestion.question_text && currentQuestion.options.length >= 2) {
+                    // Set first option as correct answer if none was detected
+                    if (!currentQuestion.correct_answer && currentQuestion.options.length > 0) {
+                        currentQuestion.correct_answer = currentQuestion.options[0];
+                    }
+                    questions.push(currentQuestion);
+                }
+                
+                questionNumber++;
+                currentQuestion = {
+                    id: Date.now() + questionNumber,
+                    question_text: questionMatch[2] || '',
+                    question_type: 'multiple_choice',
+                    points: 1,
+                    question_order: questionNumber,
+                    options: [],
+                    correct_answer: ''
+                };
+            } else if (currentQuestion) {
+                // Check if this is an option with various patterns
+                const optionMatch = line.match(/^([A-Da-d])[.)\-]?\s*(.*)/i);
+                
+                if (optionMatch) {
+                    const optionText = optionMatch[2].trim();
+                    
+                    if (optionText) {
+                        currentQuestion.options.push(optionText);
+                        // For plain text, we can't detect bold, so no correct answer detection
+                    }
+                } else if (line && !line.match(/^[A-Da-d][.)\-]/i)) {
+                    // Continue question text if it doesn't look like an option
+                    if (currentQuestion.question_text) {
+                        currentQuestion.question_text += ' ' + line;
+                    } else {
+                        currentQuestion.question_text = line;
+                    }
+                }
+            }
+        }
+        
+        // Add last question if valid
+        if (currentQuestion && currentQuestion.question_text && currentQuestion.options.length >= 2) {
+            // Set first option as correct answer if none was detected
+            if (!currentQuestion.correct_answer && currentQuestion.options.length > 0) {
+                currentQuestion.correct_answer = currentQuestion.options[0];
+            }
+            questions.push(currentQuestion);
+        }
+        
+        return questions;
+    };
+
+    const containsBoldText = (htmlContent, optionText) => {
+        // Check if the HTML contains bold tags with the option text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Look for strong or b tags
+        const boldElements = tempDiv.querySelectorAll('strong, b');
+        
+        for (let boldElement of boldElements) {
+            const boldText = boldElement.textContent.trim();
+            // Check if the bold text matches or contains the option text
+            if (boldText === optionText || 
+                boldText.includes(optionText) || 
+                optionText.includes(boldText)) {
+                return true;
+            }
+        }
+        
+        // Also check if the entire line is wrapped in bold tags
+        const strongMatch = htmlContent.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/gi);
+        if (strongMatch) {
+            for (let match of strongMatch) {
+                const textContent = match.replace(/<[^>]*>/g, '').trim();
+                if (textContent === optionText || 
+                    textContent.includes(optionText) || 
+                    optionText.includes(textContent)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     };
 
     const handleDrop = (e) => {
@@ -278,20 +420,30 @@ const WordQuestionImporter = ({ onQuestionsImported, onClose }) => {
             <div style={styles.instructionsBox}>
                 <div style={styles.instructionTitle}>Hướng dẫn định dạng file Word:</div>
                 <div style={styles.instructionText}>
-                    • Mỗi câu hỏi bắt đầu bằng "Câu 1:", "Câu 2:", v.v.
+                    • Mỗi câu hỏi bắt đầu bằng "Câu 1:", "Câu 2:", "Question 1:", v.v.
                 </div>
                 <div style={styles.instructionText}>
-                    • Các đáp án được đánh số A., B., C., D.
+                    • Các đáp án được đánh số A., B., C., D. (hoặc a., b., c., d.)
                 </div>
                 <div style={styles.instructionText}>
-                    • Đáp án đúng được in đậm hoặc viết hoa
+                    • Đáp án đúng phải được <strong>in đậm</strong> (Bold) trong Word
+                </div>
+                <div style={styles.instructionText}>
+                    • Mỗi câu hỏi phải có ít nhất 2 đáp án
                 </div>
                 <div style={styles.exampleBox}>
+                    <strong>Ví dụ định dạng:</strong><br/>
                     Câu 1: Thủ đô của Việt Nam là?<br/>
                     A. Hồ Chí Minh<br/>
-                    B. <strong>Hà Nội</strong><br/>
+                    B. <strong>Hà Nội</strong> ← Đáp án đúng (in đậm)<br/>
                     C. Đà Nẵng<br/>
-                    D. Cần Thơ
+                    D. Cần Thơ<br/><br/>
+                    
+                    Question 2: What is 2 + 2?<br/>
+                    a. 3<br/>
+                    b. <strong>4</strong> ← Correct answer (bold)<br/>
+                    c. 5<br/>
+                    d. 6
                 </div>
             </div>
 
