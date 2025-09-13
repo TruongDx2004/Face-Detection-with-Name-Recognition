@@ -17,6 +17,9 @@ import TeacherAttendance from './pages/teacher/TeacherAttendance';
 import TeacherAssignments from './pages/teacher/TeacherAssignments';
 import AssignmentForm from './pages/teacher/AssignmentForm';
 import AssignmentDetail from './pages/teacher/AssignmentDetail';
+import TeacherExams from './pages/teacher/TeacherExams';
+import ExamForm from './pages/teacher/ExamForm';
+import ExamResults from './pages/teacher/ExamResults';
 import Login from './pages/Login';
 import apiService from './services/api-service';
 import authService from './services/auth-service';
@@ -47,6 +50,10 @@ function App() {
         <Route path="/teacher/assignments/new" element={<AssignmentForm />} />
         <Route path="/teacher/assignments/:id" element={<AssignmentDetail />} />
         <Route path="/teacher/assignments/:id/edit" element={<AssignmentForm />} />
+        <Route path="/teacher/exams" element={<TeacherExams />} />
+        <Route path="/teacher/exams/create" element={<ExamForm />} />
+        <Route path="/teacher/exams/edit/:id" element={<ExamForm />} />
+        <Route path="/teacher/exams/:examId/results" element={<ExamResults />} />
       </Routes>
     </BrowserRouter>
   );

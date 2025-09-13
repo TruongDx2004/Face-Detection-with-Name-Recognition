@@ -16,6 +16,9 @@ class Exam {
         this.instructions = data.instructions;
         this.created_at = data.created_at;
         this.updated_at = data.updated_at;
+
+        this.question_count = data.question_count || 0;
+        this.student_count = data.student_count || 0;
     }
 
     // Tạo bài kiểm tra mới
@@ -39,7 +42,7 @@ class Exam {
              exam_date, start_time, end_time, instructions) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [course_section_id, title, description, exam_type, max_score, duration_minutes,
-             exam_date, start_time, end_time, instructions]
+                exam_date, start_time, end_time, instructions]
         );
 
         return result.insertId;

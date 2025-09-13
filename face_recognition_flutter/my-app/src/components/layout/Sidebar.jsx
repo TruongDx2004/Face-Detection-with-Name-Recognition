@@ -107,6 +107,7 @@ const Sidebar = ({ items = [] }) => {
     { id: 'schedules', label: 'Lịch dạy', icon: 'fas fa-calendar', path: '/teacher/schedules' },
     { id: 'attendance', label: 'Điểm danh', icon: 'fas fa-clipboard-check', path: '/teacher/attendance' },
     { id: 'assignments', label: 'Bài tập', icon: 'fas fa-tasks', path: '/teacher/assignments' },
+    { id: 'exams', label: 'Kiểm tra', icon: 'fas fa-file-alt', path: '/teacher/exams' },
     { id: 'reports', label: 'Báo cáo', icon: 'fas fa-chart-bar', path: '/teacher/reports' },
   ];
 

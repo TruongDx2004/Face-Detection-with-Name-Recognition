@@ -404,6 +404,43 @@ class ApiService {
     async getCourseSectionsByClass(classId, params = {}) {
         return await this.makeRequest('GET', `/course-sections/class/${classId}`, null, params);
     }
+    
+    // ============ EXAM ENDPOINTS ============
+    async getExams(params = {}) {
+        return await this.makeRequest('GET', '/exams', null, params);
+    }
+
+    async getExamsByCourseSection(courseSectionId) {
+        return await this.makeRequest('GET', `/exams/course-section/${courseSectionId}`);
+    }
+
+    async getTeacherExams(teacherId) {
+        return await this.makeRequest('GET', `/exams/teacher/${teacherId}`);
+    }
+
+    async getExam(id) {
+        return await this.makeRequest('GET', `/exams/${id}`);
+    }
+
+    async createExam(examData) {
+        return await this.makeRequest('POST', '/exams', examData);
+    }
+
+    async updateExam(id, examData) {
+        return await this.makeRequest('PUT', `/exams/${id}`, examData);
+    }
+
+    async deleteExam(id) {
+        return await this.makeRequest('DELETE', `/exams/${id}`);
+    }
+
+    async getExamResults(examId) {
+        return await this.makeRequest('GET', `/exams/${examId}/results`);
+    }
+
+    async getExamStatistics(examId) {
+        return await this.makeRequest('GET', `/exams/${examId}/statistics`);
+    }
 
     // ============ ASSIGNMENT ENDPOINTS ============
     async getAssignments(params = {}) {

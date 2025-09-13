@@ -1,5 +1,16 @@
 const pool = require('../config/database');
 
+const safeParseJSON = (value) => {
+        if (!value) return null;
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            console.error('JSON parse error:', value, err.message);
+            // fallback: tách theo dấu phẩy nếu không phải JSON
+            return typeof value === 'string' ? value.split(',') : value;
+        }
+    };
+
 class ExamQuestion {
     constructor(data) {
         this.id = data.id;
@@ -47,7 +58,7 @@ class ExamQuestion {
             for (let i = 0; i < questions.length; i++) {
                 const question = questions[i];
                 const optionsJson = question.options ? JSON.stringify(question.options) : null;
-                
+
                 const [result] = await connection.execute(
                     `INSERT INTO exam_questions 
                     (exam_id, question_text, question_type, points, question_order, correct_answer, options) 
@@ -81,7 +92,7 @@ class ExamQuestion {
             'SELECT * FROM exam_questions WHERE id = ?',
             [id]
         );
-        
+
         if (rows.length > 0) {
             const question = rows[0];
             if (question.options) {
@@ -92,6 +103,9 @@ class ExamQuestion {
         return null;
     }
 
+    
+
+
     // Lấy tất cả câu hỏi của một bài thi
     static async getByExam(examId, includeAnswers = true) {
         const [rows] = await pool.execute(
@@ -101,17 +115,18 @@ class ExamQuestion {
 
         return rows.map(row => {
             if (row.options) {
-                row.options = JSON.parse(row.options);
+                row.options = safeParseJSON(row.options);
             }
-            
+
             // Nếu không bao gồm đáp án (cho sinh viên làm bài)
             if (!includeAnswers) {
                 delete row.correct_answer;
             }
-            
+
             return new ExamQuestion(row);
         });
     }
+
 
     // Cập nhật câu hỏi
     static async update(id, updateData) {
@@ -206,7 +221,7 @@ class ExamQuestion {
         }
 
         let isCorrect = false;
-        
+
         switch (question.question_type) {
             case 'multiple_choice':
             case 'true_false':
