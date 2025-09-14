@@ -61,7 +61,27 @@ class ExamController {
             const { courseSectionId } = req.params;
             const exams = await Exam.getByCourseSection(courseSectionId);
 
-            ResponseHelper.success(res, exams, 'Exams retrieved successfully');
+            // Lấy câu hỏi cho từng exam (không bao gồm đáp án cho sinh viên)
+            const includeAnswers = req.user.role === 'teacher' || req.user.role === 'admin';
+            const examsWithQuestions = await Promise.all(
+                exams.map(async (exam) => {
+                    const questions = await ExamQuestion.getByExam(exam.id, includeAnswers);
+                    
+                    // Tính điểm cho mỗi câu hỏi = max_score / số lượng câu hỏi
+                    const pointsPerQuestion = questions.length > 0 ? exam.max_score / questions.length : 0;
+                    const questionsWithPoints = questions.map(question => ({
+                        ...question,
+                        points: pointsPerQuestion
+                    }));
+                    
+                    return {
+                        ...exam,
+                        questions: questionsWithPoints
+                    };
+                })
+            );
+
+            ResponseHelper.success(res, examsWithQuestions, 'Exams retrieved successfully');
 
         } catch (error) {
             console.error('Get exams error:', error);
@@ -83,7 +103,20 @@ class ExamController {
             const includeAnswers = req.user.role === 'teacher' || req.user.role === 'admin';
             const questions = await ExamQuestion.getByExam(id, includeAnswers);
 
-            ResponseHelper.success(res, { ...exam, questions }, 'Exam retrieved successfully');
+            // Tính điểm cho mỗi câu hỏi = max_score / số lượng câu hỏi
+            const pointsPerQuestion = questions.length > 0 ? exam.max_score / questions.length : 0;
+            const questionsWithPoints = questions.map(question => ({
+                ...question,
+                points: pointsPerQuestion
+            }));
+
+            // Trả về exam với questions đã được bao gồm
+            const examWithQuestions = {
+                ...exam,
+                questions: questionsWithPoints
+            };
+
+            ResponseHelper.success(res, examWithQuestions, 'Exam retrieved successfully');
 
         } catch (error) {
             console.error('Get exam error:', error);
@@ -164,17 +197,38 @@ class ExamController {
                 return ResponseHelper.error(res, reason, 400);
             }
 
-            // Tính tổng điểm
+            // Lấy câu hỏi (không bao gồm đáp án cho sinh viên)
             const questions = await ExamQuestion.getByExam(examId, false);
-            const totalScore = questions.reduce((sum, q) => sum + parseFloat(q.points), 0);
+            
+            if (!questions || questions.length === 0) {
+                return ResponseHelper.error(res, 'Exam has no questions', 400);
+            }
+
+            // Tính điểm cho mỗi câu hỏi = max_score / số lượng câu hỏi
+            const pointsPerQuestion = exam.max_score / questions.length;
+            
+            // Cập nhật điểm cho từng câu hỏi
+            const questionsWithPoints = questions.map(question => ({
+                ...question,
+                points: pointsPerQuestion
+            }));
+
+            // Sử dụng max_score của exam làm tổng điểm
+            const totalScore = exam.max_score;
 
             // Bắt đầu làm bài
             const resultId = await ExamResult.startExam(examId, studentId, totalScore);
 
+            // Tạo exam object với đầy đủ thông tin và questions (với điểm đã cập nhật)
+            const examWithQuestions = {
+                ...exam,
+                questions: questionsWithPoints
+            };
+
             ResponseHelper.success(res, {
                 result_id: resultId,
-                exam: exam,
-                questions: questions,
+                exam: examWithQuestions,
+                questions: questionsWithPoints,
                 duration_minutes: exam.duration_minutes
             }, 'Exam started successfully');
 
@@ -214,6 +268,7 @@ class ExamController {
         try {
             const { resultId } = req.params;
             const { answers } = req.body;
+            console.log('Submitting exam with resultId:', resultId, 'and answers:', answers);
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
@@ -300,7 +355,7 @@ class ExamController {
             if (grades && grades.length > 0) {
                 await ExamAnswer.gradeMultipleAnswers(grades);
             }
-
+            
             // Cập nhật điểm tổng
             if (score !== undefined) {
                 await ExamResult.gradeManually(resultId, score, req.user.id);
@@ -326,9 +381,29 @@ class ExamController {
             if (!studentId) {
                 return ResponseHelper.error(res, 'Student ID is required', 400);
             }
-            console.log(studentId + " AAA " + courseSectionId)
+            
             const exams = await Exam.getStudentExams(studentId, courseSectionId);
-            ResponseHelper.success(res, exams, 'Student exams retrieved successfully');
+            
+            // Thêm câu hỏi cho từng exam (không bao gồm đáp án)
+            const examsWithQuestions = await Promise.all(
+                exams.map(async (exam) => {
+                    const questions = await ExamQuestion.getByExam(exam.id, false);
+                    
+                    // Tính điểm cho mỗi câu hỏi = max_score / số lượng câu hỏi
+                    const pointsPerQuestion = questions.length > 0 ? exam.max_score / questions.length : 0;
+                    const questionsWithPoints = questions.map(question => ({
+                        ...question,
+                        points: pointsPerQuestion
+                    }));
+                    
+                    return {
+                        ...exam,
+                        questions: questionsWithPoints
+                    };
+                })
+            );
+            
+            ResponseHelper.success(res, examsWithQuestions, 'Student exams retrieved successfully');
 
         } catch (error) {
             console.error('Get student exams error:', error);
@@ -432,9 +507,10 @@ class ExamController {
             // Thay thế câu hỏi
             const result = await ExamQuestion.replaceMultiple(examId, questions);
 
-            // Cập nhật tổng điểm của bài thi
-            const totalPoints = questions.reduce((sum, q) => sum + (parseFloat(q.points) || 1), 0);
-            await Exam.update(examId, { max_score: totalPoints });
+            // Cập nhật tổng điểm của bài thi (không cần tính từ questions vì sẽ chia đều)
+            // Giữ nguyên max_score hiện tại hoặc sử dụng từ request
+            const totalPoints = questions.length; // Mỗi câu 1 điểm base, sẽ chia theo max_score
+            // await Exam.update(examId, { max_score: totalPoints }); // Comment out để giữ max_score gốc
 
             ResponseHelper.success(res, {
                 examId: examId,

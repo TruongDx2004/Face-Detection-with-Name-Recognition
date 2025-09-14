@@ -1,4 +1,5 @@
 // lib/models/assignment_models.dart
+import 'dart:convert';
 
 class Assignment {
   final int id;
@@ -47,8 +48,10 @@ class Assignment {
       maxScore: json['max_score'] is String
           ? double.parse(json['max_score'])
           : (json['max_score'] as num).toDouble(),
-      dueDate: DateTime.parse(json['due_date'] ?? DateTime.now().toIso8601String()),
-      createdDate: DateTime.parse(json['created_date'] ?? DateTime.now().toIso8601String()),
+      dueDate:
+          DateTime.parse(json['due_date'] ?? DateTime.now().toIso8601String()),
+      createdDate: DateTime.parse(
+          json['created_date'] ?? DateTime.now().toIso8601String()),
       isActive: (json['is_active'] as int) == 1,
       instructions: json['instructions'],
       attachmentPath: json['attachment_path'] as String?,
@@ -139,8 +142,8 @@ class AssignmentSubmission {
       id: json['id'] ?? 0,
       assignmentId: json['assignment_id'] ?? 0,
       studentId: json['student_id'] ?? 0,
-      submittedAt: json['submitted_at'] != null 
-          ? DateTime.parse(json['submitted_at']) 
+      submittedAt: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'])
           : null,
       score: double.tryParse(json['score'].toString()),
       status: json['status'] ?? 'pending',
@@ -228,9 +231,13 @@ class Quiz {
       description: json['description'],
       timeLimit: json['time_limit'] ?? 60,
       questionCount: json['question_count'] ?? 0,
-      maxScore: (json['max_score'] ?? 0).toDouble(),
-      startTime: DateTime.parse(json['start_time'] ?? DateTime.now().toIso8601String()),
-      endTime: DateTime.parse(json['end_time'] ?? DateTime.now().toIso8601String()),
+      maxScore: json['max_score'] == null
+          ? 0.0
+          : double.tryParse(json['max_score'].toString()) ?? 0.0,
+      startTime: DateTime.parse(
+          json['start_time'] ?? DateTime.now().toIso8601String()),
+      endTime:
+          DateTime.parse(json['end_time'] ?? DateTime.now().toIso8601String()),
       isActive: json['is_active'] ?? true,
       courseName: json['course_name'],
       subjectName: json['subject_name'],
@@ -277,9 +284,10 @@ class QuizAttempt {
       id: json['id'] ?? 0,
       quizId: json['quiz_id'] ?? 0,
       studentId: json['student_id'] ?? 0,
-      startedAt: DateTime.parse(json['started_at'] ?? DateTime.now().toIso8601String()),
-      completedAt: json['completed_at'] != null 
-          ? DateTime.parse(json['completed_at']) 
+      startedAt: DateTime.parse(
+          json['started_at'] ?? DateTime.now().toIso8601String()),
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'])
           : null,
       score: json['score']?.toDouble(),
       status: json['status'] ?? 'in_progress',
@@ -302,48 +310,83 @@ class Exam {
   final int id;
   final String title;
   final String description;
+  final String examType;
   final DateTime startTime;
   final DateTime endTime;
   final int duration; // in minutes
-  final int totalScore;
+  final double totalScore;
   final int courseSectionId;
-  final int teacherId;
+  final String? instructions;
+  final bool isActive;
   final List<ExamQuestion> questions;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Exam({
     required this.id,
     required this.title,
     required this.description,
+    required this.examType,
     required this.startTime,
     required this.endTime,
     required this.duration,
     required this.totalScore,
     required this.courseSectionId,
-    required this.teacherId,
+    this.instructions,
+    required this.isActive,
     required this.questions,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Exam.fromJson(Map<String, dynamic> json) {
+    DateTime parseDateTime(String? dateStr, String? timeStr) {
+      if (dateStr == null) return DateTime.now();
+
+      // Parse chuẩn ISO 8601 từ backend
+      final baseDate = DateTime.tryParse(dateStr) ?? DateTime.now();
+
+      if (timeStr == null) return baseDate;
+
+      final timeParts = timeStr.split(':');
+      final hour = int.tryParse(timeParts[0]) ?? 0;
+      final minute = int.tryParse(timeParts[1]) ?? 0;
+      final second = timeParts.length > 2 ? int.tryParse(timeParts[2]) ?? 0 : 0;
+
+      return DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        hour,
+        minute,
+        second,
+      );
+    }
+
     return Exam(
       id: json['id'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      startTime: DateTime.parse(json['start_time']),
-      endTime: DateTime.parse(json['end_time']),
-      duration: json['duration'] ?? 0,
-      totalScore: json['total_score'] ?? 0,
+      examType: json['exam_type'] ?? 'quiz',
+      startTime: parseDateTime(json['exam_date'], json['start_time']),
+      endTime: parseDateTime(json['exam_date'], json['end_time']),
+      duration: int.tryParse(json['duration_minutes'].toString()) ?? 0,
+      totalScore: json['max_score'] == null
+          ? 0.0
+          : double.tryParse(json['max_score'].toString()) ?? 0.0,
       courseSectionId: json['course_section_id'] ?? 0,
-      teacherId: json['teacher_id'] ?? 0,
+      instructions: json['instructions'],
+      isActive: json['is_active'] == 1 || json['is_active'] == true,
       questions: (json['questions'] as List?)
               ?.map((q) => ExamQuestion.fromJson(q))
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'])
+          : null,
     );
   }
 
@@ -352,15 +395,21 @@ class Exam {
       'id': id,
       'title': title,
       'description': description,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
-      'duration': duration,
-      'total_score': totalScore,
+      'exam_type': examType,
+      'exam_date':
+          '${startTime.year}-${startTime.month.toString().padLeft(2, '0')}-${startTime.day.toString().padLeft(2, '0')}',
+      'start_time':
+          '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:00',
+      'end_time':
+          '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00',
+      'duration_minutes': duration,
+      'max_score': totalScore,
       'course_section_id': courseSectionId,
-      'teacher_id': teacherId,
+      'instructions': instructions,
+      'is_active': isActive,
       'questions': questions.map((q) => q.toJson()).toList(),
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 }
@@ -372,7 +421,7 @@ class ExamQuestion {
   final String questionType; // 'multiple_choice', 'true_false', 'essay'
   final List<String> options;
   final String? correctAnswer;
-  final int points;
+  final double points;
   final int orderIndex;
 
   ExamQuestion({
@@ -387,15 +436,34 @@ class ExamQuestion {
   });
 
   factory ExamQuestion.fromJson(Map<String, dynamic> json) {
+    // Parse options - có thể là string JSON hoặc array
+    List<String> parseOptions(dynamic optionsData) {
+      if (optionsData == null) return [];
+      if (optionsData is List) {
+        return optionsData.map((e) => e.toString()).toList();
+      }
+      if (optionsData is String) {
+        try {
+          // Thử parse JSON string
+          final List<dynamic> parsed = jsonDecode(optionsData);
+          return parsed.map((e) => e.toString()).toList();
+        } catch (e) {
+          // Nếu không parse được, return empty list
+          return [];
+        }
+      }
+      return [];
+    }
+
     return ExamQuestion(
       id: json['id'] ?? 0,
       examId: json['exam_id'] ?? 0,
       questionText: json['question_text'] ?? '',
       questionType: json['question_type'] ?? 'multiple_choice',
-      options: List<String>.from(json['options'] ?? []),
+      options: parseOptions(json['options']),
       correctAnswer: json['correct_answer'],
-      points: json['points'] ?? 0,
-      orderIndex: json['order_index'] ?? 0,
+      points: double.tryParse(json['points'].toString()) ?? 0.0,
+      orderIndex: json['question_order'] ?? json['order_index'] ?? 0,
     );
   }
 
@@ -418,11 +486,15 @@ class ExamResult {
   final int examId;
   final int studentId;
   final double? score;
-  final int totalScore;
+  final double? totalScore;
+  final String status; // 'in_progress', 'completed', 'graded'
   final DateTime? startTime;
   final DateTime? endTime;
-  final bool isCompleted;
+  final DateTime? submittedAt;
+  final DateTime? gradedAt;
+  final int? gradedBy;
   final List<ExamAnswer> answers;
+  final Exam? exam; // Thêm field exam
 
   ExamResult({
     required this.id,
@@ -430,30 +502,47 @@ class ExamResult {
     required this.studentId,
     this.score,
     required this.totalScore,
+    required this.status,
     this.startTime,
     this.endTime,
-    required this.isCompleted,
+    this.submittedAt,
+    this.gradedAt,
+    this.gradedBy,
     required this.answers,
+    this.exam, // Thêm field exam
   });
+
+  // Convenience getters
+  bool get isCompleted => status == 'completed' || status == 'graded';
+  bool get isGraded => status == 'graded';
+  bool get isInProgress => status == 'in_progress';
 
   factory ExamResult.fromJson(Map<String, dynamic> json) {
     return ExamResult(
       id: json['id'] ?? 0,
       examId: json['exam_id'] ?? 0,
       studentId: json['student_id'] ?? 0,
-      score: json['score']?.toDouble(),
-      totalScore: json['total_score'] ?? 0,
-      startTime: json['start_time'] != null 
-          ? DateTime.parse(json['start_time']) 
+      score: double.tryParse(json['score'].toString()),
+      totalScore: double.tryParse(json['total_score'].toString()) ?? 0,
+      status: json['status'] ?? 'in_progress',
+      startTime: json['start_time'] != null
+          ? DateTime.parse(json['start_time'])
           : null,
-      endTime: json['end_time'] != null 
-          ? DateTime.parse(json['end_time']) 
+      endTime:
+          json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      submittedAt: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'])
           : null,
-      isCompleted: json['is_completed'] ?? false,
+      gradedAt:
+          json['graded_at'] != null ? DateTime.parse(json['graded_at']) : null,
+      gradedBy: json['graded_by'],
       answers: (json['answers'] as List?)
               ?.map((a) => ExamAnswer.fromJson(a))
               .toList() ??
           [],
+      exam: json['exam'] != null
+          ? Exam.fromJson(json['exam'])
+          : null, // Thêm field exam
     );
   }
 
@@ -464,10 +553,14 @@ class ExamResult {
       'student_id': studentId,
       'score': score,
       'total_score': totalScore,
+      'status': status,
       'start_time': startTime?.toIso8601String(),
       'end_time': endTime?.toIso8601String(),
-      'is_completed': isCompleted,
+      'submitted_at': submittedAt?.toIso8601String(),
+      'graded_at': gradedAt?.toIso8601String(),
+      'graded_by': gradedBy,
       'answers': answers.map((a) => a.toJson()).toList(),
+      'exam': exam?.toJson(), // Thêm field exam
     };
   }
 }
@@ -476,27 +569,32 @@ class ExamAnswer {
   final int id;
   final int examResultId;
   final int questionId;
-  final String answer;
-  final bool isCorrect;
-  final int pointsEarned;
+  final String? studentAnswer;
+  final bool? isCorrect;
+  final double pointsEarned;
 
   ExamAnswer({
     required this.id,
     required this.examResultId,
     required this.questionId,
-    required this.answer,
-    required this.isCorrect,
+    this.studentAnswer,
+    this.isCorrect,
     required this.pointsEarned,
   });
+
+  // Convenience getter for compatibility
+  String? get answer => studentAnswer;
 
   factory ExamAnswer.fromJson(Map<String, dynamic> json) {
     return ExamAnswer(
       id: json['id'] ?? 0,
       examResultId: json['exam_result_id'] ?? 0,
       questionId: json['question_id'] ?? 0,
-      answer: json['answer'] ?? '',
-      isCorrect: json['is_correct'] ?? false,
-      pointsEarned: json['points_earned'] ?? 0,
+      studentAnswer: json['student_answer'] ?? json['answer'],
+      isCorrect: json['is_correct'] == null
+          ? null
+          : (json['is_correct'] == 1 || json['is_correct'] == true),
+      pointsEarned: double.tryParse(json['points_earned'].toString()) ?? 0.0,
     );
   }
 
@@ -505,7 +603,7 @@ class ExamAnswer {
       'id': id,
       'exam_result_id': examResultId,
       'question_id': questionId,
-      'answer': answer,
+      'student_answer': studentAnswer,
       'is_correct': isCorrect,
       'points_earned': pointsEarned,
     };

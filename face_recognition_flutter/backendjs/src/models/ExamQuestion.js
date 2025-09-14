@@ -1,14 +1,14 @@
 const pool = require('../config/database');
 
 const safeParseJSON = (value) => {
-        if (!value) return null;
-        try {
-            return JSON.parse(value);
-        } catch (err) {
-            // fallback: tách theo dấu phẩy nếu không phải JSON
-            return typeof value === 'string' ? value.split(',') : value;
-        }
-    };
+    if (!value) return null;
+    try {
+        return JSON.parse(value);
+    } catch (err) {
+        // fallback: tách theo dấu phẩy nếu không phải JSON
+        return typeof value === 'string' ? value.split(',') : value;
+    }
+};
 
 class ExamQuestion {
     constructor(data) {
@@ -35,13 +35,41 @@ class ExamQuestion {
             options
         } = questionData;
 
+        // Lấy thông tin exam để tính điểm tự động
+        const [examRows] = await pool.execute(
+            'SELECT max_score FROM exams WHERE id = ?',
+            [exam_id]
+        );
+        
+        // Đếm số câu hỏi hiện tại của exam
+        const [countRows] = await pool.execute(
+            'SELECT COUNT(*) as count FROM exam_questions WHERE exam_id = ?',
+            [exam_id]
+        );
+        
+        const currentQuestionCount = countRows[0].count;
+        let calculatedPoints = points; // Default fallback
+        
+        if (examRows.length > 0) {
+            const maxScore = parseFloat(examRows[0].max_score);
+            console.log(`Max score for exam ${exam_id} is ${maxScore}`);
+            // Tính điểm dựa trên tổng số câu hỏi sau khi thêm câu này
+            calculatedPoints = maxScore / (currentQuestionCount + 1);
+            
+            // Cập nhật lại điểm cho tất cả câu hỏi hiện tại
+            await pool.execute(
+                'UPDATE exam_questions SET points = ? WHERE exam_id = ?',
+                [calculatedPoints, exam_id]
+            );
+        }
+
         const optionsJson = options ? JSON.stringify(options) : null;
 
         const [result] = await pool.execute(
             `INSERT INTO exam_questions 
             (exam_id, question_text, question_type, points, question_order, correct_answer, options) 
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [exam_id, question_text, question_type, points, question_order, correct_answer, optionsJson]
+            [exam_id, question_text, question_type, calculatedPoints, question_order, correct_answer, optionsJson]
         );
 
         return result.insertId;
@@ -52,6 +80,19 @@ class ExamQuestion {
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
+
+            // Lấy thông tin exam để tính điểm tự động
+            const [examRows] = await connection.execute(
+                'SELECT max_score FROM exams WHERE id = ?',
+                [examId]
+            );
+            
+            if (examRows.length === 0) {
+                throw new Error('Exam not found');
+            }
+            
+            const maxScore = parseFloat(examRows[0].max_score);
+            const pointsPerQuestion = maxScore / questions.length;
 
             const questionIds = [];
             for (let i = 0; i < questions.length; i++) {
@@ -66,7 +107,7 @@ class ExamQuestion {
                         examId,
                         question.question_text,
                         question.question_type || 'multiple_choice',
-                        question.points || 1.00,
+                        pointsPerQuestion, // Sử dụng điểm tự động tính
                         question.question_order || (i + 1),
                         question.correct_answer,
                         optionsJson
@@ -91,13 +132,26 @@ class ExamQuestion {
         try {
             await connection.beginTransaction();
 
+            // Lấy thông tin exam để tính điểm tự động
+            const [examRows] = await connection.execute(
+                'SELECT max_score FROM exams WHERE id = ?',
+                [examId]
+            );
+            
+            if (examRows.length === 0) {
+                throw new Error('Exam not found');
+            }
+            
+            const maxScore = parseFloat(examRows[0].max_score);
+            const pointsPerQuestion = maxScore / questions.length;
+
             // Bước 1: Xóa tất cả câu hỏi cũ của bài thi
             await connection.execute(
                 'DELETE FROM exam_questions WHERE exam_id = ?',
                 [examId]
             );
 
-            // Bước 2: Thêm tất cả câu hỏi mới
+            // Bước 2: Thêm tất cả câu hỏi mới với điểm tự động
             const questionIds = [];
             for (let i = 0; i < questions.length; i++) {
                 const question = questions[i];
@@ -111,7 +165,7 @@ class ExamQuestion {
                         examId,
                         question.question_text,
                         question.question_type || 'multiple_choice',
-                        question.points || 1.00,
+                        pointsPerQuestion, // Sử dụng điểm tự động tính
                         question.question_order || (i + 1),
                         question.correct_answer,
                         optionsJson
@@ -143,16 +197,23 @@ class ExamQuestion {
 
         if (rows.length > 0) {
             const question = rows[0];
+
             if (question.options) {
-                question.options = JSON.parse(question.options);
+                try {
+                    // Thử parse JSON
+                    question.options = JSON.parse(question.options);
+                } catch (e) {
+                    // Nếu không phải JSON thì giữ nguyên chuỗi
+                    question.options = question.options;
+                }
+            } else {
+                question.options = null;
             }
+
             return new ExamQuestion(question);
         }
         return null;
     }
-
-    
-
 
     // Lấy tất cả câu hỏi của một bài thi
     static async getByExam(examId, includeAnswers = true) {

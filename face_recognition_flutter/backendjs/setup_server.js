@@ -480,6 +480,76 @@ async function setupDatabase() {
                     [course_section_id, '09:00:00', 'Buổi 1 - Giới thiệu Python']
                 );
 
+                // 9. Thêm sample exam cho course section
+                const examDate = new Date();
+                examDate.setDate(examDate.getDate() + 7); // 1 tuần sau
+                const examDateStr = examDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+                
+                const [examResult] = await dbConnection.execute(
+                    `INSERT INTO exams (course_section_id, title, description, exam_type, max_score, duration_minutes, exam_date, start_time, end_time, instructions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        course_section_id,
+                        'Kiểm tra giữa kỳ Python',
+                        'Bài kiểm tra đánh giá kiến thức Python cơ bản',
+                        'midterm',
+                        100.00,
+                        90,
+                        examDateStr,
+                        '09:00:00',
+                        '10:30:00',
+                        'Đọc kỹ đề bài. Làm bài theo thứ tự. Không được sử dụng tài liệu.'
+                    ]
+                );
+                const exam_id = examResult.insertId;
+
+                // 10. Thêm sample questions cho exam
+                const questions = [
+                    {
+                        question_text: 'Python là ngôn ngữ lập trình gì?',
+                        question_type: 'multiple_choice',
+                        points: 10.00,
+                        question_order: 1,
+                        correct_answer: 'Ngôn ngữ thông dịch cấp cao',
+                        options: JSON.stringify([
+                            'Ngôn ngữ thông dịch cấp cao',
+                            'Ngôn ngữ biên dịch',
+                            'Ngôn ngữ cấp thấp',
+                            'Ngôn ngữ máy'
+                        ])
+                    },
+                    {
+                        question_text: 'Python là ngôn ngữ hướng đối tượng. Đúng hay sai?',
+                        question_type: 'true_false',
+                        points: 5.00,
+                        question_order: 2,
+                        correct_answer: 'true',
+                        options: JSON.stringify(['true', 'false'])
+                    },
+                    {
+                        question_text: 'Giải thích sự khác biệt giữa list và tuple trong Python.',
+                        question_type: 'essay',
+                        points: 25.00,
+                        question_order: 3,
+                        correct_answer: null,
+                        options: null
+                    },
+                    {
+                        question_text: 'Kết quả của print(2 ** 3) là gì?',
+                        question_type: 'multiple_choice',
+                        points: 15.00,
+                        question_order: 4,
+                        correct_answer: '8',
+                        options: JSON.stringify(['6', '8', '9', '23'])
+                    }
+                ];
+
+                for (const question of questions) {
+                    await dbConnection.execute(
+                        `INSERT INTO exam_questions (exam_id, question_text, question_type, points, question_order, correct_answer, options) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                        [exam_id, question.question_text, question.question_type, question.points, question.question_order, question.correct_answer, question.options]
+                    );
+                }
+
             } else {
                 await dbConnection.execute(
                     `INSERT INTO users (username, password_hash, full_name, email, role) VALUES (?, ?, ?, ?, ?)`,

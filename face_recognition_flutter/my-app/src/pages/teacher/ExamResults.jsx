@@ -185,6 +185,7 @@ const ExamResults = () => {
     const fetchResults = async () => {
         try {
             const response = await ApiService.getExamResults(examId);
+            console.log('Fetched results:', response.data);
             setResults(response.data || []);
         } catch (error) {
             console.error('Error fetching results:', error);
@@ -237,10 +238,26 @@ const ExamResults = () => {
 
     const formatDuration = (startTime, endTime) => {
         if (!startTime || !endTime) return '-';
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        const diffMinutes = Math.round((end - start) / (1000 * 60));
-        return `${diffMinutes} phút`;
+
+        // Parse chuỗi thành Date
+        const start = new Date(startTime.replace(' ', 'T'));
+        const end = new Date(endTime.replace(' ', 'T'));
+
+        // Tính chênh lệch theo mili giây
+        const diffMs = end - start;
+
+        // Nếu muốn hiển thị theo giây
+        const diffSeconds = Math.round(diffMs / 1000);
+
+        // Nếu muốn hiển thị theo phút
+        const diffMinutes = Math.round(diffMs / (1000 * 60));
+
+        // Chọn hiển thị theo giây hoặc phút tùy nhu cầu
+        if (diffSeconds < 60) {
+            return `${diffSeconds} giây`;
+        } else {
+            return `${diffMinutes} phút`;
+        }
     };
 
     const filteredResults = results.filter(result => {
@@ -314,7 +331,7 @@ const ExamResults = () => {
                 </div>
                 <div style={styles.statCard}>
                     <div style={styles.statNumber}>
-                        {statistics.avg_score ? statistics.avg_score.toFixed(1) : '0'}
+                        {statistics.avg_score ? Number(statistics.avg_score).toFixed(1) : '0'}
                     </div>
                     <div style={styles.statLabel}>Điểm trung bình</div>
                 </div>
@@ -403,7 +420,7 @@ const ExamResults = () => {
                                     {result.score ? `${result.score}/${exam?.max_score}` : '-'}
                                 </td>
                                 <td style={styles.tableCell}>
-                                    {formatDuration(result.start_time, result.end_time)}
+                                    {formatDuration(result.start_time, result.submitted_at)}
                                 </td>
                                 <td style={styles.tableCell}>
                                     {result.submitted_at ?

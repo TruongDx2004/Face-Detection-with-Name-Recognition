@@ -13,6 +13,15 @@ class ExamResult {
         this.submitted_at = data.submitted_at;
         this.graded_at = data.graded_at;
         this.graded_by = data.graded_by;
+
+        this.student_name = data.student_name;
+        this.student_email = data.student_email;
+        this.exam_title = data.exam_title;
+        this.exam_max_score = data.exam_max_score;
+        this.student_code = data.student_code;
+        this.created_at = data.created_at;
+        this.updated_at = data.updated_at;
+
     }
 
     // Bắt đầu làm bài thi
@@ -26,9 +35,9 @@ class ExamResult {
         if (existing.length > 0) {
             const result = existing[0];
             if (result.status === 'completed' || result.status === 'graded') {
-                throw new Error('Exam already completed');
+                throw new Error('Bạn đã hoàn thành bài thi');
             }
-            
+
             // Nếu đang làm dở, cập nhật thời gian bắt đầu
             if (result.status === 'in_progress') {
                 return result.id;
@@ -68,14 +77,17 @@ class ExamResult {
     static async calculateAutoScore(resultId) {
         const [result] = await pool.execute(
             `UPDATE exam_results er
-            SET score = (
-                SELECT COALESCE(SUM(ea.points_earned), 0)
-                FROM exam_answers ea
-                WHERE ea.exam_result_id = er.id
-            )
-            WHERE er.id = ?`,
+                SET score = (
+                    SELECT COALESCE(SUM(ea.points_earned), 0)
+                    FROM exam_answers ea
+                    WHERE ea.exam_result_id = er.id
+                )
+                WHERE er.id = ?`,
             [resultId]
         );
+
+        console.log("Update exam_results result:", result);
+
 
         // Kiểm tra xem có câu tự luận cần chấm thủ công không
         const [essayQuestions] = await pool.execute(
@@ -117,7 +129,7 @@ class ExamResult {
                     e.title as exam_title,
                     e.max_score as exam_max_score,
                     u.full_name as student_name,
-                    u.username as student_username
+                    u.email as student_email
             FROM exam_results er
             JOIN exams e ON er.exam_id = e.id
             JOIN users u ON er.student_id = u.id
@@ -144,7 +156,7 @@ class ExamResult {
         const [rows] = await pool.execute(
             `SELECT er.*, 
                     u.full_name as student_name,
-                    u.username as student_username,
+                    u.email as student_email,
                     cs.student_code
             FROM exam_results er
             JOIN users u ON er.student_id = u.id
@@ -170,14 +182,14 @@ class ExamResult {
             JOIN course_sections cs ON e.course_section_id = cs.id
             JOIN subjects s ON cs.subject_id = s.id
             WHERE er.student_id = ?`;
-        
+
         const params = [studentId];
-        
+
         if (courseSectionId) {
             query += ' AND cs.id = ?';
             params.push(courseSectionId);
         }
-        
+
         query += ' ORDER BY e.exam_date DESC';
 
         const [rows] = await pool.execute(query, params);
@@ -191,6 +203,7 @@ class ExamResult {
                     e.title as exam_title,
                     e.max_score as exam_max_score,
                     u.full_name as student_name,
+                    u.email as student_email,
                     cs.name as course_name
             FROM exam_results er
             JOIN exams e ON er.exam_id = e.id
@@ -250,10 +263,10 @@ class ExamResult {
             return { valid: false, reason: 'Time limit exceeded', autoSubmitted: true };
         }
 
-        return { 
-            valid: true, 
+        return {
+            valid: true,
             remainingMinutes: durationMinutes - elapsed,
-            elapsedMinutes: elapsed 
+            elapsedMinutes: elapsed
         };
     }
 }

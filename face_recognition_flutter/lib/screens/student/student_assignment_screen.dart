@@ -4,6 +4,9 @@ import 'package:logger/logger.dart';
 import '../../models/models.dart';
 import '../../services/api_service.dart';
 import 'assignment_detail_screen.dart';
+import 'exam_detail_screen.dart';
+import 'exam_taking_screen.dart';
+import 'exam_result_screen.dart';
 
 class StudentAssignmentScreen extends StatefulWidget {
   final int userId;
@@ -87,10 +90,14 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen>
   Future<int> _getExamCount(int courseSectionId) async {
     try {
       final response = await ApiService().getStudentExams(courseSectionId);
-      if (response.success) {
+      
+      if (response.success && response.data != null) {
+        _logger.i('Found ${response.data!.length} exams');
         return response.data!.length;
+      } else {
+        _logger.w('No exam data or unsuccessful response');
+        return 0;
       }
-      return 0;
     } catch (e) {
       _logger.e('Error getting exam count: $e');
       return 0;
@@ -1115,7 +1122,7 @@ String _formatTime(DateTime time) {
                           icon: const Icon(Icons.grade),
                           label: const Text('Xem điểm'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: const Color(0xFF667eea),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1217,6 +1224,7 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
     try {
       final response =
           await ApiService().getStudentExams(widget.courseSection.id);
+      _logger.i('Fetched exams: ${response.data}');
       if (response.success) {
         return response.data!;
       }
@@ -1229,14 +1237,36 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
 
   Future<List<ExamResult>> _fetchExamResults() async {
     try {
-      final response = await ApiService().getStudentExamResults(widget.userId);
-      if (response.success) {
-        return response.data!;
+      // Lấy danh sách exams trước
+      final examsResponse = await ApiService().getStudentExams(widget.courseSection.id);
+      if (!examsResponse.success || examsResponse.data == null) {
+        return [];
       }
-      return [];
+
+      final exams = examsResponse.data!;
+      final results = <ExamResult>[];
+
+      // Lấy kết quả cho từng exam
+      for (final exam in exams) {
+        try {
+          final resultResponse = await ApiService().getStudentExamResult(
+            examId: exam.id,
+            // studentId không cần thiết vì API sẽ lấy từ token
+          );
+          
+          if (resultResponse.success && resultResponse.data != null) {
+            results.add(resultResponse.data!);
+          }
+        } catch (e) {
+          // Nếu chưa có kết quả cho exam này, bỏ qua
+          _logger.d('No result found for exam ${exam.id}: $e');
+        }
+      }
+
+      return results;
     } catch (e) {
       _logger.e('Error fetching exam results: $e');
-      throw Exception('Failed to load exam results');
+      return []; // Trả về empty list thay vì throw exception để UI không crash
     }
   }
 
@@ -1277,33 +1307,41 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
 
   /// Navigate to exam detail
   void _navigateToExamDetail(Exam exam) {
-    // TODO: Implement exam detail screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Xem chi tiết bài kiểm tra: ${exam.title}'),
-        backgroundColor: const Color(0xFF667eea),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamDetailScreen(
+          exam: exam,
+          userId: widget.userId,
+        ),
       ),
     );
   }
 
   /// Start exam
   void _startExam(Exam exam) {
-    // TODO: Implement exam taking screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Bắt đầu làm bài kiểm tra: ${exam.title}'),
-        backgroundColor: Colors.green,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamTakingScreen(
+          exam: exam,
+          userId: widget.userId,
+        ),
       ),
     );
   }
 
   /// View exam result
   void _viewExamResult(Exam exam, ExamResult result) {
-    // TODO: Implement view exam result screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Xem kết quả bài kiểm tra: ${exam.title}'),
-        backgroundColor: Colors.blue,
+    _logger.i('Viewing result for exam ${exam.id}');
+    _logger.i('Result details: ${result.toJson()}');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamResultScreen(
+          examResult: result,
+          exam: exam,
+        ),
       ),
     );
   }
@@ -1392,11 +1430,14 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
                           examId: exam.id,
                           studentId: widget.userId,
                           score: null,
-                          totalScore: exam.totalScore,
+                          totalScore: exam.totalScore.toDouble(),
+                          status: 'not_started', // Sử dụng status phù hợp hơn
                           startTime: null,
                           endTime: null,
-                          isCompleted: false,
-                          answers: [],
+                          submittedAt: null,
+                          gradedAt: null,
+                          gradedBy: null,
+                          answers: [], 
                         ),
                       );
 
@@ -1459,7 +1500,9 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
         !result.isCompleted;
     final isUpcoming = now.isBefore(exam.startTime);
     final isExpired = now.isAfter(exam.endTime);
-
+    _logger.i(
+        'Exam: ${exam.title}, Now: $now, Start: ${exam.startTime}, End: ${exam.endTime}, CanTake: $canTakeExam, Completed: ${result.isCompleted}');
+    
     Color statusColor;
     String statusText;
 
@@ -1645,7 +1688,7 @@ class _CourseExamsScreenState extends State<CourseExamsScreen> {
                           icon: const Icon(Icons.grade),
                           label: const Text('Xem điểm'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: const Color(0xFF667eea),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

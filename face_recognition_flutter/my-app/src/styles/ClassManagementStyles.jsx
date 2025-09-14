@@ -320,9 +320,6 @@ const classManagementStyles = {
     color: 'white',
     borderColor: '#ef4444'
   },
-  modalBody: {
-    padding: "1rem",
-  },
   modalFooter: {
     display: "flex",
     justifyContent: "flex-end",
@@ -366,10 +363,6 @@ const classManagementStyles = {
     cursor: "pointer",
     border: "none",
     transition: "all 0.2s"
-  },
-  btnPrimary: {
-    backgroundColor: "#2563eb",
-    color: "#fff"
   },
   btnOutline: {
     backgroundColor: "#fff",

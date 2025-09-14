@@ -70,15 +70,16 @@ class Exam {
     // Lấy tất cả bài kiểm tra theo course section
     static async getByCourseSection(courseSectionId) {
         const [rows] = await pool.execute(
-            `SELECT e.*, 
-                    COUNT(eq.id) as question_count,
-                    COUNT(er.id) as student_count
-            FROM exams e
-            LEFT JOIN exam_questions eq ON e.id = eq.exam_id
-            LEFT JOIN exam_results er ON e.id = er.exam_id
-            WHERE e.course_section_id = ? AND e.is_active = TRUE
-            GROUP BY e.id
-            ORDER BY e.exam_date ASC`,
+            `SELECT e.*,
+                    COUNT(DISTINCT eq.id) AS question_count,
+                    COUNT(DISTINCT er.id) AS student_count
+                FROM exams e
+                LEFT JOIN exam_questions eq ON e.id = eq.exam_id
+                LEFT JOIN exam_results er ON e.id = er.exam_id
+                WHERE e.course_section_id = ? AND e.is_active = TRUE
+                GROUP BY e.id
+                ORDER BY e.exam_date ASC
+                `,
             [courseSectionId]
         );
         return rows.map(row => new Exam(row));
@@ -162,7 +163,7 @@ class Exam {
             WHERE e.course_section_id = ? AND e.is_active = TRUE
             ORDER BY e.exam_date ASC`,
             [studentId, courseSectionId]
-        );
+        );  
         return rows;
     }
 

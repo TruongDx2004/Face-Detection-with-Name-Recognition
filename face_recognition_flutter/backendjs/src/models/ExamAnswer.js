@@ -54,7 +54,7 @@ class ExamAnswer {
                 const question = await ExamQuestion.getById(answer.question_id);
                 if (question) {
                     const { isCorrect, points } = ExamQuestion.checkAnswer(question, answer.student_answer);
-                    
+
                     await connection.execute(
                         `INSERT INTO exam_answers 
                         (exam_result_id, question_id, student_answer, is_correct, points_earned) 
@@ -114,7 +114,16 @@ class ExamAnswer {
 
         return rows.map(row => {
             if (row.options) {
-                row.options = JSON.parse(row.options);
+                try {
+                    const trimmed = row.options.trim();
+                    // chỉ parse nếu bắt đầu bằng [ hoặc {
+                    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                        row.options = JSON.parse(row.options);
+                    }
+                } catch (e) {
+                    // Nếu parse thất bại, giữ nguyên string
+                    row.options = row.options;
+                }
             }
             return new ExamAnswer(row);
         });

@@ -393,7 +393,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Thời gian nộp: ${_formatDateTime(_currentSubmission!.submittedAt!)}',
+                  'Đã nộp: ${_formatDateTime(_currentSubmission!.submittedAt!)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green[700],

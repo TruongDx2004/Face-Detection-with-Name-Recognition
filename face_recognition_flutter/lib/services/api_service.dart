@@ -1170,7 +1170,8 @@ class ApiService {
         }
 
         // Add file
-        final mimeType = lookupMimeType(attachmentFile.path) ?? 'application/octet-stream';
+        final mimeType =
+            lookupMimeType(attachmentFile.path) ?? 'application/octet-stream';
         final multipartFile = await http.MultipartFile.fromPath(
           'attachment',
           attachmentFile.path,
@@ -1371,8 +1372,24 @@ class ApiService {
   /// Get exams for student by course section
   Future<ApiResponse<List<Exam>>> getStudentExams(int courseSectionId) async {
     try {
-      final response =
-          await _makeRequest('GET', '/exams/student/$courseSectionId');
+      // Get current user info to get student ID
+      final currentUser = _authService.currentUser;
+      Map<String, String>? queryParams;
+
+      if (currentUser?.role == 'student') {
+        // For students, the backend will use req.user.id automatically
+        queryParams = null;
+      } else {
+        // For non-students (teachers/admin), need to provide studentId
+        // This case shouldn't happen in student screens, but adding for completeness
+        _logger.w('Non-student user trying to get student exams');
+      }
+
+      final response = await _makeRequest(
+        'GET',
+        '/exams/student/$courseSectionId',
+        queryParams: queryParams,
+      );
 
       return _handleListResponse<Exam>(
         response,
@@ -1384,20 +1401,30 @@ class ApiService {
     }
   }
 
-  /// Get student exam results
-  Future<ApiResponse<List<ExamResult>>> getStudentExamResults(
-      int studentId) async {
+  /// Get student exam result for specific exam
+  Future<ApiResponse<ExamResult>> getStudentExamResult({
+    required int examId,
+    int? studentId, // Optional for teachers to check other students
+  }) async {
     try {
-      final response =
-          await _makeRequest('GET', '/exams/results/student/$studentId');
+      final queryParams = <String, String>{};
+      if (studentId != null) {
+        queryParams['studentId'] = studentId.toString();
+      }
 
-      return _handleListResponse<ExamResult>(
+      final response = await _makeRequest(
+        'GET',
+        '/exams/$examId/result',
+        queryParams: queryParams,
+      );
+
+      return _handleResponse<ExamResult>(
         response,
         (json) => ExamResult.fromJson(json),
       );
     } catch (e) {
-      _logger.e('Error getting student exam results: $e');
-      return ApiResponse.error('Failed to get exam results: $e');
+      _logger.e('Error getting student exam result: $e');
+      return ApiResponse.error('Failed to get exam result: $e');
     }
   }
 
@@ -1407,29 +1434,75 @@ class ApiService {
     required int studentId,
   }) async {
     try {
-      final data = {'exam_id': examId, 'student_id': studentId};
-      final response = await _makeRequest('POST', '/exams/start', body: data);
-      return _handleResponse<ExamResult>(
-          response, (json) => ExamResult.fromJson(json));
+      final response = await _makeRequest('POST', '/exams/$examId/start');
+      return _handleResponse<ExamResult>(response, (json) {
+        if (json.containsKey('result_id')) {
+          // Backend trả về result_id + exam + questions
+          final examJson = json['exam'] ?? {};
+          return ExamResult(
+            id: json['result_id'],
+            examId: examJson['id'] ?? examId,
+            studentId: studentId,
+            score: 0.0,
+            totalScore:
+                double.tryParse(examJson['max_score']?.toString() ?? '0') ??
+                    0.0,
+            status: 'in_progress',
+            startTime: DateTime.now(),
+            endTime: null,
+            submittedAt: null,
+            gradedAt: null,
+            gradedBy: null,
+            answers: [], // chưa có câu trả lời khi bắt đầu
+            exam: examJson.isNotEmpty ? Exam.fromJson(examJson) : null,
+          );
+        } else {
+          // Trường hợp API trả về đúng chuẩn ExamResult
+          return ExamResult.fromJson(json);
+        }
+      });
     } catch (e) {
       _logger.e('Error starting exam attempt: $e');
       return ApiResponse.error('Failed to start exam: $e');
     }
   }
 
-  /// Submit exam attempt
+  //Lấy các bài kiểm tra theo học phần /exams/course-section/{courseSectionId}
+  Future<ApiResponse<List<Exam>>> getExamsByCourseSection(
+      int courseSectionId) async {
+    try {
+      final response =
+          await _makeRequest('GET', '/exams/course-section/$courseSectionId');
+
+      return _handleListResponse<Exam>(
+        response,
+        (json) => Exam.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting exams by course section: $e');
+      return ApiResponse.error('Failed to get exams: $e');
+    }
+  }
+
+  /// Submit exam attempt (sử dụng resultId từ startExamAttempt)
   Future<ApiResponse<ExamResult>> submitExamAttempt({
-    required int examId,
-    required int studentId,
+    required int resultId, // Thay examId bằng resultId
     required List<ExamAnswer> answers,
   }) async {
     try {
       final data = {
-        'exam_id': examId,
-        'student_id': studentId,
-        'answers': answers.map((answer) => answer.toJson()).toList(),
+        'answers': answers
+            .map((answer) => {
+                  'question_id': answer.questionId,
+                  'student_answer': answer.studentAnswer,
+                })
+            .toList(),
       };
-      final response = await _makeRequest('POST', '/exams/submit', body: data);
+
+      // Sử dụng đúng endpoint từ backend
+      final response = await _makeRequest(
+          'POST', '/exams/results/$resultId/submit',
+          body: data);
       return _handleResponse<ExamResult>(
           response, (json) => ExamResult.fromJson(json));
     } catch (e) {
@@ -1455,20 +1528,100 @@ class ApiService {
     }
   }
 
-  /// Get exam result details
-  Future<ApiResponse<ExamResult>> getExamResult(int resultId) async {
+  /// Save individual exam answer
+  Future<ApiResponse<Map<String, dynamic>>> saveExamAnswer({
+    required int resultId,
+    required int questionId,
+    required String studentAnswer,
+  }) async {
+    try {
+      final data = {
+        'question_id': questionId,
+        'student_answer': studentAnswer,
+      };
+
+      final response = await _makeRequest(
+        'POST',
+        '/exams/results/$resultId/answer',
+        body: data,
+      );
+
+      return _handleResponse<Map<String, dynamic>>(response, null);
+    } catch (e) {
+      _logger.e('Error saving exam answer: $e');
+      return ApiResponse.error('Failed to save answer: $e');
+    }
+  }
+
+  /// Check exam time limit
+  Future<ApiResponse<Map<String, dynamic>>> checkExamTimeLimit({
+    required int resultId,
+    required int durationMinutes,
+  }) async {
     try {
       final response = await _makeRequest(
         'GET',
-        '/exams/results/$resultId',
+        '/exams/results/$resultId/time-check',
+        queryParams: {'duration_minutes': durationMinutes.toString()},
       );
 
-      return _handleResponse<ExamResult>(response, (json) {
-        return ExamResult.fromJson(json);
-      });
+      return _handleResponse<Map<String, dynamic>>(response, null);
     } catch (e) {
-      _logger.e('Error getting exam result: $e');
-      return ApiResponse.error('Failed to get exam result: $e');
+      _logger.e('Error checking exam time limit: $e');
+      return ApiResponse.error('Failed to check time limit: $e');
+    }
+  }
+
+  /// Get exam statistics (for teachers)
+  Future<ApiResponse<Map<String, dynamic>>> getExamStatistics(
+      int examId) async {
+    try {
+      final response = await _makeRequest('GET', '/exams/$examId/statistics');
+      return _handleResponse<Map<String, dynamic>>(response, null);
+    } catch (e) {
+      _logger.e('Error getting exam statistics: $e');
+      return ApiResponse.error('Failed to get exam statistics: $e');
+    }
+  }
+
+  /// Get ungraded exams (for teachers)
+  Future<ApiResponse<List<ExamResult>>> getUngradedExams() async {
+    try {
+      final response = await _makeRequest('GET', '/exams/ungraded');
+      return _handleListResponse<ExamResult>(
+        response,
+        (json) => ExamResult.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error getting ungraded exams: $e');
+      return ApiResponse.error('Failed to get ungraded exams: $e');
+    }
+  }
+
+  /// Grade exam manually (for teachers)
+  Future<ApiResponse<ExamResult>> gradeExam({
+    required int resultId,
+    double? score,
+    List<Map<String, dynamic>>? grades,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (score != null) data['score'] = score;
+      if (grades != null) data['grades'] = grades;
+
+      final response = await _makeRequest(
+        'POST',
+        '/exams/results/$resultId/grade',
+        body: data,
+      );
+
+      return _handleResponse<ExamResult>(
+        response,
+        (json) => ExamResult.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Error grading exam: $e');
+      return ApiResponse.error('Failed to grade exam: $e');
     }
   }
 

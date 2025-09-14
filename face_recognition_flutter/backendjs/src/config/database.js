@@ -12,7 +12,9 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    charset: 'utf8mb4'
+    charset: 'utf8mb4',
+    timezone: '+00:00', // Force UTC to prevent timezone issues
+    dateStrings: true   // Return dates as strings to prevent auto conversion
 };
 
 // Tạo connection pool

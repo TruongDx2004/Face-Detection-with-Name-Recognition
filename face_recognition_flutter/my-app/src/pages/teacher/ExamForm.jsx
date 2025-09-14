@@ -35,7 +35,7 @@ const styles = {
         transition: 'all 0.2s ease'
     },
     formTextarea: {
-        width: '100%',
+        width: '98%',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #d1d5db',
@@ -45,7 +45,7 @@ const styles = {
         transition: 'all 0.2s ease'
     },
     formSelect: {
-        width: '100%',
+        width: '98%',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #d1d5db',
@@ -106,7 +106,7 @@ const styles = {
         color: '#374151'
     },
     optionInput: {
-        width: '100%',
+        width: '98%',
         padding: '8px 12px',
         borderRadius: '6px',
         border: '1px solid #d1d5db',
@@ -534,7 +534,7 @@ const ExamForm = () => {
                                 <span style={styles.questionNumber}>Câu hỏi {index + 1}</span>
                                 <button
                                     type="button"
-                                    style={{ ...styles.button, ...styles.buttonDanger }}
+                                    style={{ ...styles.button, ...styles.buttonDanger, fontSize: '12px', padding: '6px 12px', marginLeft: 'auto' }}
                                     onClick={() => removeQuestion(index)}
                                 >
                                     🗑️ Xóa
@@ -566,7 +566,7 @@ const ExamForm = () => {
                                     </select>
                                 </div>
 
-                                <div style={styles.formGroup}>
+                                {/* <div style={styles.formGroup}>
                                     <label style={styles.formLabel}>Điểm</label>
                                     <input
                                         type="number"
@@ -576,7 +576,7 @@ const ExamForm = () => {
                                         min="0"
                                         step="0.1"
                                     />
-                                </div>
+                                </div> */}
                             </div>
 
                             {question.question_type === 'multiple_choice' && (
