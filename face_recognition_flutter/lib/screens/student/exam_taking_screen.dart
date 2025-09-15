@@ -14,10 +14,10 @@ class ExamTakingScreen extends StatefulWidget {
   final int userId;
 
   const ExamTakingScreen({
-    Key? key,
+    super.key,
     required this.exam,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   State<ExamTakingScreen> createState() => _ExamTakingScreenState();
@@ -36,8 +36,8 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
   ExamResult? _examResult;
   
   // Store answers: question_id -> answer
-  Map<int, ExamAnswer> _answers = {};
-  List<TextEditingController> _essayControllers = [];
+  final Map<int, ExamAnswer> _answers = {};
+  final List<TextEditingController> _essayControllers = [];
 
   @override
   void initState() {
@@ -425,7 +425,7 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
                         ? (_currentQuestionIndex + 1) / widget.exam.questions.length 
                         : 0.0,
                     backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                   ),
                 ],
               ),
@@ -687,7 +687,7 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.green),
+              borderSide: const BorderSide(color: Colors.green),
             ),
           ),
           onChanged: (value) {

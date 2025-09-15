@@ -175,14 +175,14 @@ const styles = {
         marginBottom: '6px'
     },
     formInput: {
-        width: '100%',
+        width: '90%',
         padding: '8px 12px',
         borderRadius: '6px',
         border: '1px solid #d1d5db',
         fontSize: '14px'
     },
     formTextarea: {
-        width: '100%',
+        width: '90%',
         padding: '8px 12px',
         borderRadius: '6px',
         border: '1px solid #d1d5db',
@@ -512,6 +512,481 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, loading }) => {
     );
 };
 
+// Submission Details Modal Component
+const SubmissionDetailsModal = ({ isOpen, onClose, submission, loading, onDownloadFile, onGradeSubmission }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [gradeData, setGradeData] = useState({ score: '', feedback: '' });
+    const [grading, setGrading] = useState(false);
+
+    // Initialize grade data when submission changes
+    useEffect(() => {
+        if (submission) {
+            setGradeData({
+                score: submission.score || '',
+                feedback: submission.feedback || ''
+            });
+        }
+    }, [submission]);
+
+    if (!isOpen) return null;
+
+    const handleGradeSubmit = async (e) => {
+        e.preventDefault();
+        if (!gradeData.score || gradeData.score < 0) {
+            return;
+        }
+
+        setGrading(true);
+        try {
+            await onGradeSubmission(submission.id, gradeData);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error grading submission:', error);
+        } finally {
+            setGrading(false);
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Chưa xác định';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'graded':
+                return { backgroundColor: '#10b981', color: '#ffffff' };
+            case 'submitted':
+                return { backgroundColor: '#3b82f6', color: '#ffffff' };
+            case 'late':
+                return { backgroundColor: '#f59e0b', color: '#ffffff' };
+            default:
+                return { backgroundColor: '#6b7280', color: '#ffffff' };
+        }
+    };
+
+    const getStatusText = (status) => {
+        switch (status) {
+            case 'graded':
+                return 'Đã chấm điểm';
+            case 'submitted':
+                return 'Đã nộp';
+            case 'late':
+                return 'Nộp muộn';
+            default:
+                return 'Chưa nộp';
+        }
+    };
+
+    return (
+        <div style={styles.modal}>
+            <div style={{
+                ...styles.modalContent,
+                maxWidth: '800px',
+                width: '95%',
+                maxHeight: '90vh'
+            }}>
+                <div style={styles.modalHeader}>
+                    <i className="fas fa-file-alt"></i>
+                    Chi tiết bài nộp
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '20px',
+                            cursor: 'pointer',
+                            color: '#6b7280',
+                            marginLeft: 'auto'
+                        }}
+                    >
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '40px',
+                        fontSize: '16px',
+                        color: '#64748b'
+                    }}>
+                        <i className="fas fa-spinner fa-spin" style={{ marginRight: '10px' }}></i>
+                        Đang tải chi tiết...
+                    </div>
+                ) : submission ? (
+                    <div>
+                        {/* Student Information */}
+                        <div style={{
+                            backgroundColor: '#f8fafc',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            marginBottom: '20px',
+                            border: '1px solid #e2e8f0'
+                        }}>
+                            <h3 style={{
+                                fontSize: '18px',
+                                fontWeight: '600',
+                                marginBottom: '16px',
+                                color: '#1a202c',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <i className="fas fa-user"></i>
+                                Thông tin sinh viên
+                            </h3>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                                gap: '16px'
+                            }}>
+                                <div>
+                                    <div style={styles.infoLabel}>Họ và tên</div>
+                                    <div style={styles.infoValue}>{submission.student_name || 'Không xác định'}</div>
+                                </div>
+                                <div>
+                                    <div style={styles.infoLabel}>Mã sinh viên</div>
+                                    <div style={styles.infoValue}>{submission.student_code || 'Không xác định'}</div>
+                                </div>
+                                <div>
+                                    <div style={styles.infoLabel}>Email</div>
+                                    <div style={styles.infoValue}>{submission.student_email || 'Không xác định'}</div>
+                                </div>
+                                <div>
+                                    <div style={styles.infoLabel}>Trạng thái</div>
+                                    <div style={{
+                                        ...styles.submissionStatus,
+                                        ...getStatusStyle(submission.status),
+                                        display: 'inline-block'
+                                    }}>
+                                        {getStatusText(submission.status)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Submission Details */}
+                        <div style={{
+                            backgroundColor: '#ffffff',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            marginBottom: '20px',
+                            border: '1px solid #e2e8f0'
+                        }}>
+                            <h3 style={{
+                                fontSize: '18px',
+                                fontWeight: '600',
+                                marginBottom: '16px',
+                                color: '#1a202c',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <i className="fas fa-clock"></i>
+                                Chi tiết bài nộp
+                            </h3>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                                gap: '16px',
+                                marginBottom: '16px'
+                            }}>
+                                <div>
+                                    <div style={styles.infoLabel}>Thời gian nộp</div>
+                                    <div style={styles.infoValue}>{formatDate(submission.submitted_at)}</div>
+                                </div>
+                                <div>
+                                    <div style={styles.infoLabel}>Thời gian cập nhật</div>
+                                    <div style={styles.infoValue}>{formatDate(submission.updated_at)}</div>
+                                </div>
+                                {submission.score !== null && (
+                                    <div>
+                                        <div style={styles.infoLabel}>Điểm số</div>
+                                        <div style={{
+                                            ...styles.infoValue,
+                                            color: submission.score >= 5 ? '#10b981' : '#ef4444',
+                                            fontSize: '18px'
+                                        }}>
+                                            {submission.score}
+                                        </div>
+                                    </div>
+                                )}
+                                {submission.graded_at && (
+                                    <div>
+                                        <div style={styles.infoLabel}>Thời gian chấm</div>
+                                        <div style={styles.infoValue}>{formatDate(submission.graded_at)}</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Submission Content */}
+                            {submission.submission_text && (
+                                <div style={{ marginBottom: '16px' }}>
+                                    <div style={styles.infoLabel}>Nội dung bài làm</div>
+                                    <div style={{
+                                        backgroundColor: '#f8fafc',
+                                        padding: '12px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #e2e8f0',
+                                        fontSize: '14px',
+                                        lineHeight: '1.6',
+                                        color: '#374151',
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        {submission.submission_text}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Attachment */}
+                            {submission.attachment_path && (
+                                <div style={{ marginBottom: '16px' }}>
+                                    <div style={styles.infoLabel}>Tệp đính kèm</div>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '12px',
+                                        backgroundColor: '#f8fafc',
+                                        borderRadius: '6px',
+                                        border: '1px solid #e2e8f0'
+                                    }}>
+                                        <i className="fas fa-file" style={{ fontSize: '20px', color: '#64748b' }}></i>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a202c' }}>
+                                                {submission.attachment_path.split('/').pop()}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                                Tệp đính kèm
+                                            </div>
+                                        </div>
+                                        <button
+                                            style={{ ...styles.button, ...styles.buttonPrimary }}
+                                            onClick={() => onDownloadFile && onDownloadFile(submission.attachment_path)}
+                                        >
+                                            <i className="fas fa-download"></i>
+                                            Tải xuống
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Grading Section */}
+                        <div style={{
+                            backgroundColor: submission.status === 'graded' ? '#f0f9ff' : '#fef3c7',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            border: `1px solid ${submission.status === 'graded' ? '#0ea5e9' : '#fbbf24'}`
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '16px'
+                            }}>
+                                <h3 style={{
+                                    fontSize: '18px',
+                                    fontWeight: '600',
+                                    color: submission.status === 'graded' ? '#0c4a6e' : '#92400e',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <i className={submission.status === 'graded' ? 'fas fa-check-circle' : 'fas fa-edit'}></i>
+                                    {submission.status === 'graded' ? 'Đã chấm điểm' : 'Chấm điểm'}
+                                </h3>
+
+                                {submission.status === 'submitted' && !isEditing && (
+                                    <button
+                                        style={{ ...styles.button, ...styles.buttonPrimary }}
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        <i className="fas fa-edit"></i>
+                                        Chấm điểm
+                                    </button>
+                                )}
+
+                                {submission.status === 'graded' && !isEditing && (
+                                    <button
+                                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        <i className="fas fa-edit"></i>
+                                        Chỉnh sửa
+                                    </button>
+                                )}
+                            </div>
+
+                            {isEditing ? (
+                                <form onSubmit={handleGradeSubmit}>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 2fr',
+                                        gap: '16px',
+                                        marginBottom: '16px'
+                                    }}>
+                                        <div>
+                                            <label style={styles.formLabel}>Điểm số *</label>
+                                            <input
+                                                type="number"
+                                                step="0.25"
+                                                min="0"
+                                                style={styles.formInput}
+                                                value={gradeData.score}
+                                                onChange={(e) => setGradeData(prev => ({ ...prev, score: e.target.value }))}
+                                                required
+                                                disabled={grading}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={styles.formLabel}>Nhận xét</label>
+                                            <textarea
+                                                style={{
+                                                    ...styles.formTextarea,
+                                                    minHeight: '60px'
+                                                }}
+                                                value={gradeData.feedback}
+                                                onChange={(e) => setGradeData(prev => ({ ...prev, feedback: e.target.value }))}
+                                                placeholder="Nhập nhận xét cho sinh viên..."
+                                                disabled={grading}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button
+                                            type="button"
+                                            style={{ ...styles.button, ...styles.buttonSecondary }}
+                                            onClick={() => setIsEditing(false)}
+                                            disabled={grading}
+                                        >
+                                            Hủy
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            style={{ ...styles.button, ...styles.buttonSuccess }}
+                                            disabled={grading || !gradeData.score}
+                                        >
+                                            {grading ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin"></i>
+                                                    Đang lưu...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-save"></i>
+                                                    Lưu điểm
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div>
+                                    {submission.status === 'graded' ? (
+                                        <div>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                                gap: '16px',
+                                                marginBottom: '16px'
+                                            }}>
+                                                <div>
+                                                    <div style={styles.infoLabel}>Điểm số</div>
+                                                    <div style={{
+                                                        ...styles.infoValue,
+                                                        fontSize: '24px',
+                                                        color: submission.score >= 5 ? '#10b981' : '#ef4444'
+                                                    }}>
+                                                        {submission.score}
+                                                    </div>
+                                                </div>
+                                                {submission.graded_at && (
+                                                    <div>
+                                                        <div style={styles.infoLabel}>Thời gian chấm</div>
+                                                        <div style={styles.infoValue}>{formatDate(submission.graded_at)}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {submission.feedback && (
+                                                <div>
+                                                    <div style={styles.infoLabel}>Nhận xét</div>
+                                                    <div style={{
+                                                        backgroundColor: '#ffffff',
+                                                        padding: '12px',
+                                                        borderRadius: '6px',
+                                                        border: '1px solid #e2e8f0',
+                                                        fontSize: '14px',
+                                                        lineHeight: '1.6',
+                                                        color: '#374151',
+                                                        whiteSpace: 'pre-wrap'
+                                                    }}>
+                                                        {submission.feedback}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '20px',
+                                            color: '#78350f',
+                                            fontSize: '14px'
+                                        }}>
+                                            <i className="fas fa-clock" style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }}></i>
+                                            Bài nộp chưa được chấm điểm
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div style={styles.emptyState}>
+                        <div style={styles.emptyStateIcon}>
+                            <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>Không thể tải thông tin bài nộp</div>
+                    </div>
+                )}
+
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: '24px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #e2e8f0'
+                }}>
+                    <button
+                        type="button"
+                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                        onClick={onClose}
+                    >
+                        <i className="fas fa-times"></i>
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Main Component
 const AssignmentDetail = () => {
     const { id } = useParams();
@@ -536,6 +1011,9 @@ const AssignmentDetail = () => {
     const [selectedSubmission, setSelectedSubmission] = useState(null);
     const [grading, setGrading] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showSubmissionDetailsModal, setShowSubmissionDetailsModal] = useState(false);
+    const [submissionDetails, setSubmissionDetails] = useState(null);
+    const [loadingSubmissionDetails, setLoadingSubmissionDetails] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -614,7 +1092,7 @@ const AssignmentDetail = () => {
         try {
             setDeleting(true);
             const response = await ApiService.deleteAssignment(id);
-            
+
             if (response.success) {
                 showNotification('Xóa bài tập thành công', 'success');
                 navigate('/teacher/assignments');
@@ -637,7 +1115,7 @@ const AssignmentDetail = () => {
                 score: parseFloat(gradeData.score),
                 feedback: gradeData.feedback
             });
-            
+
             if (response.success) {
                 showNotification('Chấm điểm thành công', 'success');
                 await fetchSubmissions();
@@ -654,9 +1132,80 @@ const AssignmentDetail = () => {
         }
     };
 
-    const handleViewSubmissionDetails = (submission) => {
-        // TODO: Implement submission details view
-        console.log('View submission details:', submission);
+    const handleViewSubmissionDetails = async (submission) => {
+        try {
+            setLoadingSubmissionDetails(true);
+            setShowSubmissionDetailsModal(true);
+            setSubmissionDetails(null);
+
+            // Fetch detailed submission information
+            // const response = await ApiService.getSubmissionDetails(submission.id);
+            // if (response.success) {
+            //     setSubmissionDetails(response.data);
+            // } else {
+            // If API doesn't exist, use the submission data we already have
+            setSubmissionDetails(submission);
+            // }
+        } catch (error) {
+            console.error('Error fetching submission details:', error);
+            // Fallback to using existing submission data
+            setSubmissionDetails(submission);
+            showNotification('Không thể tải chi tiết bài nộp', 'warning');
+        } finally {
+            setLoadingSubmissionDetails(false);
+        }
+    };
+
+    const handleDownloadSubmissionFile = async (filePath) => {
+        try {
+            const filename = filePath.split('/').pop();
+            const blob = await ApiService.downloadSubmissionFile(filename);
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Download error:', error);
+            showNotification('Lỗi khi tải file bài nộp', 'error');
+        }
+    };
+
+    const handleGradeSubmissionInModal = async (submissionId, gradeData) => {
+        try {
+            const response = await ApiService.gradeSubmission(submissionId, {
+                score: parseFloat(gradeData.score),
+                feedback: gradeData.feedback
+            });
+
+            if (response.success) {
+                showNotification('Chấm điểm thành công', 'success');
+
+                // Update the submission in the modal
+                setSubmissionDetails(prev => ({
+                    ...prev,
+                    score: parseFloat(gradeData.score),
+                    feedback: gradeData.feedback,
+                    status: 'graded',
+                    graded_at: new Date().toISOString()
+                }));
+
+                // Refresh the submissions list
+                await fetchSubmissions();
+
+                return response.data;
+            } else {
+                throw new Error('Failed to grade submission');
+            }
+        } catch (error) {
+            console.error('Error grading submission:', error);
+            showNotification('Lỗi khi chấm điểm', 'error');
+            throw error;
+        }
     };
 
     const formatDate = (dateString) => {
@@ -818,7 +1367,7 @@ const AssignmentDetail = () => {
                                 try {
                                     const filename = assignment.attachment_path.split('/').pop();
                                     const blob = await ApiService.downloadAssignmentFile(filename);
-                                    
+
                                     const url = window.URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url;
@@ -944,6 +1493,19 @@ const AssignmentDetail = () => {
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={handleDeleteAssignment}
                 loading={deleting}
+            />
+
+            {/* Submission Details Modal */}
+            <SubmissionDetailsModal
+                isOpen={showSubmissionDetailsModal}
+                onClose={() => {
+                    setShowSubmissionDetailsModal(false);
+                    setSubmissionDetails(null);
+                }}
+                submission={submissionDetails}
+                loading={loadingSubmissionDetails}
+                onDownloadFile={handleDownloadSubmissionFile}
+                onGradeSubmission={handleGradeSubmissionInModal}
             />
         </AppLayout>
     );

@@ -12,10 +12,10 @@ class ExamDetailScreen extends StatefulWidget {
   final int userId;
 
   const ExamDetailScreen({
-    Key? key,
+    super.key,
     required this.exam,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   State<ExamDetailScreen> createState() => _ExamDetailScreenState();

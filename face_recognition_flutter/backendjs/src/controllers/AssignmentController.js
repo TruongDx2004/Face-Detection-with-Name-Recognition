@@ -635,7 +635,7 @@ class AssignmentController {
             const [submissions] = await db.execute(
                 `SELECT asub.*, 
                         u.full_name as student_name,
-                        u.username as student_username,
+                        u.email as student_email,
                         cs.student_code
                 FROM assignment_submissions asub
                 JOIN users u ON asub.student_id = u.id

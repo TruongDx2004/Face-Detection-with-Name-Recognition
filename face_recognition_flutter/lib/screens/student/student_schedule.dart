@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../models/models.dart';
-import '../../models/attendance_models.dart';
 import '../../services/api_service.dart';
 import 'face_capture_screen.dart';
 import 'session_list_screen.dart';

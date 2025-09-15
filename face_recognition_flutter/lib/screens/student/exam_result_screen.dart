@@ -9,10 +9,10 @@ class ExamResultScreen extends StatelessWidget {
   final Exam exam;
 
   const ExamResultScreen({
-    Key? key,
+    super.key,
     required this.examResult,
     required this.exam,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -234,7 +234,7 @@ class ExamResultScreen extends StatelessWidget {
                     LinearProgressIndicator(
                       value: examResult.answers.length / exam.questions.length,
                       backgroundColor: Colors.grey.shade300,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                       minHeight: 8,
                     ),
                   ],
