@@ -104,6 +104,7 @@ const Sidebar = ({ items = [] }) => {
   const defaultItems = [
     { id: 'dashboard', label: 'Trang chủ', icon: 'fas fa-tachometer-alt', path: '/teacher-dashboard' },
     { id: 'classes', label: 'Quản lý lớp', icon: 'fas fa-users', path: '/teacher/classes' },
+    { id: 'course-sections', label: 'Học phần', icon: 'fas fa-chalkboard-teacher', path: '/teacher/course-sections' },
     { id: 'schedules', label: 'Lịch dạy', icon: 'fas fa-calendar', path: '/teacher/schedules' },
     { id: 'attendance', label: 'Điểm danh', icon: 'fas fa-clipboard-check', path: '/teacher/attendance' },
     { id: 'assignments', label: 'Bài tập', icon: 'fas fa-tasks', path: '/teacher/assignments' },

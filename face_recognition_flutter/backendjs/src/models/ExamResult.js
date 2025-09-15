@@ -86,9 +86,6 @@ class ExamResult {
             [resultId]
         );
 
-        console.log("Update exam_results result:", result);
-
-
         // Kiểm tra xem có câu tự luận cần chấm thủ công không
         const [essayQuestions] = await pool.execute(
             `SELECT COUNT(*) as essay_count

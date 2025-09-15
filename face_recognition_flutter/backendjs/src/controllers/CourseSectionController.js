@@ -223,6 +223,82 @@ class CourseSectionController {
         }
     }
 
+    // Lấy assignments của course section
+    static async getCourseSectionAssignments(req, res) {
+        try {
+            const { id } = req.params;
+            
+            const courseSection = await CourseSection.findById(id);
+            if (!courseSection) {
+                return ResponseHelper.error(res, 'Course section not found', 404);
+            }
+
+            const assignments = await CourseSection.getAssignments(id);
+            
+            return ResponseHelper.success(res, assignments, 'Course section assignments retrieved successfully');
+        } catch (error) {
+            return ResponseHelper.error(res, error.message, 500);
+        }
+    }
+
+    // Xuất Excel bảng điểm
+    static async exportGradebookExcel(req, res) {
+        try {
+            const { id } = req.params;
+            
+            // Kiểm tra quyền truy cập
+            if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+                return ResponseHelper.error(res, 'Access denied', 403);
+            }
+
+            const courseSection = await CourseSection.findById(id);
+            if (!courseSection) {
+                return ResponseHelper.error(res, 'Course section not found', 404);
+            }
+
+            // Kiểm tra quyền sở hữu course section cho teacher
+            if (req.user.role === 'teacher' && courseSection.teacher_id !== req.user.id) {
+                return ResponseHelper.error(res, 'Access denied', 403);
+            }
+
+            const ExcelExportService = require('../services/ExcelExportService');
+            const workbook = await ExcelExportService.exportGradebook(id);
+
+            // Tạo tên file
+            const fileName = `BangDiem_${courseSection.name}_${courseSection.semester}_${new Date().getFullYear()}.xlsx`;
+
+            // Thiết lập response headers
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+
+            // Ghi workbook vào response
+            await workbook.xlsx.write(res);
+            res.end();
+
+        } catch (error) {
+            console.error('Export gradebook excel error:', error);
+            return ResponseHelper.error(res, 'Failed to export gradebook', 500);
+        }
+    }
+
+    // Lấy gradebook của course section
+    static async getCourseSectionGradebook(req, res) {
+        try {
+            const { id } = req.params;
+            
+            const courseSection = await CourseSection.findById(id);
+            if (!courseSection) {
+                return ResponseHelper.error(res, 'Course section not found', 404);
+            }
+
+            const gradebook = await CourseSection.getGradebook(id);
+            
+            return ResponseHelper.success(res, gradebook, 'Course section gradebook retrieved successfully');
+        } catch (error) {
+            return ResponseHelper.error(res, error.message, 500);
+        }
+    }
+
     // Lấy course sections theo teacher
     static async getCourseSectionsByTeacher(req, res) {
         try {

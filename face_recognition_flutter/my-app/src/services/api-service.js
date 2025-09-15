@@ -477,8 +477,87 @@ class ApiService {
         return await this.makeRequest('GET', `/assignments/${assignmentId}/submissions`, null, params);
     }
 
+    async getAssignmentsByCourseSection(courseSectionId, params = {}) {
+        return await this.makeRequest('GET', `/course-sections/${courseSectionId}/assignments`, null, params);
+    }
+
     async gradeSubmission(submissionId, gradeData) {
         return await this.makeRequest('PUT', `/assignments/submissions/${submissionId}/grade`, gradeData);
+    }
+
+    // Gradebook methods
+    async getGradebookByCourseSection(courseSectionId, params = {}) {
+        return await this.makeRequest('GET', `/course-sections/${courseSectionId}/gradebook`, null, params);
+    }
+
+    async updateExamResult(examResultId, resultData) {
+        return await this.makeRequest('PUT', `/exam-results/${examResultId}`, resultData);
+    }
+
+    async downloadSubmissionFile(filename) {
+        try {
+            const url = `${this.baseUrl}/assignments/submissions/files/${filename}`;
+            const headers = this.getHeaders();
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to download submission file');
+            }
+
+            return response.blob();
+        } catch (error) {
+            console.error('Download submission file error:', error);
+            throw error;
+        }
+    }
+
+    // Grade Configuration methods
+    async getGradeConfiguration(courseSectionId) {
+        return await this.makeRequest('GET', `/course-sections/${courseSectionId}/grade-configuration`);
+    }
+
+    async updateGradeConfiguration(courseSectionId, configData) {
+        return await this.makeRequest('PUT', `/course-sections/${courseSectionId}/grade-configuration`, configData);
+    }
+
+    async recalculateGrades(courseSectionId) {
+        return await this.makeRequest('POST', `/course-sections/${courseSectionId}/recalculate-grades`);
+    }
+
+    async exportGradebookExcel(courseSectionId) {
+        try {
+            const url = `${this.baseUrl}/course-sections/${courseSectionId}/export-gradebook`;
+            const headers = this.getHeaders();
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to export gradebook');
+            }
+
+            // Lấy tên file từ response header
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'BangDiem.xlsx';
+            if (contentDisposition) {
+                const matches = /filename\*=UTF-8''(.+)/.exec(contentDisposition);
+                if (matches != null && matches[1]) {
+                    filename = decodeURIComponent(matches[1]);
+                }
+            }
+
+            const blob = await response.blob();
+            return { blob, filename };
+        } catch (error) {
+            console.error('Export gradebook excel error:', error);
+            throw error;
+        }
     }
 
     async getTeacherCourseSections() {

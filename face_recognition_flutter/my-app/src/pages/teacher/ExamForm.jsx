@@ -427,7 +427,7 @@ const ExamForm = () => {
                             </select>
                         </div>
 
-                        <div style={styles.formGroup}>
+                        {/* <div style={styles.formGroup}>
                             <label style={styles.formLabel}>Điểm tối đa</label>
                             <input
                                 type="number"
@@ -437,7 +437,7 @@ const ExamForm = () => {
                                 min="0"
                                 step="0.1"
                             />
-                        </div>
+                        </div> */}
                     </div>
 
                     <div style={styles.formRow}>

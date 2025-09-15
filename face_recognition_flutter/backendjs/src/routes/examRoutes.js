@@ -565,6 +565,47 @@ router.post('/results/:resultId/grade', authenticateToken, ExamController.gradeE
 
 /**
  * @swagger
+ * /exam-results/{resultId}:
+ *   put:
+ *     summary: Update exam result score
+ *     tags: [Exams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: resultId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Exam result ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               score:
+ *                 type: number
+ *                 description: Exam score
+ *               status:
+ *                 type: string
+ *                 enum: [not_started, in_progress, completed, graded]
+ *                 description: Exam status
+ *     responses:
+ *       200:
+ *         description: Exam result updated successfully
+ *       404:
+ *         description: Exam result not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put('/results/:resultId', authenticateToken, ExamController.updateExamResult);
+
+/**
+ * @swagger
  * /exams/student/{courseSectionId}:
  *   get:
  *     summary: Get student exams

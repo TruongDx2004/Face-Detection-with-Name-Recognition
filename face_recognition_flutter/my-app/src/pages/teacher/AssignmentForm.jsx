@@ -247,9 +247,9 @@ const AssignmentForm = () => {
             newErrors.due_time = 'Giờ hạn nộp là bắt buộc';
         }
 
-        if (!formData.max_score || parseFloat(formData.max_score) <= 0) {
-            newErrors.max_score = 'Điểm tối đa phải lớn hơn 0';
-        }
+        // if (!formData.max_score || parseFloat(formData.max_score) <= 0) {
+        //     newErrors.max_score = 'Điểm tối đa phải lớn hơn 0';
+        // }
 
         if (!isEdit && selectedCourseSections.length === 0) {
             newErrors.course_sections = 'Vui lòng chọn ít nhất một lớp học phần';
@@ -469,7 +469,7 @@ const AssignmentForm = () => {
                             </select>
                         </div>
 
-                        <div style={styles.formGroup}>
+                        {/* <div style={styles.formGroup}>
                             <label style={styles.formLabel}>
                                 <i className="fas fa-star" style={{ marginRight: '6px' }}></i>
                                 Điểm tối đa *
@@ -484,7 +484,7 @@ const AssignmentForm = () => {
                                 placeholder="10"
                             />
                             {errors.max_score && <div style={styles.errorText}>{errors.max_score}</div>}
-                        </div>
+                        </div> */}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

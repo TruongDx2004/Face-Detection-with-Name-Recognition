@@ -41,7 +41,7 @@ const upload = multer({
             'application/zip',
             'application/x-rar-compressed'
         ];
-        
+
         if (allowedTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
@@ -86,8 +86,8 @@ class AssignmentController {
             }
 
             if (courseSections[0].teacher_id !== teacher_id) {
-                return res.status(403).json({ 
-                    error: 'You are not authorized to create assignments for this course section' 
+                return res.status(403).json({
+                    error: 'You are not authorized to create assignments for this course section'
                 });
             }
 
@@ -187,8 +187,8 @@ class AssignmentController {
             }
 
             if (assignments[0].teacher_id !== teacher_id) {
-                return res.status(403).json({ 
-                    error: 'You are not authorized to update this assignment' 
+                return res.status(403).json({
+                    error: 'You are not authorized to update this assignment'
                 });
             }
 
@@ -198,7 +198,7 @@ class AssignmentController {
             // Xử lý file mới
             if (req.file) {
                 updateData.attachment_path = req.file.path;
-                
+
                 // Xóa file cũ nếu có
                 if (assignment.attachment_path) {
                     try {
@@ -283,8 +283,8 @@ class AssignmentController {
             }
 
             if (assignments[0].teacher_id !== teacher_id) {
-                return res.status(403).json({ 
-                    error: 'You are not authorized to delete this assignment' 
+                return res.status(403).json({
+                    error: 'You are not authorized to delete this assignment'
                 });
             }
 
@@ -320,8 +320,8 @@ class AssignmentController {
             );
 
             if (enrollments.length === 0) {
-                return res.status(403).json({ 
-                    error: 'You are not enrolled in this course section' 
+                return res.status(403).json({
+                    error: 'You are not enrolled in this course section'
                 });
             }
 
@@ -437,8 +437,8 @@ class AssignmentController {
             );
 
             if (enrollments.length === 0) {
-                return res.status(403).json({ 
-                    error: 'You are not enrolled in this course section' 
+                return res.status(403).json({
+                    error: 'You are not enrolled in this course section'
                 });
             }
 
@@ -567,8 +567,8 @@ class AssignmentController {
             }
 
             if (submissions[0].teacher_id !== graded_by) {
-                return res.status(403).json({ 
-                    error: 'You are not authorized to grade this submission' 
+                return res.status(403).json({
+                    error: 'You are not authorized to grade this submission'
                 });
             }
 
@@ -594,6 +594,9 @@ class AssignmentController {
                 [submissionId]
             );
 
+            // Tự động tính lại điểm cho sinh viên
+            await AssignmentController.autoCalculateGradesAfterGrading(submissionId);
+            console.log('Auto calculate grades after assignment grading completed for submission:', submissionId);
             res.json({
                 message: 'Assignment graded successfully',
                 data: gradedSubmissions[0]
@@ -605,6 +608,31 @@ class AssignmentController {
                 error: 'Failed to grade submission',
                 message: error.message
             });
+        }
+    }
+
+    // Tự động tính lại điểm sau khi chấm bài
+    static async autoCalculateGradesAfterGrading(submissionId) {
+        try {
+            // Lấy thông tin submission và course section
+            const [submissions] = await db.execute(`
+                SELECT asub.student_id, a.course_section_id
+                FROM assignment_submissions asub
+                JOIN assignments a ON asub.assignment_id = a.id
+                WHERE asub.id = ?
+            `, [submissionId]);
+
+            if (submissions.length > 0) {
+                const { student_id, course_section_id } = submissions[0];
+
+                // Import và gọi hàm tính điểm
+                const GradeConfigurationController = require('./GradeConfigurationController');
+                await GradeConfigurationController.calculateStudentGrade(course_section_id, student_id);
+                console.log('Auto calculate grades after assignment grading for student:', student_id, 'in course section:', course_section_id);
+            }
+        } catch (error) {
+            console.error('Auto calculate grades error:', error);
+            // Không throw error để không ảnh hưởng đến flow chính
         }
     }
 
@@ -627,8 +655,8 @@ class AssignmentController {
             }
 
             if (assignments[0].teacher_id !== teacher_id) {
-                return res.status(403).json({ 
-                    error: 'You are not authorized to view submissions for this assignment' 
+                return res.status(403).json({
+                    error: 'You are not authorized to view submissions for this assignment'
                 });
             }
 

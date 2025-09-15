@@ -268,7 +268,6 @@ class ExamController {
         try {
             const { resultId } = req.params;
             const { answers } = req.body;
-            console.log('Submitting exam with resultId:', resultId, 'and answers:', answers);
 
             // Kiểm tra quyền sinh viên
             if (req.user.role !== 'student') {
@@ -370,6 +369,80 @@ class ExamController {
         } catch (error) {
             console.error('Grade exam error:', error);
             ResponseHelper.error(res, 'Failed to grade exam', 500);
+        }
+    }
+
+    // Cập nhật kết quả thi (cho gradebook)
+    static async updateExamResult(req, res) {
+        try {
+            const { resultId } = req.params;
+            const { score, status } = req.body;
+
+            // Kiểm tra quyền giáo viên
+            if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+                return ResponseHelper.error(res, 'Access denied', 403);
+            }
+
+            // Kiểm tra kết quả thi có tồn tại không
+            const existingResult = await ExamResult.getById(resultId);
+            if (!existingResult) {
+                return ResponseHelper.error(res, 'Exam result not found', 404);
+            }
+
+            // Cập nhật điểm và trạng thái
+            const updateData = {};
+            if (score !== undefined) {
+                updateData.score = parseFloat(score);
+                updateData.graded_by = req.user.id;
+                updateData.graded_at = new Date();
+            }
+            if (status !== undefined) {
+                updateData.status = status;
+            }
+
+            // Nếu có điểm thì tự động chuyển sang graded
+            if (score !== undefined) {
+                updateData.status = 'graded';
+            }
+
+            await ExamResult.update(resultId, updateData);
+
+            // Tự động tính lại điểm cho sinh viên
+            await this.autoCalculateGradesAfterExamGrading(resultId);
+
+            const updatedResult = await ExamResult.getById(resultId);
+            ResponseHelper.success(res, updatedResult, 'Exam result updated successfully');
+
+        } catch (error) {
+            console.error('Update exam result error:', error);
+            ResponseHelper.error(res, 'Failed to update exam result', 500);
+        }
+    }
+
+    // Tự động tính lại điểm sau khi chấm bài kiểm tra
+    static async autoCalculateGradesAfterExamGrading(examResultId) {
+        try {
+            const db = require('../config/database');
+            
+            // Lấy thông tin exam result và course section
+            const [examResults] = await db.execute(`
+                SELECT er.student_id, e.course_section_id
+                FROM exam_results er
+                JOIN exams e ON er.exam_id = e.id
+                WHERE er.id = ?
+            `, [examResultId]);
+
+            if (examResults.length > 0) {
+                const { student_id, course_section_id } = examResults[0];
+                
+                // Import và gọi hàm tính điểm
+                const GradeConfigurationController = require('./GradeConfigurationController');
+                await GradeConfigurationController.calculateStudentGrade(course_section_id, student_id);
+                console.log('Auto calculate grades after exam grading completed for student:', student_id, 'in course section:', course_section_id);
+            }
+        } catch (error) {
+            console.error('Auto calculate grades after exam grading error:', error);
+            // Không throw error để không ảnh hưởng đến flow chính
         }
     }
 

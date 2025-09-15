@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CourseSectionController = require('../controllers/CourseSectionController');
+const GradeConfigurationController = require('../controllers/GradeConfigurationController');
 
 // Import auth middleware safely
 let auth;
@@ -378,6 +379,158 @@ router.get('/:id/attendance-sessions', auth, CourseSectionController.getCourseSe
 
 /**
  * @swagger
+ * /api/course-sections/{id}/assignments:
+ *   get:
+ *     summary: Get course section assignments
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Course section assignments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       title:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       assignment_type:
+ *                         type: string
+ *                       max_score:
+ *                         type: number
+ *                       due_date:
+ *                         type: string
+ *                         format: date-time
+ *                       created_date:
+ *                         type: string
+ *                         format: date-time
+ *                       is_active:
+ *                         type: boolean
+ *       404:
+ *         description: Course section not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/assignments', auth, CourseSectionController.getCourseSectionAssignments);
+
+/**
+ * @swagger
+ * /api/course-sections/{id}/gradebook:
+ *   get:
+ *     summary: Get course section gradebook
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Course section gradebook retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       course_section_id:
+ *                         type: integer
+ *                       student_id:
+ *                         type: integer
+ *                       assignment_avg:
+ *                         type: number
+ *                       exam_avg:
+ *                         type: number
+ *                       attendance_score:
+ *                         type: number
+ *                       final_score:
+ *                         type: number
+ *                       letter_grade:
+ *                         type: string
+ *                       gpa_points:
+ *                         type: number
+ *                       is_passed:
+ *                         type: boolean
+ *       404:
+ *         description: Course section not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/gradebook', auth, CourseSectionController.getCourseSectionGradebook);
+
+/**
+ * @swagger
+ * /api/course-sections/{id}/export-gradebook:
+ *   get:
+ *     summary: Export gradebook to Excel file
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Excel file downloaded successfully
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Course section not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id/export-gradebook', auth, CourseSectionController.exportGradebookExcel);
+
+/**
+ * @swagger
  * /api/course-sections/teacher/{teacherId}:
  *   get:
  *     summary: Get course sections by teacher
@@ -513,5 +666,131 @@ router.get('/class/:classId', auth, CourseSectionController.getCourseSectionsByC
  *         description: Server error
  */
 router.get('/student/:studentId', auth, CourseSectionController.getCourseSectionsByStudent);
+
+// Grade Configuration Routes
+/**
+ * @swagger
+ * /api/course-sections/{courseSectionId}/grade-configuration:
+ *   get:
+ *     summary: Get grade configuration for course section
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseSectionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Grade configuration retrieved successfully
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Course section not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:courseSectionId/grade-configuration', auth, GradeConfigurationController.getGradeConfiguration);
+
+/**
+ * @swagger
+ * /api/course-sections/{courseSectionId}/grade-configuration:
+ *   put:
+ *     summary: Update grade configuration for course section
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseSectionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - assignment_weight
+ *               - exam_weight
+ *               - attendance_weight
+ *               - passing_score
+ *             properties:
+ *               assignment_weight:
+ *                 type: number
+ *                 format: float
+ *               exam_weight:
+ *                 type: number
+ *                 format: float
+ *               attendance_weight:
+ *                 type: number
+ *                 format: float
+ *               passing_score:
+ *                 type: number
+ *                 format: float
+ *     responses:
+ *       200:
+ *         description: Grade configuration updated successfully
+ *       400:
+ *         description: Invalid input (weights must total 100%)
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
+router.put('/:courseSectionId/grade-configuration', auth, GradeConfigurationController.updateGradeConfiguration);
+
+/**
+ * @swagger
+ * /api/course-sections/{courseSectionId}/recalculate-grades:
+ *   post:
+ *     summary: Recalculate all grades for course section
+ *     tags: [Course Sections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: courseSectionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course section ID
+ *     responses:
+ *       200:
+ *         description: Grades recalculated successfully
+ *       403:
+ *         description: Access denied
+ *       500:
+ *         description: Server error
+ */
+router.post('/:courseSectionId/recalculate-grades', auth, async (req, res) => {
+    try {
+        const { courseSectionId } = req.params;
+
+        // Kiểm tra quyền
+        if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        await GradeConfigurationController.recalculateAllGrades(courseSectionId);
+        
+        res.json({ 
+            success: true, 
+            message: 'All grades recalculated successfully' 
+        });
+    } catch (error) {
+        console.error('Recalculate grades error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to recalculate grades' 
+        });
+    }
+});
 
 module.exports = router;

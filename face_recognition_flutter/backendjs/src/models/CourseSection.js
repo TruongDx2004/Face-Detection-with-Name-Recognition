@@ -273,6 +273,51 @@ class CourseSection {
         }
     }
 
+    // Lấy assignments của course section
+    static async getAssignments(courseSectionId) {
+        try {
+            const [rows] = await db.execute(`
+                SELECT a.*, 
+                       cs.name as course_name,
+                       s.name as subject_name,
+                       c.name as class_name,
+                       u.full_name as teacher_name
+                FROM assignments a
+                JOIN course_sections cs ON a.course_section_id = cs.id
+                JOIN subjects s ON cs.subject_id = s.id
+                JOIN classes c ON cs.class_id = c.id
+                JOIN users u ON cs.teacher_id = u.id
+                WHERE a.course_section_id = ? AND a.is_active = TRUE
+                ORDER BY a.due_date ASC, a.created_date DESC
+            `, [courseSectionId]);
+
+            return rows;
+        } catch (error) {
+            throw new Error(`Error getting course section assignments: ${error.message}`);
+        }
+    }
+
+    // Lấy gradebook của course section
+    static async getGradebook(courseSectionId) {
+        try {
+            const [rows] = await db.execute(`
+                SELECT g.*, 
+                       u.full_name as student_name,
+                       u.username as student_username,
+                       cs_student.student_code
+                FROM gradebook g
+                JOIN users u ON g.student_id = u.id
+                LEFT JOIN class_students cs_student ON u.id = cs_student.student_id
+                WHERE g.course_section_id = ?
+                ORDER BY cs_student.student_code ASC, u.full_name ASC
+            `, [courseSectionId]);
+
+            return rows;
+        } catch (error) {
+            throw new Error(`Error getting course section gradebook: ${error.message}`);
+        }
+    }
+
     // Kiểm tra course section code đã tồn tại
     static async codeExists(code, excludeId = null) {
         try {
