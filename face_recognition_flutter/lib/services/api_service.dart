@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';
 import '../models/models.dart';
+import '../models/grade_models.dart';
 import '../utils/constants.dart';
 import 'auth_service.dart';
 import 'package:http_parser/http_parser.dart';
@@ -192,7 +193,7 @@ class ApiService {
       _logger.e('Network request failed: $e');
       if (e.toString().contains('TimeoutException')) {
         throw Exception(
-            'Request timeout. Please check your internet connection.');
+            'Lỗi kết nối mạng. Vui lòng thử lại sau!');
       }
       rethrow;
     }
@@ -1629,15 +1630,113 @@ class ApiService {
   String _getUserFriendlyErrorMessage(String error) {
     if (error.contains('SocketException') ||
         error.contains('NetworkException')) {
-      return 'No internet connection. Please check your network settings.';
+      return 'Lỗi kết nối mạng. Vui lòng thử lại sau!';
     } else if (error.contains('TimeoutException')) {
-      return 'Request timeout. Please try again.';
+      return 'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại sau!';
     } else if (error.contains('FormatException')) {
-      return 'Invalid server response format.';
+      return 'Dữ liệu phản hồi không hợp lệ.';
     } else if (error.contains('HandshakeException')) {
-      return 'SSL/TLS connection error. Please check server configuration.';
+      return 'Có lỗi xảy ra.';
     } else {
       return 'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  // ============ STUDENT GRADES METHODS ============
+  
+  Future<ApiResponse<List<StudentGrade>>> getStudentCurrentGrades(int userId) async {
+    try {
+      final response = await _makeRequest('GET', '/students/$userId/current-grades');
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          final List<dynamic> gradesList = responseData['data'] ?? [];
+          final List<StudentGrade> grades = gradesList
+              .map((item) => StudentGrade.fromJson(item as Map<String, dynamic>))
+              .toList();
+          return ApiResponse.success(grades);
+        } else {
+          return ApiResponse.error(responseData['message'] ?? 'Failed to get current grades');
+        }
+      } else {
+        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get current grades');
+      }
+    } catch (e) {
+      _logger.e('Get student current grades error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  Future<ApiResponse<List<SemesterSummary>>> getStudentSemesterSummaries(int userId) async {
+    try {
+      final response = await _makeRequest('GET', '/students/$userId/semester-summaries');
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          final List<dynamic> summariesList = responseData['data'] ?? [];
+          final List<SemesterSummary> summaries = summariesList
+              .map((item) => SemesterSummary.fromJson(item as Map<String, dynamic>))
+              .toList();
+          return ApiResponse.success(summaries);
+        } else {
+          return ApiResponse.error(responseData['message'] ?? 'Failed to get semester summaries');
+        }
+      } else {
+        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get semester summaries');
+      }
+    } catch (e) {
+      _logger.e('Get student semester summaries error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  Future<ApiResponse<GpaOverall>> getStudentGpaOverall(int userId) async {
+    try {
+      final response = await _makeRequest('GET', '/students/$userId/gpa-overall');
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          final gpaData = responseData['data'] ?? {};
+          final GpaOverall gpaOverall = GpaOverall.fromJson(gpaData as Map<String, dynamic>);
+          return ApiResponse.success(gpaOverall);
+        } else {
+          return ApiResponse.error(responseData['message'] ?? 'Failed to get GPA overall');
+        }
+      } else {
+        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get GPA overall');
+      }
+    } catch (e) {
+      _logger.e('Get student GPA overall error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  Future<ApiResponse<CourseSectionGradeDetail>> getStudentCourseSectionGradeDetail(
+    int userId, 
+    int courseSectionId
+  ) async {
+    try {
+      final response = await _makeRequest('GET', '/students/$userId/course-sections/$courseSectionId/grade-detail');
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          final gradeDetailData = responseData['data'] ?? {};
+          _logger.d('Grade detail data: $gradeDetailData');
+          final CourseSectionGradeDetail gradeDetail = CourseSectionGradeDetail.fromJson(gradeDetailData as Map<String, dynamic>);
+          return ApiResponse.success(gradeDetail);
+        } else {
+          return ApiResponse.error(responseData['message'] ?? 'Failed to get course section grade detail');
+        }
+      } else {
+        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get course section grade detail');
+      }
+    } catch (e) {
+      _logger.e('Get student course section grade detail error: $e');
+      return ApiResponse.error('Network error: $e');
     }
   }
 }

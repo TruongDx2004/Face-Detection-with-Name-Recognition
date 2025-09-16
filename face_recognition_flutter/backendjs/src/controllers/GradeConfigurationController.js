@@ -158,7 +158,6 @@ class GradeConfigurationController {
                 `SELECT * FROM grade_configurations WHERE course_section_id = ?`,
                 [courseSectionId]
             );
-            console.log('Grade configuration for courseSectionId', courseSectionId, ':', configs);
             if (configs.length === 0) {
                 console.warn(`Course section ${courseSectionId} chưa có cấu hình điểm. Vui lòng cấu hình điểm trước.`);
                 return;
@@ -201,17 +200,17 @@ class GradeConfigurationController {
             // Tính điểm trung bình kiểm tra (bao gồm cả điểm 0 cho bài chưa thi)
             let examTotalScore = 0;
             let examCount = activeExams.length;
-
+            console.log('studentId', studentId, 'examCount', examCount, 'activeExams', activeExams);
             if (examCount > 0) {
                 for (const exam of activeExams) {
-                    const [examResult] = await db.execute(`
-                        SELECT er.score
-                        FROM exam_results er
-                        WHERE er.exam_id = ? AND er.student_id = ?
-                    `, [exam.id, studentId]);
+                    const [rows] = await db.execute(`
+                            SELECT er.score
+                            FROM exam_results er
+                            WHERE er.exam_id = ? AND er.student_id = ?
+                        `, [exam.id, studentId]);
 
-                    // Nếu có điểm thì lấy điểm, không có thì tính = 0
-                    const score = examResult.length > 0 && examResult[0].score !== null ? examResult[0].score : 0;
+                    // rows là một mảng, có thể rỗng
+                    const score = parseFloat(rows[0]?.score ?? 0) || 0;
                     examTotalScore += score;
                 }
             }
@@ -229,8 +228,10 @@ class GradeConfigurationController {
             // Tính điểm trung bình
             const assignmentAvgScore = assignmentCount > 0 ? assignmentTotalScore / assignmentCount : 0;
             const examAvgScore = examCount > 0 ? examTotalScore / examCount : 0;
-            const attendancePercentage = attendanceScore[0]?.total_sessions > 0 
-                ? (attendanceScore[0]?.present_count || 0) / attendanceScore[0].total_sessions * 10 
+            console.log('examAvgScore', examAvgScore, 'examCount', examCount, 'examTotalScore', examTotalScore);
+
+            const attendancePercentage = attendanceScore[0]?.total_sessions > 0
+                ? (attendanceScore[0]?.present_count || 0) / attendanceScore[0].total_sessions * 10
                 : 0;
 
             // Tính điểm cuối theo trọng số

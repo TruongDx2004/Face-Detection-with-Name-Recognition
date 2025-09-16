@@ -408,6 +408,7 @@ class ExamController {
             await ExamResult.update(resultId, updateData);
 
             // Tự động tính lại điểm cho sinh viên
+            console.log('Triggering auto calculate grades after exam grading for result ID:', resultId);
             await this.autoCalculateGradesAfterExamGrading(resultId);
 
             const updatedResult = await ExamResult.getById(resultId);
