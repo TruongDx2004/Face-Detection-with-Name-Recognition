@@ -164,11 +164,22 @@ class AttendanceController {
     async markAttendanceByFace(req, res) {
         try {
             if (!req.file) {
-                return res.status(400).json({ error: 'No image uploaded' });
+                return res.status(400).json({ error: 'Không thể tải hình ảnh' });
             }
 
-            const { session_id } = req.body;
+            const { session_id, location_data } = req.body;
             const imagePath = req.file.path;
+
+            console.log('Mark attendance request:', {
+                session_id,
+                location_data: location_data ? JSON.parse(location_data) : null,
+                file: req.file.filename
+            });
+
+            if (!session_id) {
+                await fs.unlink(imagePath);
+                return res.status(400).json({ error: 'session_id is required' });
+            }
 
             // Kiểm tra session tồn tại và đang active
             const [sessions] = await db.execute(
@@ -178,19 +189,38 @@ class AttendanceController {
 
             if (sessions.length === 0) {
                 await fs.unlink(imagePath);
-                return res.status(404).json({ error: 'Attendance session not found or not active' });
+                return res.status(404).json({ error: 'Không tìm thấy phiên điểm danh' });
             }
 
             const session = sessions[0];
 
-            // Kiểm tra thời gian điểm danh
+            // Kiểm tra thời gian điểm danh (chỉ kiểm tra start_time, bỏ qua end_time nếu null)
             const now = new Date();
-            const startTime = new Date(session.start_time);
-            const endTime = new Date(session.end_time);
+            const sessionDate = new Date(session.session_date);
+            const startTime = new Date(`${session.session_date}T${session.start_time}`);
+            
+            // Kiểm tra ngày phiên học
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            sessionDate.setHours(0, 0, 0, 0);
 
-            if (now < startTime || now > endTime) {
+            if (sessionDate.getTime() !== today.getTime()) {
                 await fs.unlink(imagePath);
-                return res.status(400).json({ error: 'Attendance session is not in valid time range' });
+                return res.status(400).json({ error: 'Ngày của phiên không phải hôm nay' });
+            }
+
+            // Chỉ kiểm tra start_time (cho phép điểm danh sau giờ bắt đầu)
+            // Có thể thêm giới hạn thời gian tối đa (ví dụ: 2 tiếng sau start_time)
+            const maxAttendanceTime = new Date(startTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours after start
+            
+            if (now < startTime) {
+                await fs.unlink(imagePath);
+                return res.status(400).json({ error: 'Phiên điểm danh chưa bắt đầu' });
+            }
+            
+            if (now > maxAttendanceTime) {
+                await fs.unlink(imagePath);
+                return res.status(400).json({ error: 'Phiên điểm danh đã kết thúc' });
             }
 
             // Nhận diện khuôn mặt
@@ -199,7 +229,7 @@ class AttendanceController {
             if (!recognitionResult.success || !recognitionResult.user_id) {
                 await fs.unlink(imagePath);
                 return res.status(400).json({
-                    error: 'Face not recognized',
+                    error: 'Điểm danh thất bại',
                     confidence: recognitionResult.confidence || 0
                 });
             }
@@ -216,7 +246,7 @@ class AttendanceController {
 
             if (courseSectionInfo.length === 0) {
                 await fs.unlink(imagePath);
-                return res.status(404).json({ error: 'Course section not found for this session' });
+                return res.status(404).json({ error: 'Không tìm thấy học phần' });
             }
 
             // Kiểm tra user có trong class không
@@ -227,7 +257,7 @@ class AttendanceController {
 
             if (classStudents.length === 0) {
                 await fs.unlink(imagePath);
-                return res.status(403).json({ error: 'Student not enrolled in this class' });
+                return res.status(403).json({ error: 'Sinh viên không có trong lớp' });
             }
 
             // Kiểm tra đã điểm danh chưa
@@ -238,15 +268,33 @@ class AttendanceController {
 
             if (existingAttendance.length > 0) {
                 await fs.unlink(imagePath);
-                return res.status(409).json({ error: 'Already marked attendance for this session' });
+                return res.status(409).json({ error: 'Bạn đã điểm danh cho buổi học' });
             }
 
-            // Lưu bản ghi điểm danh
-            await db.execute(`
+            // Parse location data if provided
+            let parsedLocationData = null;
+            if (location_data) {
+                try {
+                    parsedLocationData = JSON.parse(location_data);
+                } catch (e) {
+                    console.warn('Invalid location data format:', e);
+                }
+            }
+
+            // Lưu bản ghi điểm danh với location data
+            const insertQuery = `
                 INSERT INTO attendances 
-                (session_id, student_id, confidence_score, image_path, status) 
-                VALUES (?, ?, ?, ?, 'present')
-            `, [session_id, userId, recognitionResult.confidence, imagePath]);
+                (session_id, student_id, confidence_score, image_path, status, location_data, attendance_time) 
+                VALUES (?, ?, ?, ?, 'present', ?, NOW())
+            `;
+            
+            await db.execute(insertQuery, [
+                session_id, 
+                userId, 
+                recognitionResult.confidence, 
+                imagePath, 
+                parsedLocationData ? JSON.stringify(parsedLocationData) : null
+            ]);
 
             // Lấy thông tin student
             const [students] = await db.execute(
@@ -255,10 +303,14 @@ class AttendanceController {
             );
 
             res.json({
+                success: true,
                 message: 'Attendance marked successfully',
-                student: students[0],
-                confidence: recognitionResult.confidence,
-                timestamp: new Date()
+                data: {
+                    student: students[0],
+                    confidence_score: recognitionResult.confidence,
+                    timestamp: new Date(),
+                    location_verified: parsedLocationData ? parsedLocationData.isAllowed : null
+                }
             });
         } catch (error) {
             console.error('Mark attendance error:', error);

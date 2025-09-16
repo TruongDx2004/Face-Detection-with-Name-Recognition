@@ -1,6 +1,7 @@
 // lib/screens/student/face_capture_screen_optimized.dart
 import 'dart:io';
 import 'dart:math';
+import 'dart:math' as math;
 import 'dart:async';
 import 'package:face_attendance/services/ml_kit_face_service.dart';
 import 'package:flutter/material.dart';
@@ -124,7 +125,39 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
     try {
       _logger.i('🚀 Starting service initialization...');
 
-      // Initialize ML Kit
+      // Check location first before starting any other process
+      _setStatus('Kiểm tra vị trí...', Colors.blue);
+      final locationInfo = await _locationService.getLocationInfo();
+      _locationInfo = locationInfo;
+      
+      _logger.i('[LocationCheck] lat=${locationInfo?['latitude']}, '
+          'lng=${locationInfo?['longitude']}, '
+          'acc=${locationInfo?['accuracy']}m, '
+          'distance=${(locationInfo?['distanceFromSchool'] as num?)?.toStringAsFixed(1)}m, '
+          'allowed=${locationInfo?['isAllowed']}, '
+          'mock=${locationInfo?['isMock']}');
+
+      if (locationInfo == null) {
+        _setStatus('Không thể xác định vị trí', Colors.red);
+        _showLocationErrorDialog();
+        return;
+      }
+
+      if (locationInfo['isMock'] == true) {
+        _setStatus('Phát hiện Fake GPS!', Colors.red);
+        _showMockLocationErrorDialog();
+        return;
+      }
+
+      if (locationInfo['isAllowed'] != true) {
+        _setStatus('Vị trí không hợp lệ', Colors.red);
+        _showLocationOutOfRangeDialog(locationInfo);
+        return;
+      }
+
+      _setStatus('Vị trí hợp lệ, đang khởi tạo...', Colors.green);
+
+      // Initialize ML Kit after location check passes
       final initialized = await _faceService.initialize();
       if (!initialized) {
         _setStatus('Lỗi khởi tạo ML Kit', Colors.red);
@@ -135,7 +168,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       await _initializeCamera();
     } catch (e) {
       _logger.e('❌ Service initialization error: $e');
-      _setStatus('Lỗi khởi tạo: $e', Colors.red);
+      _setStatus('Có lỗi xảy ra, vui lòng thử lại sau', Colors.red);
     }
   }
 
@@ -161,7 +194,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       await _setupCamera(_selectedCameraIndex);
     } catch (e) {
       _logger.e('❌ Camera initialization error: $e');
-      _setStatus('Lỗi khởi tạo camera: $e', Colors.red);
+      _setStatus('Có lỗi xảy ra, vui lòng thử lại sau', Colors.red);
     }
   }
 
@@ -193,7 +226,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       }
     } catch (e) {
       _logger.e('❌ Camera setup error: $e');
-      _setStatus('Lỗi thiết lập camera: $e', Colors.red);
+      _setStatus('Có lỗi xảy ra, vui lòng thử lại sau', Colors.red);
     }
   }
 
@@ -438,37 +471,14 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
     try {
       _imageStreamSubscription?.cancel();
-      _setStatus('Kiểm tra vị trí...', Colors.blue);
+      _setStatus('Đang chụp ảnh...', Colors.blue);
 
-      // Kiểm tra vị trí trước khi điểm danh
-      final locationInfo = await _locationService.getLocationInfo();
-      _locationInfo = locationInfo;
-      _logger.i('[LocationCheck] lat=${locationInfo?['latitude']}, '
-          'lng=${locationInfo?['longitude']}, '
-          'acc=${locationInfo?['accuracy']}m, '
-          'distance=${(locationInfo?['distanceFromSchool'] as num?)?.toStringAsFixed(1)}m, '
-          'allowed=${locationInfo?['isAllowed']}, '
-          'mock=${locationInfo?['isMock']}');
-
-      if (locationInfo == null) {
-        _setStatus('Không thể xác định vị trí', Colors.red);
-        _showLocationErrorDialog();
+      // Use the location info that was already verified during initialization
+      if (_locationInfo == null) {
+        _setStatus('Thông tin vị trí không hợp lệ', Colors.red);
+        _resetLivenessCheck();
         return;
       }
-
-      if (locationInfo['isMock'] == true) {
-        _setStatus('Phát hiện Fake GPS!', Colors.red);
-        _showMockLocationErrorDialog();
-        return;
-      }
-
-      if (locationInfo['isAllowed'] != true) {
-        _setStatus('Vị trí không trong phạm vi cho phép', Colors.red);
-        _showLocationOutOfRangeDialog(locationInfo);
-        return;
-      }
-
-      _setStatus('Vị trí hợp lệ, đang chụp ảnh...', Colors.green);
 
       // Capture image
       final XFile imageFile = await _cameraController!.takePicture();
@@ -480,7 +490,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       final result = await ApiService().markAttendance(
         sessionId: widget.sessionId,
         imageFile: File(imageFile.path),
-        locationData: locationInfo, // Gửi thông tin vị trí
+        locationData: _locationInfo!, // Use verified location info
       );
 
       if (result.success) {
@@ -500,12 +510,12 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           }
         });
       } else {
-        _setStatus('Điểm danh thất bại: ${result.message}', Colors.red);
+        _setStatus('Điểm danh thất bại!', Colors.red);
         _resetLivenessCheck();
       }
     } catch (e) {
       _logger.e('❌ Auto attendance marking error: $e');
-      _setStatus('Lỗi: $e', Colors.red);
+      _setStatus('Có lỗi xảy ra!', Colors.red);
       _resetLivenessCheck();
     } finally {
       if (mounted) {
@@ -685,7 +695,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       int nextCameraIndex = (_selectedCameraIndex + 1) % _cameras!.length;
       await _setupCamera(nextCameraIndex);
     } catch (e) {
-      _setStatus('Lỗi chuyển camera: $e', Colors.red);
+      _setStatus('Có lỗi camera xảy ra!', Colors.red);
     } finally {
       setState(() {
         _isProcessing = false;
@@ -724,7 +734,14 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
     return Stack(
       children: [
-        CameraPreview(_cameraController!),
+        // Mirror the camera preview for front-facing camera to provide natural mirror experience
+        Transform(
+          alignment: Alignment.center,
+          transform: _cameras![_selectedCameraIndex].lensDirection == CameraLensDirection.front
+              ? Matrix4.rotationY(math.pi) // Flip horizontally for front camera
+              : Matrix4.identity(), // No flip for back camera
+          child: CameraPreview(_cameraController!),
+        ),
 
         // Face detection overlay
         Positioned.fill(
