@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const responseHelper = require('../utils/responseHelper');
+const { generateAttendanceSessions, updateAttendanceSessions, deleteAttendanceSessions } = require('../utils/attendanceGenerator');
 
 class ScheduleController {
     // Lấy danh sách tất cả schedules
@@ -250,11 +251,15 @@ class ScheduleController {
     // Tạo lịch học mới
     async createSchedule(req, res) {
         try {
-            const { course_section_id, weekday, start_time, end_time, room } = req.body;
+            const { course_section_id, weekday, start_time, end_time, room, start_date, total_sessions } = req.body;
 
             // Validation
-            if (!course_section_id || weekday === undefined || !start_time || !end_time) {
-                return responseHelper.error(res, 'Course section, weekday, start time, and end time are required', 400);
+            if (!course_section_id || weekday === undefined || !start_time || !end_time || !start_date) {
+                return responseHelper.error(res, 'Course section, weekday, start time, end time, and start date are required', 400);
+            }
+
+            if (!total_sessions || total_sessions <= 0 || total_sessions > 30) {
+                return responseHelper.error(res, 'Total sessions must be between 1 and 30', 400);
             }
 
             if (weekday < 1 || weekday > 7) {
@@ -321,9 +326,40 @@ class ScheduleController {
 
             // Insert new schedule
             const [result] = await db.execute(
-                'INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)',
-                [course_section_id, weekday, start_time, end_time, room || null]
+                'INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room, start_date, total_sessions) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [course_section_id, weekday, start_time, end_time, room || null, start_date, total_sessions]
             );
+
+            const scheduleId = result.insertId;
+
+            // Tự động tạo các phiên điểm danh
+            try {
+                console.log('About to generate attendance sessions with params:', {
+                    scheduleId,
+                    course_section_id,
+                    weekday,
+                    start_date,
+                    total_sessions,
+                    start_time,
+                    end_time
+                });
+                
+                const attendanceResult = await generateAttendanceSessions(
+                    scheduleId,
+                    course_section_id,
+                    weekday,
+                    start_date,
+                    total_sessions,
+                    start_time,
+                    end_time
+                );
+
+                console.log(`Created ${attendanceResult.created} attendance sessions for schedule ${scheduleId}`);
+            } catch (attendanceError) {
+                console.error('Error creating attendance sessions:', attendanceError);
+                console.error('Stack trace:', attendanceError.stack);
+                // Không return error vì schedule đã được tạo thành công
+            }
 
             // Get created schedule with related info
             const [newSchedule] = await db.execute(`
@@ -334,6 +370,8 @@ class ScheduleController {
                     s.start_time,
                     s.end_time,
                     s.room,
+                    s.start_date,
+                    s.total_sessions,
                     s.is_active,
                     s.created_at,
                     cs.name as course_section_name,
@@ -341,7 +379,7 @@ class ScheduleController {
                 FROM schedules s
                 JOIN course_sections cs ON s.course_section_id = cs.id
                 WHERE s.id = ?
-            `, [result.insertId]);
+            `, [scheduleId]);
 
             return responseHelper.success(res, {
                 schedule: newSchedule[0]
@@ -410,6 +448,19 @@ class ScheduleController {
             if (room !== undefined) {
                 updateFields.push('room = ?');
                 updateValues.push(room);
+            }
+
+            if (req.body.start_date !== undefined) {
+                updateFields.push('start_date = ?');
+                updateValues.push(req.body.start_date);
+            }
+
+            if (req.body.total_sessions !== undefined) {
+                if (req.body.total_sessions <= 0 || req.body.total_sessions > 30) {
+                    return responseHelper.error(res, 'Total sessions must be between 1 and 30', 400);
+                }
+                updateFields.push('total_sessions = ?');
+                updateValues.push(req.body.total_sessions);
             }
 
             if (is_active !== undefined) {
@@ -486,6 +537,22 @@ class ScheduleController {
                 return responseHelper.error(res, 'Schedule not found', 404);
             }
 
+            // Cập nhật phiên điểm danh nếu có thay đổi liên quan
+            if (start_time !== undefined || end_time !== undefined || req.body.start_date !== undefined || req.body.total_sessions !== undefined) {
+                try {
+                    await updateAttendanceSessions(id, {
+                        start_time,
+                        end_time,
+                        start_date: req.body.start_date,
+                        total_sessions: req.body.total_sessions
+                    });
+                    console.log(`Updated attendance sessions for schedule ${id}`);
+                } catch (attendanceError) {
+                    console.error('Error updating attendance sessions:', attendanceError);
+                    // Không return error vì schedule đã được cập nhật thành công
+                }
+            }
+
             // Get updated schedule
             const [updatedSchedule] = await db.execute(`
                 SELECT 
@@ -538,14 +605,16 @@ class ScheduleController {
                 return responseHelper.error(res, 'You can only delete schedules for your own course sections', 403);
             }
 
-            // Check if there are any attendance sessions for this schedule
-            const [attendanceSessions] = await db.execute(
-                'SELECT COUNT(*) as count FROM attendance_sessions WHERE course_section_id = ? AND session_date >= CURDATE()',
-                [schedule.course_section_id]
+            // Check if there are any attendance records for this schedule's sessions
+            const [attendanceRecords] = await db.execute(
+                `SELECT COUNT(*) as count FROM attendances a 
+                 JOIN attendance_sessions ats ON a.session_id = ats.id 
+                 WHERE ats.schedule_id = ?`,
+                [id]
             );
 
-            if (attendanceSessions[0].count > 0) {
-                // Soft delete instead of hard delete
+            if (attendanceRecords[0].count > 0) {
+                // Soft delete instead of hard delete if there are attendance records
                 await db.execute(
                     'UPDATE schedules SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
                     [id]
@@ -553,9 +622,17 @@ class ScheduleController {
 
                 return responseHelper.success(res, {
                     schedule: { id, course_section_name: schedule.course_section_name }
-                }, 'Schedule deactivated successfully (has associated attendance sessions)');
+                }, 'Schedule deactivated successfully (has associated attendance records)');
             } else {
-                // Hard delete if no attendance sessions
+                // Delete associated attendance sessions first
+                try {
+                    await deleteAttendanceSessions(id);
+                    console.log(`Deleted attendance sessions for schedule ${id}`);
+                } catch (attendanceError) {
+                    console.error('Error deleting attendance sessions:', attendanceError);
+                }
+
+                // Hard delete the schedule
                 const [result] = await db.execute('DELETE FROM schedules WHERE id = ?', [id]);
 
                 if (result.affectedRows === 0) {
@@ -564,7 +641,7 @@ class ScheduleController {
 
                 return responseHelper.success(res, {
                     schedule: { id, course_section_name: schedule.course_section_name }
-                }, 'Schedule deleted successfully');
+                }, 'Schedule and associated attendance sessions deleted successfully');
             }
         } catch (error) {
             console.error('Delete schedule error:', error);
@@ -645,12 +722,20 @@ class ScheduleController {
                     data: scheduleData
                 };
 
-                const { course_section_code, weekday, start_time, end_time, room } = scheduleData;
+                const { course_section_code, weekday, start_time, end_time, room, start_date, total_sessions } = scheduleData;
 
                 // Validate required fields
-                if (!course_section_code || weekday === undefined || !start_time || !end_time) {
+                if (!course_section_code || weekday === undefined || !start_time || !end_time || !start_date || !total_sessions) {
                     result.status = 'failure';
-                    result.message = 'Missing required fields: course_section_code, weekday, start_time, end_time';
+                    result.message = 'Missing required fields: course_section_code, weekday, start_time, end_time, start_date, total_sessions';
+                    importResults.push(result);
+                    continue;
+                }
+
+                // Validate total_sessions
+                if (total_sessions <= 0 || total_sessions > 30) {
+                    result.status = 'failure';
+                    result.message = 'Total sessions must be between 1 and 30';
                     importResults.push(result);
                     continue;
                 }
@@ -719,11 +804,30 @@ class ScheduleController {
 
                 // Insert schedule
                 const [insertResult] = await connection.execute(
-                    'INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)',
-                    [courseSection.id, weekday, start_time, end_time, room || null]
+                    'INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room, start_date, total_sessions) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [courseSection.id, weekday, start_time, end_time, room || null, start_date, total_sessions]
                 );
 
-                result.schedule_id = insertResult.insertId;
+                const scheduleId = insertResult.insertId;
+                result.schedule_id = scheduleId;
+
+                // Tự động tạo các phiên điểm danh
+                try {
+                    const attendanceResult = await generateAttendanceSessions(
+                        scheduleId,
+                        courseSection.id,
+                        weekday,
+                        start_date,
+                        total_sessions,
+                        start_time,
+                        end_time
+                    );
+                    result.attendance_sessions_created = attendanceResult.created;
+                } catch (attendanceError) {
+                    console.error('Error creating attendance sessions for import:', attendanceError);
+                    result.attendance_warning = 'Schedule created but failed to create attendance sessions';
+                }
+
                 importResults.push(result);
             }
 
@@ -768,27 +872,33 @@ class ScheduleController {
                     weekday: 1,
                     start_time: '08:00:00',
                     end_time: '09:30:00',
-                    room: 'A101'
+                    room: 'A101',
+                    start_date: '2024-01-15',
+                    total_sessions: 15
                 },
                 {
                     course_section_code: courseSections[1]?.code || 'PHYS101_CNTT47',
                     weekday: 2,
                     start_time: '10:00:00',
                     end_time: '11:30:00',
-                    room: 'B205'
+                    room: 'B205',
+                    start_date: '2024-01-16',
+                    total_sessions: 12
                 }
             ];
 
             return responseHelper.success(res, {
                 template,
                 instructions: {
-                    required_fields: ['course_section_code', 'weekday', 'start_time', 'end_time'],
+                    required_fields: ['course_section_code', 'weekday', 'start_time', 'end_time', 'start_date', 'total_sessions'],
                     optional_fields: ['room'],
                     field_descriptions: {
                         course_section_code: 'Mã lớp học phần (bắt buộc, phải tồn tại)',
                         weekday: 'Thứ trong tuần: 1=Thứ Hai, 2=Thứ Ba, ..., 7=Chủ Nhật (bắt buộc)',
                         start_time: 'Giờ bắt đầu, định dạng: HH:MM:SS (bắt buộc)',
                         end_time: 'Giờ kết thúc, định dạng: HH:MM:SS (bắt buộc)',
+                        start_date: 'Ngày bắt đầu học kỳ, định dạng: YYYY-MM-DD (bắt buộc)',
+                        total_sessions: 'Tổng số buổi học (1-30, bắt buộc)',
                         room: 'Phòng học (tùy chọn)'
                     },
                     notes: [

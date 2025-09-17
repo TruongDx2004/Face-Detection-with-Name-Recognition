@@ -289,6 +289,40 @@ const ScheduleCard = ({ schedule, onStartSession, onViewDetails }) => {
                     <i className="fas fa-calendar-alt" style={{ color: '#64748b', width: '16px' }}></i>
                     {schedule.semester} - {schedule.academic_year}
                 </div>
+
+                {/* Auto-attendance info */}
+                {(schedule.start_date || schedule.total_sessions) && (
+                    <div style={{
+                        marginTop: '12px',
+                        padding: '8px 12px',
+                        backgroundColor: '#f0f9ff',
+                        borderRadius: '6px',
+                        border: '1px solid #bae6fd'
+                    }}>
+                        <div style={{
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: '#0369a1',
+                            marginBottom: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <i className="fas fa-magic"></i>
+                            Tự động tạo phiên điểm danh
+                        </div>
+                        {schedule.start_date && (
+                            <div style={{ fontSize: '11px', color: '#0284c7', marginBottom: '2px' }}>
+                                📅 Từ: {new Date(schedule.start_date).toLocaleDateString('vi-VN')}
+                            </div>
+                        )}
+                        {schedule.total_sessions && (
+                            <div style={{ fontSize: '11px', color: '#0284c7' }}>
+                                📊 {schedule.total_sessions} buổi học
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div style={styles.scheduleActions}>
@@ -316,7 +350,9 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit, courseOptions }) => {
         weekday: '',
         start_time: '',
         end_time: '',
-        room: ''
+        room: '',
+        start_date: '',
+        total_sessions: 15
     });
 
     const [loading, setLoading] = useState(false);
@@ -331,7 +367,8 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit, courseOptions }) => {
                 course_section_id: parseInt(formData.course_section_id),
                 weekday: parseInt(formData.weekday),
                 start_time: formData.start_time + ':00',
-                end_time: formData.end_time + ':00'
+                end_time: formData.end_time + ':00',
+                total_sessions: parseInt(formData.total_sessions)
             });
 
             setFormData({
@@ -339,7 +376,9 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit, courseOptions }) => {
                 weekday: '',
                 start_time: '',
                 end_time: '',
-                room: ''
+                room: '',
+                start_date: '',
+                total_sessions: 15
             });
 
             onClose();
@@ -424,6 +463,34 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit, courseOptions }) => {
                                 style={styles.formInput}
                                 value={formData.end_time}
                                 onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Ngày bắt đầu học kỳ *</label>
+                            <input
+                                type="date"
+                                style={styles.formInput}
+                                value={formData.start_date}
+                                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                min={new Date().toISOString().split('T')[0]}
+                                required
+                            />
+                        </div>
+
+                        <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Số buổi học *</label>
+                            <input
+                                type="number"
+                                style={styles.formInput}
+                                value={formData.total_sessions}
+                                onChange={(e) => setFormData({ ...formData, total_sessions: parseInt(e.target.value) || 15 })}
+                                min="1"
+                                max="30"
+                                placeholder="1-30 buổi"
                                 required
                             />
                         </div>

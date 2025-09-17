@@ -230,6 +230,30 @@ router.put('/sessions/:session_id/status', authorize(USER_ROLES.TEACHER, USER_RO
 
 /**
  * @swagger
+ * /attendance/sessions/{session_id}/activate:
+ *   put:
+ *     summary: Activate attendance session (Teacher only)
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: session_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Session activated successfully
+ *       404:
+ *         description: Session not found
+ *       403:
+ *         description: Not authorized to activate this session
+ */
+router.put('/sessions/:session_id/activate', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AttendanceController.activateSession);
+
+/**
+ * @swagger
  * /attendance/mark-manual:
  *   post:
  *     summary: Mark attendance manually (Teacher only)

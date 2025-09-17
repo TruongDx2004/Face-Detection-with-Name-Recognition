@@ -425,13 +425,53 @@ const ScheduleActionPopover = ({ position, schedule, session, onClose, onStartSe
     );
   };
 
+  const todayString = new Date().toISOString().split('T')[0];
+  const hasSessionToday = session && session.session_date === todayString;
+  const isSessionActive = hasSessionToday && session.is_active;
+
   return (
     <div ref={popoverRef} style={{ ...styles.schedulePopover, top: position.y, left: position.x }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
         <div style={{ fontWeight: '600' }}>{schedule.subject_name}</div>
         <div style={{ fontSize: '12px', color: '#64748b' }}>Lớp: {schedule.class_name}</div>
+        {hasSessionToday && (
+          <div style={{ fontSize: '11px', marginTop: '4px' }}>
+            {isSessionActive ? (
+              <span style={{ color: '#10b981' }}>
+                <i className="fas fa-play-circle"></i> Phiên đang hoạt động
+              </span>
+            ) : (
+              <span style={{ color: '#f59e0b' }}>
+                <i className="fas fa-pause-circle"></i> Phiên chưa kích hoạt
+              </span>
+            )}
+          </div>
+        )}
       </div>
-      <PopoverItem icon="fas fa-play-circle" text="Bắt đầu phiên điểm danh" onClick={() => onStartSession(schedule)} color="#10b981" />
+      {hasSessionToday ? (
+        isSessionActive ? (
+          <PopoverItem 
+            icon="fas fa-eye" 
+            text="Xem phiên điểm danh" 
+            onClick={() => onViewSession(session)} 
+            color="#10b981" 
+          />
+        ) : (
+          <PopoverItem 
+            icon="fas fa-play" 
+            text="Kích hoạt phiên điểm danh" 
+            onClick={() => onStartSession(schedule)} 
+            color="#10b981" 
+          />
+        )
+      ) : (
+        <PopoverItem 
+          icon="fas fa-search" 
+          text="Tìm phiên điểm danh hôm nay" 
+          onClick={() => onStartSession(schedule)} 
+          color="#f59e0b" 
+        />
+      )}
       <PopoverItem icon="fas fa-users" text="Xem danh sách lớp" onClick={() => onViewClass(schedule.class_id)} />
     </div>
   );
@@ -637,22 +677,33 @@ const TeacherDashboard = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Load schedules, all sessions, and user profile
       const [schedulesRes, sessionsRes, profileRes] = await Promise.all([
         ApiService.getSchedules({ teacher_id: 'current' }),
-        ApiService.getTeacherSessions(),
+        ApiService.getTeacherSessions(), // Lấy tất cả phiên điểm danh của giáo viên
         ApiService.getProfile()
       ]);
+      
       const loadedSchedules = schedulesRes.success ? schedulesRes.data.schedules || [] : [];
       const loadedSessions = sessionsRes.success ? sessionsRes.data.sessions || [] : [];
+      
       if (profileRes.success) setCurrentUser(profileRes.data);
+      
       setSchedules(loadedSchedules);
-      setSessions(loadedSessions);
+      setSessions(loadedSessions); // Bao gồm cả phiên tự động tạo và phiên thủ công
+      
+      // Calculate statistics
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      
       setStatistics({
         totalSchedules: loadedSchedules.length,
         totalSessions: loadedSessions.length,
         activeSessions: loadedSessions.filter(s => s.is_active).length,
-        todaysSessions: loadedSessions.filter(s => new Date(s.session_date).toDateString() === new Date().toDateString()).length
+        todaysSessions: loadedSessions.filter(s => s.session_date === todayString).length
       });
+      
     } catch (err) {
       setError('Lỗi kết nối: ' + err.message);
       if (String(err.message).includes('401') || String(err.message).includes('Unauthorized')) {
@@ -688,9 +739,11 @@ const TeacherDashboard = () => {
   const handleScheduleClick = (event, schedule) => {
     event.stopPropagation();
     const todayString = new Date().toISOString().split('T')[0];
+    
+    // Tìm phiên điểm danh của ngày hôm nay cho lịch học này
     const existingSession = sessions.find(s =>
-      s.schedule_id === schedule.id 
-      && new Date(s.created_at).toISOString().split('T')[0] === todayString
+      s.course_section_id === schedule.course_section_id 
+      && s.session_date === todayString
     );
 
     const rect = event.currentTarget.getBoundingClientRect();
@@ -704,29 +757,53 @@ const TeacherDashboard = () => {
 
   const handleStartSession = async (schedule) => {
     setPopover({ visible: false });
-    try {
-      const response = await ApiService.createAttendanceSession({
-        course_section_id: schedule.course_section_id,
-        session_date: new Date().toISOString().split('T')[0],
-        session_name: `${schedule.subject_name} - ${new Date().toLocaleDateString('vi-VN')}`
-      });
-      if (response.success) {
-        showNotification('Tạo phiên điểm danh thành công!', 'success');
-        await loadDashboardData();
-        const newSession = response.data;
+    
+    const todayString = new Date().toISOString().split('T')[0];
+    
+    // Tìm phiên điểm danh có sẵn của ngày hôm nay
+    const existingSession = sessions.find(s =>
+      s.course_section_id === schedule.course_section_id 
+      && s.session_date === todayString
+    );
+    
+    if (existingSession) {
+      // Nếu đã có phiên, kích hoạt và mở phiên đó
+      try {
+        // Kích hoạt phiên nếu chưa active
+        if (!existingSession.is_active) {
+          const activateResponse = await ApiService.activateSession(existingSession.id);
+          if (activateResponse.success) {
+            showNotification('Kích hoạt phiên điểm danh thành công!', 'success');
+            // Cập nhật trạng thái session
+            existingSession.is_active = true;
+          } else {
+            showNotification('Không thể kích hoạt phiên: ' + activateResponse.message, 'error');
+            return;
+          }
+        } else {
+          showNotification('Mở phiên điểm danh có sẵn!', 'info');
+        }
+        
         setSelectedSession({
-          ...newSession,
+          ...existingSession,
           subject: schedule.subject_name,
           class_name: schedule.class_name,
-          is_active: true,
-          id: newSession.session_id
+          is_active: true
         });
         setShowSessionModal(true);
-      } else {
-        showNotification(`Lỗi: ${response.message || 'Không thể tạo phiên điểm danh'}`, 'error');
+        
+        // Reload data để cập nhật trạng thái
+        await loadDashboardData();
+        
+      } catch (error) {
+        showNotification('Lỗi khi kích hoạt phiên: ' + error.message, 'error');
       }
-    } catch (err) {
-      showNotification(`${err.message}`, 'error');
+    } else {
+      // Nếu chưa có phiên, thông báo không tìm thấy
+      showNotification(
+        'Không tìm thấy phiên điểm danh cho ngày hôm nay. Vui lòng kiểm tra lại lịch học hoặc liên hệ admin.', 
+        'warning'
+      );
     }
   };
 

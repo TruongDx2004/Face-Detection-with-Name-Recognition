@@ -538,11 +538,34 @@ class AttendanceController {
                 return res.status(400).json({ error: 'is_active must be a boolean value' });
             }
 
+            // Kiểm tra session tồn tại và thuộc về teacher
+            const [sessions] = await db.execute(
+                `SELECT ats.id, ats.is_active, cs.teacher_id 
+                 FROM attendance_sessions ats
+                 JOIN course_sections cs ON ats.course_section_id = cs.id
+                 WHERE ats.id = ?`,
+                [session_id]
+            );
+
+            if (sessions.length === 0) {
+                return res.status(404).json({ error: 'Session not found' });
+            }
+
+            const session = sessions[0];
+
+            // Kiểm tra quyền (chỉ teacher của course section hoặc admin)
+            if (req.user.role !== 'admin' && session.teacher_id !== req.user.id) {
+                return res.status(403).json({ error: 'You are not authorized to update this session' });
+            }
+
             const updateFields = ['is_active = ?'];
             const params = [is_active];
 
-            // Nếu deactivate session, set end_time
-            if (!is_active) {
+            // Nếu activate session, clear end_time
+            if (is_active) {
+                updateFields.push('end_time = NULL');
+            } else {
+                // Nếu deactivate session, set end_time
                 updateFields.push('end_time = CURRENT_TIME');
             }
 
@@ -551,10 +574,66 @@ class AttendanceController {
                 [...params, session_id]
             );
 
-            res.json({ message: 'Session status updated successfully' });
+            res.json({ 
+                message: 'Session status updated successfully',
+                session_id: session_id,
+                is_active: is_active
+            });
         } catch (error) {
             console.error('Update session status error:', error);
             res.status(500).json({ error: 'Failed to update session status' });
+        }
+    }
+
+    // Kích hoạt phiên điểm danh
+    async activateSession(req, res) {
+        try {
+            const { session_id } = req.params;
+
+            // Kiểm tra session tồn tại và thuộc về teacher
+            const [sessions] = await db.execute(
+                `SELECT ats.id, ats.is_active, cs.teacher_id, cs.name as course_section_name
+                 FROM attendance_sessions ats
+                 JOIN course_sections cs ON ats.course_section_id = cs.id
+                 WHERE ats.id = ?`,
+                [session_id]
+            );
+
+            if (sessions.length === 0) {
+                return res.status(404).json({ error: 'Session not found' });
+            }
+
+            const session = sessions[0];
+
+            // Kiểm tra quyền (chỉ teacher của course section hoặc admin)
+            if (req.user.role !== 'admin' && session.teacher_id !== req.user.id) {
+                return res.status(403).json({ error: 'You are not authorized to activate this session' });
+            }
+
+            // Nếu đã active rồi thì không cần làm gì
+            if (session.is_active) {
+                return res.json({ 
+                    message: 'Session is already active',
+                    session_id: session_id,
+                    is_active: true
+                });
+            }
+
+            // Kích hoạt session
+            await db.execute(
+                `UPDATE attendance_sessions SET is_active = TRUE, end_time = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                [session_id]
+            );
+
+            res.json({ 
+                message: 'Session activated successfully',
+                session_id: session_id,
+                is_active: true,
+                course_section_name: session.course_section_name
+            });
+        } catch (error) {
+            console.error('Activate session error:', error);
+            res.status(500).json({ error: 'Failed to activate session' });
         }
     }
 

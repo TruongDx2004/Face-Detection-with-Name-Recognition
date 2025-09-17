@@ -10,39 +10,57 @@ import { SessionDetailModal } from './TeacherDashboard';
 
 // Styles cho nội dung class detail
 const styles = {
-  classInfo: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-    gap: "20px",
-    marginBottom: "30px",
-    width: "100%",       // đảm bảo container full width
-  },
   infoCard: {
     backgroundColor: "#ffffff",
     borderRadius: "12px",
     padding: "20px",
     border: "1px solid #e2e8f0",
     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+    width: "100%",
   },
-  infoLabel: {
+
+  gridContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+    gap: "20px",
+  },
+
+  section: {
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    padding: "15px",
+    background: "#f9fafb",
+  },
+
+  sectionTitle: {
+    fontSize: "15px",
+    fontWeight: "600",
+    color: "#1a202c",
+    marginBottom: "8px",
+  },
+
+  sectionContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+
+  infoRow: {
+    display: "flex",
+    justifyContent: "space-between",
     fontSize: "14px",
+  },
+
+  infoLabel: {
     color: "#64748b",
     fontWeight: "500",
-    marginBottom: "6px",
   },
+
   infoValue: {
-    fontSize: "18px",
     fontWeight: "600",
     color: "#1a202c",
   },
-  tabContainer: {
-    borderBottom: '2px solid #e2e8f0',
-    marginBottom: '24px'
-  },
-  tabList: {
-    display: 'flex',
-    gap: '0'
-  },
+
   tab: {
     padding: '12px 24px',
     border: 'none',
@@ -401,7 +419,7 @@ const ScheduleCard = ({ schedule, sessions, onClick }) => {
           <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#374151' }}>
             Phiên gần đây:
           </div>
-          {scheduleSessions.slice(0, 3).map(session => (
+          {scheduleSessions.slice(0, 5).map(session => (
             <div
               key={session.id}
               style={styles.sessionItem}
@@ -423,7 +441,7 @@ const ScheduleCard = ({ schedule, sessions, onClick }) => {
                 backgroundColor: session.is_active ? '#dcfce7' : '#f3f4f6',
                 color: session.is_active ? '#16a34a' : '#6b7280'
               }}>
-                {session.is_active ? 'Đang diễn ra' : 'Đã kết thúc'}
+                {session.is_active ? 'Đang diễn ra' : 'Chưa kích hoạt'}
               </div>
             </div>
           ))}
@@ -982,7 +1000,7 @@ const SessionsHistory = ({ sessions, schedules }) => {
         >
           <option value="all">Tất cả trạng thái</option>
           <option value="active">Đang diễn ra</option>
-          <option value="completed">Đã kết thúc</option>
+          <option value="completed">Chưa kích hoạt</option>
         </select>
       </div>
 
@@ -1004,7 +1022,7 @@ const SessionsHistory = ({ sessions, schedules }) => {
                 <td style={styles.tableCell}>
                   {new Date(session.session_date).toLocaleDateString('vi-VN')}
                 </td>
-                <td style={styles.tableCell}>{session.subject}</td>
+                <td style={styles.tableCell}>{session.subject_name}</td>
                 <td style={styles.tableCell}>{session.teacher_name}</td>
                 <td style={styles.tableCell}>
                   {session.start_time.substring(0, 5)}
@@ -1016,7 +1034,7 @@ const SessionsHistory = ({ sessions, schedules }) => {
                     backgroundColor: session.is_active ? '#dcfce7' : '#f3f4f6',
                     color: session.is_active ? '#16a34a' : '#6b7280'
                   }}>
-                    {session.is_active ? 'Đang diễn ra' : 'Đã kết thúc'}
+                    {session.is_active ? 'Đang diễn ra' : 'Chưa kích hoạt'}
                   </span>
                 </td>
                 <td style={styles.tableCell}>
@@ -1187,7 +1205,7 @@ const ClassDetail = () => {
 
         // Set summary data
         setClassData({
-          name: 'Tất cả lớp học trong học kì',
+          name: 'Tất cả lớp',
           total_classes: teacherClasses.length,
           total_students: allStudents.length,
           total_schedules: teacherSchedules.length,
@@ -1252,7 +1270,6 @@ const ClassDetail = () => {
     const scheduleSessions = sessions.filter(
       s => s.schedule_id === scheduleId && s.class_id === classData.id
     );
-    console.log(sessions);
     return {
       total: scheduleSessions.length,
       active: scheduleSessions.filter(s => s.is_active).length,
@@ -1346,45 +1363,71 @@ const ClassDetail = () => {
         ]}
       />
 
-      {/* Class Overview Cards */}
-       <div style={styles.classInfo}>
+      {/* Class Overview Card */}
       <div style={styles.infoCard}>
-        <div style={styles.infoLabel}>{classId ? "Tên lớp" : "Tổng quan"}</div>
-        <div style={styles.infoValue}>{classData.name}</div>
-      </div>
+        <div style={styles.gridContainer}>
+          {/* Thông tin lớp */}
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Thông tin lớp</div>
+            <div style={styles.sectionContent}>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>{classId ? "Tên lớp:" : "Tổng quan:"}</span>
+                <span style={styles.infoValue}>{classData.name}</span>
+              </div>
 
-      {!classId && (
-        <>
-          <div style={styles.infoCard}>
-            <div style={styles.infoLabel}>Số lớp học</div>
-            <div style={styles.infoValue}>{classData.total_classes || 0}</div>
+              {!classId && (
+                <>
+                  <div style={styles.infoRow}>
+                    <span style={styles.infoLabel}>Số lớp học:</span>
+                    <span style={styles.infoValue}>{classData.total_classes || 0}</span>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <span style={styles.infoLabel}>Học kì hiện tại:</span>
+                    <span style={styles.infoValue}>{classData.current_semester || "N/A"}</span>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <span style={styles.infoLabel}>Năm học:</span>
+                    <span style={styles.infoValue}>{classData.current_academic_year || "N/A"}</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div style={styles.infoCard}>
-            <div style={styles.infoLabel}>Học kì hiện tại</div>
-            <div style={styles.infoValue}>{classData.current_semester || "N/A"}</div>
+
+          {/* Sinh viên */}
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Sinh viên</div>
+            <div style={styles.sectionContent}>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Tổng số sinh viên:</span>
+                <span style={styles.infoValue}>{students.length}</span>
+              </div>
+            </div>
           </div>
-          <div style={styles.infoCard}>
-            <div style={styles.infoLabel}>Năm học</div>
-            <div style={styles.infoValue}>{classData.current_academic_year || "N/A"}</div>
+
+          {/* Lịch học */}
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Lịch học & Môn học</div>
+            <div style={styles.sectionContent}>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>{classId ? "Số môn học:" : "Tổng lịch học:"}</span>
+                <span style={styles.infoValue}>{schedules.length}</span>
+              </div>
+            </div>
           </div>
-        </>
-      )}
 
-      <div style={styles.infoCard}>
-        <div style={styles.infoLabel}>Số sinh viên</div>
-        <div style={styles.infoValue}>{students.length}</div>
+          {/* Điểm danh */}
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Điểm danh</div>
+            <div style={styles.sectionContent}>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Tổng phiên điểm danh:</span>
+                <span style={styles.infoValue}>{sessions.length}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div style={styles.infoCard}>
-        <div style={styles.infoLabel}>{classId ? "Số môn học" : "Tổng lịch học"}</div>
-        <div style={styles.infoValue}>{schedules.length}</div>
-      </div>
-
-      <div style={styles.infoCard}>
-        <div style={styles.infoLabel}>Tổng phiên điểm danh</div>
-        <div style={styles.infoValue}>{sessions.length}</div>
-      </div>
-    </div>
 
       {/* Navigation Tabs */}
       <div style={styles.tabContainer}>
@@ -1457,7 +1500,7 @@ const ClassDetail = () => {
                   <div style={styles.scheduleStats}>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.total}</div>
-                      <div style={styles.statLabel}>Tổng phiên</div>
+                      <div style={styles.statLabel}>Số buổi học</div>
                     </div>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.active}</div>
@@ -1465,7 +1508,7 @@ const ClassDetail = () => {
                     </div>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.completed}</div>
-                      <div style={styles.statLabel}>Đã hoàn thành</div>
+                      <div style={styles.statLabel}>Tổng phiên</div>
                     </div>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.averageAttendance}</div>

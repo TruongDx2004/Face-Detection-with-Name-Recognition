@@ -201,6 +201,8 @@ async function setupDatabase() {
                 start_time TIME NOT NULL,
                 end_time TIME NOT NULL,
                 room VARCHAR(50),
+                start_date DATE NOT NULL COMMENT 'Ngày bắt đầu học kỳ',
+                total_sessions INT DEFAULT 15 COMMENT 'Tổng số buổi học',
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -214,10 +216,12 @@ async function setupDatabase() {
                 start_time TIME NOT NULL,
                 end_time TIME,
                 session_name VARCHAR(100),
+                schedule_id INT NULL COMMENT 'Liên kết với lịch học nếu tự động tạo',
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE
+                FOREIGN KEY (course_section_id) REFERENCES course_sections(id) ON DELETE CASCADE,
+                FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE SET NULL
             )`,
 
             `CREATE TABLE IF NOT EXISTS attendances (
@@ -468,10 +472,14 @@ async function setupDatabase() {
                     course_section_id = courseSectionResult.insertId;
                 }
 
-                // 7. Thêm lịch học cho lớp học phần
+                // 7. Thêm lịch học cho lớp học phần với start_date và total_sessions
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() + 7); // Bắt đầu từ tuần sau
+                const startDateStr = startDate.toISOString().split('T')[0];
+                
                 await dbConnection.execute(
-                    `INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room) VALUES (?, ?, ?, ?, ?)`,
-                    [course_section_id, 2, '09:00:00', '11:00:00', 'P101']
+                    `INSERT INTO schedules (course_section_id, weekday, start_time, end_time, room, start_date, total_sessions) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [course_section_id, 2, '09:00:00', '11:00:00', 'P101', startDateStr, 15]
                 );
 
                 // 8. Thêm buổi học (attendance session)

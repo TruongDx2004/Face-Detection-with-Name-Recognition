@@ -195,6 +195,16 @@ class ApiService {
         return await this.makeRequest('PUT', `/attendance/end-session/${sessionId}`);
     }
 
+    async activateSession(sessionId) {
+        return await this.makeRequest('PUT', `/attendance/sessions/${sessionId}/activate`);
+    }
+
+    async updateSessionStatus(sessionId, isActive) {
+        return await this.makeRequest('PUT', `/attendance/sessions/${sessionId}/status`, {
+            is_active: isActive
+        });
+    }
+
     async getTeacherSessions(startDate = null, endDate = null) {
         const queryParams = {};
         if (startDate) queryParams.start_date = startDate;
@@ -221,6 +231,14 @@ class ApiService {
 
     async getSessionAttendanceRecords(sessionId) {
         return await this.makeRequest('GET', `/attendance/sessions/${sessionId}/records`);
+    }
+
+    async getTodaySessionsByCourseSection(courseSectionId) {
+        const today = new Date().toISOString().split('T')[0];
+        return await this.makeRequest('GET', '/attendance/sessions', null, {
+            course_section_id: courseSectionId,
+            session_date: today
+        });
     }
 
     // ============ CLASS MANAGEMENT ENDPOINTS ============

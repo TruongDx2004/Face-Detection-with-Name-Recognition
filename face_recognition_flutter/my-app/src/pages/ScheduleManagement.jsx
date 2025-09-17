@@ -91,10 +91,46 @@ const ScheduleCard = ({ scheduleData, onEditSchedule, onDeleteSchedule }) => {
               background: '#f59e0b',
               color: 'white'
             }}>
-              {scheduleData.room}
+              📍 {scheduleData.room}
             </span>
           )}
         </div>
+
+        {/* Additional info for auto-attendance */}
+        {(scheduleData.start_date || scheduleData.total_sessions) && (
+          <div style={{ 
+            marginTop: '1rem', 
+            padding: '0.75rem', 
+            backgroundColor: '#f8fafc', 
+            borderRadius: '0.5rem',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ 
+              fontSize: '0.75rem', 
+              fontWeight: '600', 
+              color: '#6366f1', 
+              marginBottom: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <i className="fas fa-calendar-check"></i>
+              Tự động tạo phiên điểm danh
+            </div>
+            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>
+              {scheduleData.start_date && (
+                <div style={{ marginBottom: '0.25rem' }}>
+                  📅 Bắt đầu: {new Date(scheduleData.start_date).toLocaleDateString('vi-VN')}
+                </div>
+              )}
+              {scheduleData.total_sessions && (
+                <div>
+                  📊 Tổng: {scheduleData.total_sessions} buổi học
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div style={courseManagementStyles.courseActions}>
           <button
@@ -291,7 +327,9 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
     weekday: scheduleData?.weekday || 1,
     start_time: scheduleData?.start_time?.substring(0, 8) || '08:00:00',
     end_time: scheduleData?.end_time?.substring(0, 8) || '09:30:00',
-    room: scheduleData?.room || ''
+    room: scheduleData?.room || '',
+    start_date: scheduleData?.start_date || '',
+    total_sessions: scheduleData?.total_sessions || 15
   });
   const [errors, setErrors] = useState({});
 
@@ -319,6 +357,21 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
 
     if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
       newErrors.end_time = 'Giờ kết thúc phải sau giờ bắt đầu';
+    }
+
+    if (!formData.start_date) {
+      newErrors.start_date = 'Ngày bắt đầu học kỳ không được để trống';
+    } else {
+      const startDate = new Date(formData.start_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (startDate < today) {
+        newErrors.start_date = 'Ngày bắt đầu phải từ hôm nay trở về sau';
+      }
+    }
+
+    if (!formData.total_sessions || formData.total_sessions < 1 || formData.total_sessions > 30) {
+      newErrors.total_sessions = 'Số buổi học phải từ 1 đến 30';
     }
 
     setErrors(newErrors);
@@ -399,6 +452,38 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
             />
 
             {errors.end_time && <div style={courseManagementStyles.formError}>{errors.end_time}</div>}
+          </div>
+        </div>
+
+        <div style={courseManagementStyles.formRow}>
+          <div style={courseManagementStyles.formGroup}>
+            <label style={courseManagementStyles.formLabel}>
+              Ngày bắt đầu học kỳ <span style={courseManagementStyles.required}>*</span>
+            </label>
+            <input
+              type="date"
+              style={courseManagementStyles.formInput}
+              value={formData.start_date}
+              onChange={(e) => handleInputChange('start_date', e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+            />
+            {errors.start_date && <div style={courseManagementStyles.formError}>{errors.start_date}</div>}
+          </div>
+
+          <div style={courseManagementStyles.formGroup}>
+            <label style={courseManagementStyles.formLabel}>
+              Số buổi học <span style={courseManagementStyles.required}>*</span>
+            </label>
+            <input
+              type="number"
+              style={courseManagementStyles.formInput}
+              value={formData.total_sessions}
+              onChange={(e) => handleInputChange('total_sessions', parseInt(e.target.value) || '')}
+              min="1"
+              max="30"
+              placeholder="Nhập số buổi học (1-30)"
+            />
+            {errors.total_sessions && <div style={courseManagementStyles.formError}>{errors.total_sessions}</div>}
           </div>
         </div>
 
@@ -559,22 +644,29 @@ const ScheduleManagement = () => {
             weekday: 1,
             start_time: '08:00:00',
             end_time: '09:30:00',
-            room: 'A101'
+            room: 'A101',
+            start_date: '2024-01-15',
+            total_sessions: 15
           }
         ],
         instructions: {
-          required_fields: ['course_section_code', 'weekday', 'start_time', 'end_time'],
+          required_fields: ['course_section_code', 'weekday', 'start_time', 'end_time', 'start_date', 'total_sessions'],
           optional_fields: ['room'],
           field_descriptions: {
             course_section_code: 'Mã lớp học phần (bắt buộc, phải tồn tại)',
             weekday: 'Thứ trong tuần: 1=Thứ Hai, 2=Thứ Ba, ..., 7=Chủ Nhật (bắt buộc)',
             start_time: 'Giờ bắt đầu, định dạng: HH:MM:SS (bắt buộc)',
             end_time: 'Giờ kết thúc, định dạng: HH:MM:SS (bắt buộc)',
+            start_date: 'Ngày bắt đầu học kỳ, định dạng: YYYY-MM-DD (bắt buộc)',
+            total_sessions: 'Tổng số buổi học (1-30, bắt buộc)',
             room: 'Phòng học (tùy chọn)'
           },
           notes: [
             'Mã lớp học phần phải tồn tại trong hệ thống',
             'Giờ bắt đầu phải trước giờ kết thúc',
+            'Ngày bắt đầu phải từ hôm nay trở về sau',
+            'Số buổi học phải từ 1 đến 30',
+            'Hệ thống sẽ tự động tạo phiên điểm danh theo lịch học',
             'Không được xung đột thời gian trong cùng lớp hoặc cùng giáo viên',
             'Xóa các dòng ví dụ trước khi import',
             'Tối đa 50 lịch học mỗi lần import'
