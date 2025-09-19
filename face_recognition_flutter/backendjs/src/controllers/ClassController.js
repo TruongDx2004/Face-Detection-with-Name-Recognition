@@ -110,7 +110,7 @@ class ClassController {
             if (code) {
                 const [codeExists] = await db.execute('SELECT id FROM classes WHERE code = ?', [code]);
                 if (codeExists.length > 0) {
-                    return res.status(400).json({ error: 'Class code already exists' });
+                    return res.status(400).json({ error: 'Mã lớp này đã tồn tại' });
                 }
             }
 
@@ -173,25 +173,25 @@ class ClassController {
             const { name, code, year, description, status } = req.body;
 
             if (!name) {
-                return res.status(400).json({ error: 'Class name is required' });
+                return res.status(400).json({ error: 'Yêu cầu tên lớp' });
             }
 
             // Validate status if provided
             if (status && !['active', 'inactive'].includes(status)) {
-                return res.status(400).json({ error: 'Status must be either "active" or "inactive"' });
+                return res.status(400).json({ error: 'Trạng thái phải là "active" hoặc "inactive"' });
             }
 
             // Check for duplicate name (excluding current class)
             const [existing] = await db.execute('SELECT id FROM classes WHERE name = ? AND id != ?', [name, id]);
             if (existing.length > 0) {
-                return res.status(400).json({ error: 'Class name already exists' });
+                return res.status(400).json({ error: 'Tên Lớp đã tồn tại' });
             }
 
             // Check for duplicate code (excluding current class)
             if (code) {
                 const [codeExists] = await db.execute('SELECT id FROM classes WHERE code = ? AND id != ?', [code, id]);
                 if (codeExists.length > 0) {
-                    return res.status(400).json({ error: 'Class code already exists' });
+                    return res.status(400).json({ error: 'Mã Lớp này đã tồn tại' });
                 }
             }
 
@@ -201,13 +201,13 @@ class ClassController {
             );
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Class not found' });
+                return res.status(404).json({ error: 'Không tìm thấy Lớp' });
             }
 
-            res.status(200).json({ message: 'Class updated successfully' });
+            res.status(200).json({ message: 'Cập nhât Lớp thành công' });
         } catch (error) {
             console.error('Update class error:', error);
-            res.status(500).json({ error: 'Failed to update class' });
+            res.status(500).json({ error: 'Lỗi khi cập nhật Lớp' });
         }
     }
 
@@ -230,13 +230,13 @@ class ClassController {
 
             if (students[0].count > 0) {
                 return res.status(400).json({ 
-                    error: 'Cannot delete class with students. Please remove all students first.' 
+                    error: 'Không thể xóa Lớp vì vẫn còn sinh viên trong lớp'
                 });
             }
 
             await db.execute('DELETE FROM classes WHERE id = ?', [classId]);
 
-            res.json({ message: 'Class deleted successfully' });
+            res.json({ message: 'Xóa lớp thành công' });
         } catch (error) {
             console.error('Delete class error:', error);
             res.status(500).json({ error: 'Failed to delete class' });

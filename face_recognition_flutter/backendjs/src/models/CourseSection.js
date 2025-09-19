@@ -142,7 +142,7 @@ class CourseSection {
         }
     }
 
-    // Lấy tất cả course sections với phân trang
+    // Lấy tất cả course sections với phân trang + current_enrollment
     static async getAll(page = 1, limit = 10, filters = {}) {
         try {
             const offset = (page - 1) * limit;
@@ -150,24 +150,28 @@ class CourseSection {
             // Base query
             let query = `
             SELECT cs.*, 
-                   c.name AS class_name,
-                   s.name AS subject_name,
-                   u.full_name AS teacher_name
+                c.name AS class_name,
+                s.name AS subject_name,
+                s.credits AS subject_credits,
+                u.full_name AS teacher_name,
+                u.email AS teacher_email,
+                COUNT(DISTINCT cls.student_id) AS current_enrollment
             FROM course_sections cs
             JOIN classes c ON cs.class_id = c.id
             JOIN subjects s ON cs.subject_id = s.id
             JOIN users u ON cs.teacher_id = u.id
+            LEFT JOIN class_students cls ON c.id = cls.class_id
             WHERE cs.is_active = 1
-        `;
+            `;
 
             let countQuery = `
-            SELECT COUNT(*) as total
+                SELECT COUNT(*) as total
             FROM course_sections cs
             JOIN classes c ON cs.class_id = c.id
             JOIN subjects s ON cs.subject_id = s.id
             JOIN users u ON cs.teacher_id = u.id
             WHERE cs.is_active = 1
-        `;
+            `;  
 
             const filterParams = [];
 
@@ -202,9 +206,9 @@ class CourseSection {
                 filterParams.push(filters.academic_year);
             }
 
-            // Add order and pagination
+            // GROUP BY để COUNT hoạt động đúng
+            query += ` GROUP BY cs.id, c.name, s.name, s.credits, u.full_name, u.email`;
             query += ` ORDER BY u.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
-
 
             // Execute queries
             const [rows] = await db.execute(query, [...filterParams]);

@@ -152,7 +152,10 @@ const Modal = ({ isOpen, onClose, title, size = 'normal', children }) => {
 // Class Form Component
 const ClassForm = ({ classData, onSave, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
-    name: classData?.name || ''
+    name: classData?.name || '',
+    code: classData?.code || '',
+    year: classData?.year || new Date().getFullYear().toString(),
+    description: classData?.description || ''
   });
   const [errors, setErrors] = useState({});
 
@@ -165,9 +168,21 @@ const ClassForm = ({ classData, onSave, onCancel, isLoading }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    
     if (!formData.name.trim()) {
       newErrors.name = 'Tên lớp học không được để trống';
     }
+    
+    if (!formData.code.trim()) {
+      newErrors.code = 'Mã lớp học không được để trống';
+    }
+    
+    if (!formData.year.trim()) {
+      newErrors.year = 'Năm học không được để trống';
+    } else if (!/^\d{4}$/.test(formData.year)) {
+      newErrors.year = 'Năm học phải là 4 chữ số';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -181,18 +196,64 @@ const ClassForm = ({ classData, onSave, onCancel, isLoading }) => {
   return (
     <>
       <div style={classManagementStyles.modalBody}>
-        <div style={classManagementStyles.formGroup}>
-          <label style={classManagementStyles.formLabel}>
-            Tên lớp học <span style={classManagementStyles.required}>*</span>
-          </label>
-          <input
-            type="text"
-            style={classManagementStyles.formInput}
-            value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            placeholder="Ví dụ: CNTT K47"
-          />
-          {errors.name && <div style={classManagementStyles.formError}>{errors.name}</div>}
+        <div style={classManagementStyles.formRow}>
+          <div style={classManagementStyles.formGroup}>
+            <label style={classManagementStyles.formLabel}>
+              Tên lớp học <span style={classManagementStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              style={classManagementStyles.formInput}
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              placeholder="Ví dụ: CNTT K47"
+            />
+            {errors.name && <div style={classManagementStyles.formError}>{errors.name}</div>}
+          </div>
+          
+          <div style={classManagementStyles.formGroup}>
+            <label style={classManagementStyles.formLabel}>
+              Mã lớp học <span style={classManagementStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              style={classManagementStyles.formInput}
+              value={formData.code}
+              onChange={(e) => handleInputChange('code', e.target.value)}
+              placeholder="Ví dụ: CNTT47"
+            />
+            {errors.code && <div style={classManagementStyles.formError}>{errors.code}</div>}
+          </div>
+        </div>
+
+        <div style={classManagementStyles.formRow}>
+          <div style={classManagementStyles.formGroup}>
+            <label style={classManagementStyles.formLabel}>
+              Năm học <span style={classManagementStyles.required}>*</span>
+            </label>
+            <input
+              type="text"
+              style={classManagementStyles.formInput}
+              value={formData.year}
+              onChange={(e) => handleInputChange('year', e.target.value)}
+              placeholder="Ví dụ: 2024"
+              maxLength="4"
+            />
+            {errors.year && <div style={classManagementStyles.formError}>{errors.year}</div>}
+          </div>
+          
+          <div style={classManagementStyles.formGroup}>
+            <label style={classManagementStyles.formLabel}>
+              Mô tả
+            </label>
+            <input
+              type="text"
+              style={classManagementStyles.formInput}
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              placeholder="Mô tả về lớp học (tùy chọn)"
+            />
+          </div>
         </div>
       </div>
 
@@ -716,10 +777,10 @@ const ClassManagement = () => {
       let response;
       if (currentClass) {
         // Update existing class
-        response = await apiService.updateClass(currentClass.id, formData.name);
+        response = await apiService.updateClass(currentClass.id, formData);
       } else {
         // Create new class
-        response = await apiService.createClass(formData.name);
+        response = await apiService.createClass(formData);
       }
 
       if (response.success) {
@@ -958,26 +1019,6 @@ const ClassManagement = () => {
                 <i className="fas fa-list" style={styles.sectionIcon}></i>
                 Danh sách lớp học ({filteredClasses.length})
               </h2>
-              <div style={classManagementStyles.viewOptions}>
-                <button
-                  style={{
-                    ...classManagementStyles.viewBtn,
-                    ...(currentView === 'grid' ? classManagementStyles.viewBtnActive : {})
-                  }}
-                  onClick={() => setCurrentView('grid')}
-                >
-                  <i className="fas fa-th-large"></i>
-                </button>
-                <button
-                  style={{
-                    ...classManagementStyles.viewBtn,
-                    ...(currentView === 'list' ? classManagementStyles.viewBtnActive : {})
-                  }}
-                  onClick={() => setCurrentView('list')}
-                >
-                  <i className="fas fa-list"></i>
-                </button>
-              </div>
             </div>
 
             {filteredClasses.length === 0 && !loading ? (
@@ -1023,16 +1064,191 @@ const ClassManagement = () => {
                 </button>
               </div>
             ) : (
-              <div style={gridStyle}>
-                {filteredClasses.map(classData => (
-                  <ClassCard
-                    key={classData.id}
-                    classData={classData}
-                    onManageStudents={handleManageStudents}
-                    onEditClass={handleEditClass}
-                    onDeleteClass={handleDeleteClass}
-                  />
-                ))}
+              <div style={{
+                background: 'white',
+                borderRadius: '1rem',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse'
+                }}>
+                  <thead>
+                    <tr style={{
+                      background: '#f8fafc',
+                      borderBottom: '1px solid #e2e8f0'
+                    }}>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Mã lớp
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Tên lớp
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Khóa học
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Số sinh viên
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClasses.map((classData, index) => (
+                      <tr
+                        key={classData.id}
+                        style={{
+                          borderBottom: index < filteredClasses.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          transition: 'background-color 0.2s',
+                          ':hover': {
+                            backgroundColor: '#f8fafc'
+                          }
+                        }}
+                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f8fafc'}
+                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            fontWeight: '600',
+                            color: '#1e293b',
+                            fontSize: '0.875rem'
+                          }}>
+                            {classData.code || classData.id}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            fontWeight: '500',
+                            color: '#1e293b',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {classData.name}
+                          </div>
+                          {classData.description && (
+                            <div style={{
+                              fontSize: '0.75rem',
+                              color: '#64748b'
+                            }}>
+                              {classData.description}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '1rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            background: '#e0f2fe',
+                            color: '#0369a1'
+                          }}>
+                            {classData.year}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{
+                            fontWeight: '500',
+                            color: '#1e293b'
+                          }}>
+                            {classData.studentCount || 0}
+                          </span>
+                        </td>
+                        {/* <td style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
+                          {new Date(classData.created_at).toLocaleDateString('vi-VN')}
+                        </td> */}
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            <button
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#f0f9ff',
+                                color: '#0369a1',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}
+                              onClick={() => handleManageStudents(classData)}
+                              title="Quản lý sinh viên"
+                            >
+                              <i className="fas fa-users"></i>
+                              SV
+                            </button>
+                            <button
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#fef3c7',
+                                color: '#d97706',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                              onClick={() => handleEditClass(classData)}
+                              title="Chỉnh sửa"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                              onClick={() => handleDeleteClass(classData)}
+                              title="Xóa"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>

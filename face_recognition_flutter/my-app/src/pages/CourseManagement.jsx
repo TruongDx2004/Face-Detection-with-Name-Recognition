@@ -471,7 +471,7 @@ const CourseManagement = () => {
       const response = await apiService.getCourseSections();
       if (response.success) {
         setCourseSections(response.data.courseSections || response.data || []);
-        console.log(response.data.courseSections || response.data || [])
+        console.log(response);  
         showNotification('Tải danh sách lớp học phần thành công', 'success');
       } else {
         showNotification(response.message || 'Lỗi khi tải dữ liệu', 'error');
@@ -796,26 +796,6 @@ const CourseManagement = () => {
                 <i className="fas fa-list" style={styles.sectionIcon}></i>
                 Danh sách lớp học phần ({filteredCourseSections.length})
               </h2>
-              <div style={courseManagementStyles.viewOptions}>
-                <button
-                  style={{
-                    ...courseManagementStyles.viewBtn,
-                    ...(currentView === 'grid' ? courseManagementStyles.viewBtnActive : {})
-                  }}
-                  onClick={() => setCurrentView('grid')}
-                >
-                  <i className="fas fa-th-large"></i>
-                </button>
-                <button
-                  style={{
-                    ...courseManagementStyles.viewBtn,
-                    ...(currentView === 'list' ? courseManagementStyles.viewBtnActive : {})
-                  }}
-                  onClick={() => setCurrentView('list')}
-                >
-                  <i className="fas fa-list"></i>
-                </button>
-              </div>
             </div>
 
             {filteredCourseSections.length === 0 && !loading ? (
@@ -861,15 +841,233 @@ const CourseManagement = () => {
                 </button>
               </div>
             ) : (
-              <div style={gridStyle}>
-                {filteredCourseSections.map(courseData => (
-                  <CourseCard
-                    key={courseData.id}
-                    courseData={courseData}
-                    onEditCourse={handleEditCourse}
-                    onDeleteCourse={handleDeleteCourse}
-                  />
-                ))}
+              <div style={{
+                background: 'white',
+                borderRadius: '1rem',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse'
+                }}>
+                  <thead>
+                    <tr style={{
+                      background: '#f8fafc',
+                      borderBottom: '1px solid #e2e8f0'
+                    }}>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Mã LHP
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Lớp học phần
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Môn học
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Giảng viên
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Số tín chỉ
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Sĩ số
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCourseSections.map((courseData, index) => (
+                      <tr
+                        key={courseData.id}
+                        style={{
+                          borderBottom: index < filteredCourseSections.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f8fafc'}
+                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            fontWeight: '600',
+                            color: '#1e293b',
+                            fontSize: '0.875rem'
+                          }}>
+                            {courseData.code}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            fontWeight: '500',
+                            color: '#1e293b',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {courseData.class_name} - {courseData.name}
+                          </div>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: '#64748b'
+                          }}>
+                            Lớp: {courseData.class_name}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            fontWeight: '500',
+                            color: '#1e293b',
+                            marginBottom: '0.25rem'
+                          }}>
+                            {courseData.subject_name}
+                          </div>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: '#64748b'
+                          }}>
+                            {courseData.subject?.subject_code}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: '#e0f2fe',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: '#0369a1'
+                            }}>
+                              {courseData.teacher_name?.charAt(0) || 'GV'}
+                            </div>
+                            <div>
+                              <div style={{
+                                fontWeight: '500',
+                                color: '#1e293b',
+                                fontSize: '0.875rem'
+                              }}>
+                                {courseData.teacher_name || 'Chưa phân công'}
+                              </div>
+                              <div style={{
+                                fontSize: '0.75rem',
+                                color: '#64748b'
+                              }}>
+                                {courseData.teacher_email || ''}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '1rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            background: '#ddd6fe',
+                            color: '#7c3aed'
+                          }}>
+                            {courseData.subject_credits|| 0}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span style={{
+                            fontWeight: '500',
+                            color: '#1e293b'
+                          }}>
+                            {courseData.current_enrollment || 0}/{courseData.max_students || 0}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            <button
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#fef3c7',
+                                color: '#d97706',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                              onClick={() => handleEditCourse(courseData)}
+                              title="Chỉnh sửa"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '500'
+                              }}
+                              onClick={() => handleDeleteCourse(courseData)}
+                              title="Xóa"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>

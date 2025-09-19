@@ -249,12 +249,12 @@ class ApiService {
         return await this.makeRequest('GET', '/classes', null, queryParams);
     }
 
-    async createClass(name) {
-        return await this.makeRequest('POST', '/classes', { name });
+    async createClass(classData) {
+        return await this.makeRequest('POST', '/classes', classData);
     }
 
-    async updateClass(id, name) {
-        return await this.makeRequest('PUT', `/classes/${id}`, { name });
+    async updateClass(id, classData) {
+        return await this.makeRequest('PUT', `/classes/${id}`, classData);
     }
 
     async deleteClass(id) {

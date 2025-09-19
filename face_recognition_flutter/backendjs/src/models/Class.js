@@ -4,9 +4,11 @@ class Class {
     constructor(data) {
         this.id = data.id;
         this.name = data.name;
+        this.code = data.code;
+        this.year = data.year;
         this.description = data.description;
         this.teacher_id = data.teacher_id;
-        this.status  = data.is_active;
+        this.status = data.status || data.is_active;
         this.created_at = data.created_at;
         this.updated_at = data.updated_at;
     }
@@ -27,11 +29,11 @@ class Class {
     // Tạo class mới
     static async create(classData) {
         try {
-            const { name, description, teacher_id } = classData;
+            const { name, code, year, description, teacher_id, status = 'active' } = classData;
             
             const [result] = await db.execute(
-                'INSERT INTO classes (name, description, teacher_id) VALUES (?, ?, ?)',
-                [name, description, teacher_id]
+                'INSERT INTO classes (name, code, year, description, teacher_id, status) VALUES (?, ?, ?, ?, ?, ?)',
+                [name, code, year, description, teacher_id, status]
             );
             
             return await Class.findById(result.insertId);

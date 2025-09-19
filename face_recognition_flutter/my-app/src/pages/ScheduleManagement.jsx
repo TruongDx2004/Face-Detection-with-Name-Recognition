@@ -322,6 +322,7 @@ const Modal = ({ isOpen, onClose, title, size = 'normal', children }) => {
 
 // Schedule Form Component
 const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSections, weekdays }) => {
+  console.log('ScheduleForm scheduleData:', scheduleData);
   const [formData, setFormData] = useState({
     course_section_id: scheduleData?.course_section_id || '',
     weekday: scheduleData?.weekday || 1,
@@ -329,7 +330,7 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
     end_time: scheduleData?.end_time?.substring(0, 8) || '09:30:00',
     room: scheduleData?.room || '',
     start_date: scheduleData?.start_date || '',
-    total_sessions: scheduleData?.total_sessions || 15
+    total_sessions: scheduleData?.total_sessions || 7
   });
   const [errors, setErrors] = useState({});
 
@@ -362,11 +363,15 @@ const ScheduleForm = ({ scheduleData, onSave, onCancel, isLoading, courseSection
     if (!formData.start_date) {
       newErrors.start_date = 'Ngày bắt đầu học kỳ không được để trống';
     } else {
-      const startDate = new Date(formData.start_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (startDate < today) {
-        newErrors.start_date = 'Ngày bắt đầu phải từ hôm nay trở về sau';
+      // Chỉ kiểm tra ngày bắt đầu từ hôm nay trở về sau khi tạo lịch học mới
+      // Khi chỉnh sửa (scheduleData tồn tại) thì không cần kiểm tra ràng buộc này
+      if (!scheduleData) {
+        const startDate = new Date(formData.start_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (startDate < today) {
+          newErrors.start_date = 'Ngày bắt đầu phải từ hôm nay trở về sau';
+        }
       }
     }
 
@@ -646,7 +651,7 @@ const ScheduleManagement = () => {
             end_time: '09:30:00',
             room: 'A101',
             start_date: '2024-01-15',
-            total_sessions: 15
+            total_sessions: 7
           }
         ],
         instructions: {

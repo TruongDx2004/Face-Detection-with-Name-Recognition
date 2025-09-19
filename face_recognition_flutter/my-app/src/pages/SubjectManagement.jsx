@@ -812,15 +812,181 @@ const SubjectManagement = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div style={classManagementStyles.classesGrid}>
-                                {filteredSubjects.map(subject => (
-                                    <SubjectCard
-                                        key={subject.id}
-                                        subject={subject}
-                                        onEdit={handleEditSubject}
-                                        onDelete={handleDeleteSubject}
-                                    />
-                                ))}
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '1rem',
+                                border: '1px solid #e2e8f0',
+                                overflow: 'hidden'
+                            }}>
+                                <table style={{
+                                    width: '100%',
+                                    borderCollapse: 'collapse'
+                                }}>
+                                    <thead>
+                                        <tr style={{
+                                            background: '#f8fafc',
+                                            borderBottom: '1px solid #e2e8f0'
+                                        }}>
+                                            <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'left',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Mã môn học
+                                            </th>
+                                            <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'left',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Tên môn học
+                                            </th>
+                                            <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'center',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Số tín chỉ
+                                            </th>
+                                            {/* <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'center',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Loại môn học
+                                            </th> */}
+                                            <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'center',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Ngày tạo
+                                            </th>
+                                            <th style={{
+                                                padding: '1rem',
+                                                textAlign: 'center',
+                                                fontWeight: '600',
+                                                color: '#374151',
+                                                fontSize: '0.875rem'
+                                            }}>
+                                                Thao tác
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredSubjects.map((subject, index) => (
+                                            <tr
+                                                key={subject.id}
+                                                style={{
+                                                    borderBottom: index < filteredSubjects.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                                    transition: 'background-color 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f8fafc'}
+                                                onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+                                            >
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{
+                                                        fontWeight: '600',
+                                                        color: '#1e293b',
+                                                        fontSize: '0.875rem'
+                                                    }}>
+                                                        {subject.code}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{
+                                                        fontWeight: '500',
+                                                        color: '#1e293b',
+                                                        marginBottom: '0.25rem'
+                                                    }}>
+                                                        {subject.name}
+                                                    </div>
+                                                    {subject.description && (
+                                                        <div style={{
+                                                            fontSize: '0.75rem',
+                                                            color: '#64748b'
+                                                        }}>
+                                                            {subject.description}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '1rem',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        background: '#ddd6fe',
+                                                        color: '#7c3aed'
+                                                    }}>
+                                                        {subject.credits}
+                                                    </span>
+                                                </td>
+                                                {/* <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '1rem',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        background: subject.subject_type === 'Bắt buộc' ? '#dcfce7' : '#fef3c7',
+                                                        color: subject.subject_type === 'Bắt buộc' ? '#166534' : '#d97706'
+                                                    }}>
+                                                        {subject.subject_type || 'Chưa xác định'}
+                                                    </span>
+                                                </td> */}
+                                                <td style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
+                                                    {new Date(subject.created_at).toLocaleDateString('vi-VN')}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                        <button
+                                                            style={{
+                                                                padding: '0.5rem 0.75rem',
+                                                                background: '#fef3c7',
+                                                                color: '#d97706',
+                                                                border: 'none',
+                                                                borderRadius: '0.375rem',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => handleEditSubject(subject)}
+                                                            title="Chỉnh sửa"
+                                                        >
+                                                            <i className="fas fa-edit"></i>
+                                                        </button>
+                                                        <button
+                                                            style={{
+                                                                padding: '0.5rem 0.75rem',
+                                                                background: '#fee2e2',
+                                                                color: '#dc2626',
+                                                                border: 'none',
+                                                                borderRadius: '0.375rem',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: '500'
+                                                            }}
+                                                            onClick={() => handleDeleteSubject(subject)}
+                                                            title="Xóa"
+                                                        >
+                                                            <i className="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </section>

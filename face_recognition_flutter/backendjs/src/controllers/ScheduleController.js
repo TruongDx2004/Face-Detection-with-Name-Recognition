@@ -19,6 +19,8 @@ class ScheduleController {
                     s.room,
                     s.is_active,
                     s.created_at,
+                    s.start_date,
+                    s.total_sessions,
                     cs.name as course_section_name,
                     cs.code as course_section_code,
                     cs.semester,
