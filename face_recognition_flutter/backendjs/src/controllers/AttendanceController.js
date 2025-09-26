@@ -198,7 +198,7 @@ class AttendanceController {
             const now = new Date();
             const sessionDate = new Date(session.session_date);
             const startTime = new Date(`${session.session_date}T${session.start_time}`);
-            
+
             // Kiểm tra ngày phiên học
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -212,12 +212,11 @@ class AttendanceController {
             // Chỉ kiểm tra start_time (cho phép điểm danh sau giờ bắt đầu)
             // Có thể thêm giới hạn thời gian tối đa (ví dụ: 2 tiếng sau start_time)
             const maxAttendanceTime = new Date(startTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours after start
-            
+            console.log({ now, startTime, maxAttendanceTime });
             if (now < startTime) {
                 await fs.unlink(imagePath);
                 return res.status(400).json({ error: 'Phiên điểm danh chưa bắt đầu' });
             }
-            
             if (now > maxAttendanceTime) {
                 await fs.unlink(imagePath);
                 return res.status(400).json({ error: 'Phiên điểm danh đã kết thúc' });
@@ -225,16 +224,26 @@ class AttendanceController {
 
             // Nhận diện khuôn mặt
             const recognitionResult = await faceService.recognizeFace(imagePath);
+            console.log('Face recognition result:', recognitionResult);
 
-            if (!recognitionResult.success || !recognitionResult.user_id) {
+            if (
+                !recognitionResult.success ||
+                !recognitionResult.results ||
+                recognitionResult.results.length === 0
+            ) {
+                const confidence = firstResult.confidence;
                 await fs.unlink(imagePath);
                 return res.status(400).json({
                     error: 'Điểm danh thất bại',
-                    confidence: recognitionResult.confidence || 0
+                    confidence: confidence || null,
                 });
             }
 
-            const userId = recognitionResult.user_id;
+            const firstResult = recognitionResult.results[0]; // lấy kết quả đầu tiên
+            const userId = firstResult.label_id;
+            const confidence = firstResult.confidence;
+
+            console.log("✅ User ID:", userId, "Confidence:", confidence);
 
             // Lấy thông tin course section từ session
             const [courseSectionInfo] = await db.execute(
@@ -281,19 +290,19 @@ class AttendanceController {
                 }
             }
 
-            // Lưu bản ghi điểm danh với location data
+            // Lưu bản ghi điểm danh với location data // location_data,
             const insertQuery = `
                 INSERT INTO attendances 
-                (session_id, student_id, confidence_score, image_path, status, location_data, attendance_time) 
-                VALUES (?, ?, ?, ?, 'present', ?, NOW())
+                    (session_id, student_id, confidence_score, image_path, status, attendance_time) 
+                    VALUES (?, ?, ?, ?, 'present', NOW())
             `;
-            
+
             await db.execute(insertQuery, [
-                session_id, 
-                userId, 
-                recognitionResult.confidence, 
-                imagePath, 
-                parsedLocationData ? JSON.stringify(parsedLocationData) : null
+                session_id,
+                userId,
+                confidence,
+                imagePath,
+                //parsedLocationData ? JSON.stringify(parsedLocationData) : null
             ]);
 
             // Lấy thông tin student
@@ -574,7 +583,7 @@ class AttendanceController {
                 [...params, session_id]
             );
 
-            res.json({ 
+            res.json({
                 message: 'Session status updated successfully',
                 session_id: session_id,
                 is_active: is_active
@@ -612,7 +621,7 @@ class AttendanceController {
 
             // Nếu đã active rồi thì không cần làm gì
             if (session.is_active) {
-                return res.json({ 
+                return res.json({
                     message: 'Session is already active',
                     session_id: session_id,
                     is_active: true
@@ -625,7 +634,7 @@ class AttendanceController {
                 [session_id]
             );
 
-            res.json({ 
+            res.json({
                 message: 'Session activated successfully',
                 session_id: session_id,
                 is_active: true,

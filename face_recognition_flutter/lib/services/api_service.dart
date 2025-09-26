@@ -1638,7 +1638,7 @@ class ApiService {
     } else if (error.contains('HandshakeException')) {
       return 'Có lỗi xảy ra.';
     } else {
-      return 'An unexpected error occurred. Please try again.';
+      return 'Có lỗi xảy ra. Vui lòng thử lại sau!';
     }
   }
 

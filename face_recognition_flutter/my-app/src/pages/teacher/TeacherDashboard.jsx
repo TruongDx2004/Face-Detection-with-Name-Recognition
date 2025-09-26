@@ -426,6 +426,7 @@ const ScheduleActionPopover = ({ position, schedule, session, onClose, onStartSe
   };
 
   const todayString = new Date().toISOString().split('T')[0];
+  console.log('Session for schedule', todayString, session);
   const hasSessionToday = session && session.session_date === todayString;
   const isSessionActive = hasSessionToday && session.is_active;
 
@@ -684,10 +685,9 @@ const TeacherDashboard = () => {
         ApiService.getTeacherSessions(), // Lấy tất cả phiên điểm danh của giáo viên
         ApiService.getProfile()
       ]);
-      
       const loadedSchedules = schedulesRes.success ? schedulesRes.data.schedules || [] : [];
       const loadedSessions = sessionsRes.success ? sessionsRes.data.sessions || [] : [];
-      
+
       if (profileRes.success) setCurrentUser(profileRes.data);
       
       setSchedules(loadedSchedules);
