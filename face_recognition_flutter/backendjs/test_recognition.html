@@ -484,7 +484,7 @@
                     
                 } catch (error) {
                     console.error('Error during capture and recognition:', error);
-                    this.showMessage(`Error: ${error.message}`, 'error');
+                    this.showMessage(`${error.message}`, 'error');
                 } finally {
                     this.isProcessing = false;
                     this.captureBtn.innerHTML = '📸 Capture & Recognize';

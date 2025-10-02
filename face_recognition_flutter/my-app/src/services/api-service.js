@@ -460,6 +460,48 @@ class ApiService {
         return await this.makeRequest('GET', `/exams/${examId}/statistics`);
     }
 
+    // ============ ASSIGNMENT TEMPLATE ENDPOINTS ============
+    async createTemplate(templateData) {
+        return await this.makeMultipartRequest('POST', '/assignment-templates', templateData);
+    }
+
+    async getTeacherTemplates(teacherId, params = {}) {
+        return await this.makeRequest('GET', `/assignment-templates/teacher/${teacherId}`, null, params);
+    }
+
+    async getPublicTemplates(params = {}) {
+        return await this.makeRequest('GET', '/assignment-templates/public', null, params);
+    }
+
+    async getTemplate(templateId) {
+        return await this.makeRequest('GET', `/assignment-templates/${templateId}`);
+    }
+
+    async updateTemplate(templateId, templateData) {
+        return await this.makeMultipartRequest('PUT', `/assignment-templates/${templateId}`, templateData);
+    }
+
+    async deleteTemplate(templateId) {
+        return await this.makeRequest('DELETE', `/assignment-templates/${templateId}`);
+    }
+
+    async createAssignmentFromTemplate(templateId, assignmentData) {
+        return await this.makeRequest('POST', `/assignment-templates/${templateId}/create-assignment`, assignmentData);
+    }
+
+    async getTemplateStats(teacherId) {
+        return await this.makeRequest('GET', `/assignment-templates/teacher/${teacherId}/stats`);
+    }
+
+    async getTopTemplates(limit = 10) {
+        return await this.makeRequest('GET', `/assignment-templates/top?limit=${limit}`);
+    }
+
+    async searchTemplatesByTags(tags) {
+        const tagString = Array.isArray(tags) ? tags.join(',') : tags;
+        return await this.makeRequest('GET', `/assignment-templates/search?tags=${encodeURIComponent(tagString)}`);
+    }
+
     // ============ ASSIGNMENT ENDPOINTS ============
     async getAssignments(params = {}) {
         return await this.makeRequest('GET', '/assignments', null, params);
@@ -496,7 +538,7 @@ class ApiService {
     }
 
     async getAssignmentsByCourseSection(courseSectionId, params = {}) {
-        return await this.makeRequest('GET', `/course-sections/${courseSectionId}/assignments`, null, params);
+        return await this.makeRequest('GET', `/assignments`, null, { course_section_id: courseSectionId, ...params });
     }
 
     async gradeSubmission(submissionId, gradeData) {

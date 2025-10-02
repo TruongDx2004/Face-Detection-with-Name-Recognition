@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ApiService from '../../services/api-service';
 import authService from '../../services/auth-service';
 import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
+import ConfirmModal from '../../components/ConfirmModal';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 
 // Styles
@@ -134,7 +135,10 @@ const LoadingSpinner = () => (
 const AssignmentForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const isEdit = Boolean(id);
+    const template = location.state?.template;
+    const fromTemplate = location.state?.fromTemplate;
     const { notifications, showNotification, removeNotification } = useNotification();
 
     const [loading, setLoading] = useState(false);
@@ -146,6 +150,8 @@ const AssignmentForm = () => {
     const [existingAttachment, setExistingAttachment] = useState(null);
     const [selectedCourseSections, setSelectedCourseSections] = useState([]);
     const [errors, setErrors] = useState({});
+    const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -161,8 +167,27 @@ const AssignmentForm = () => {
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         loadData();
+        
+        // Load template data if creating from template
+        if (fromTemplate && template) {
+            loadTemplateData();
+        }
+        
         return () => clearInterval(timer);
     }, []);
+
+    const loadTemplateData = () => {
+        setFormData({
+            title: template.title || '',
+            description: template.description || '',
+            assignment_type: template.assignment_type || 'homework',
+            max_score: template.default_max_score || '',
+            due_date: '',
+            due_time: '',
+            instructions: template.instructions || '',
+            is_active: true
+        });
+    };
 
     useEffect(() => {
         if (isEdit && id) {
@@ -304,37 +329,68 @@ const AssignmentForm = () => {
                 }
             } else {
                 // For create mode, submit to multiple course sections
-                const promises = selectedCourseSections.map(async (courseSectionId) => {
-                    const sectionData = new FormData();
-                    
-                    Object.keys(assignmentData).forEach(key => {
-                        if (key !== 'due_time') {
-                            sectionData.append(key, assignmentData[key]);
+                const results = [];
+                const errors = [];
+                
+                for (const courseSectionId of selectedCourseSections) {
+                    try {
+                        const sectionData = new FormData();
+                        
+                        Object.keys(assignmentData).forEach(key => {
+                            if (key !== 'due_time') {
+                                sectionData.append(key, assignmentData[key]);
+                            }
+                        });
+                        
+                        sectionData.append('course_section_id', courseSectionId);
+                        
+                        if (attachmentFile) {
+                            sectionData.append('attachment', attachmentFile);
                         }
-                    });
-                    
-                    sectionData.append('course_section_id', courseSectionId);
-                    
-                    if (attachmentFile) {
-                        sectionData.append('attachment', attachmentFile);
+
+                        // Nếu tạo từ template, thêm template_id
+                        if (fromTemplate && template) {
+                            sectionData.append('template_id', template.id);
+                        }
+
+                        const response = await ApiService.createAssignment(sectionData);
+
+                        if (response.success) {
+                            results.push(response);
+                        } else {
+                            throw new Error(response.error || 'Failed to create assignment');
+                        }
+                    } catch (error) {
+                        // Lấy tên lớp để hiển thị trong error
+                        const section = courseSections.find(s => s.id === courseSectionId);
+                        const sectionName = section ? section.name : `ID ${courseSectionId}`;
+                        
+                        if (error.message.includes('đã tồn tại')) {
+                            errors.push(`${sectionName}: Bài tập đã tồn tại`);
+                        } else {
+                            errors.push(`${sectionName}: ${error.message}`);
+                        }
                     }
+                }
 
-                    const response = await ApiService.createAssignment(sectionData);
-
-                    if (!response.success) {
-                        throw new Error(`Failed to create assignment for course section ${courseSectionId}`);
-                    }
-                    
-                    return response;
-                });
-
-                await Promise.all(promises);
-                showNotification(`Tạo bài tập thành công cho ${selectedCourseSections.length} lớp`, 'success');
+                if (errors.length > 0 && results.length === 0) {
+                    // Tất cả đều fail
+                    throw new Error(`Không thể tạo bài tập \n${errors.join('\n')}`);
+                } else if (errors.length > 0) {
+                    // Một số thành công, một số fail
+                    showNotification(
+                        `Tạo thành công cho ${results.length} lớp. Lỗi:\n${errors.join('\n')}`, 
+                        'warning'
+                    );
+                } else {
+                    // Tất cả thành công
+                    showNotification(`Tạo bài tập thành công cho ${results.length} lớp`, 'success');
+                }
                 navigate('/teacher/assignments');
             }
         } catch (error) {
             console.error('Error submitting assignment:', error);
-            showNotification('Lỗi khi lưu bài tập', 'error');
+            showNotification(`${error}`, 'error');
         } finally {
             setSubmitting(false);
         }
@@ -371,6 +427,32 @@ const AssignmentForm = () => {
         } else {
             setSelectedCourseSections(prev => prev.filter(id => id !== courseSectionId));
         }
+    };
+
+    const hasUnsavedChanges = () => {
+        return formData.title || formData.description || formData.instructions || 
+               selectedCourseSections.length > 0 || attachmentFile;
+    };
+
+    const handleCancel = () => {
+        if (hasUnsavedChanges()) {
+            setShowUnsavedChangesModal(true);
+            setPendingNavigation('/teacher/assignments');
+        } else {
+            navigate('/teacher/assignments');
+        }
+    };
+
+    const confirmNavigation = () => {
+        setShowUnsavedChangesModal(false);
+        if (pendingNavigation) {
+            navigate(pendingNavigation);
+        }
+    };
+
+    const cancelNavigation = () => {
+        setShowUnsavedChangesModal(false);
+        setPendingNavigation(null);
     };
 
     const breadcrumb = [
@@ -613,7 +695,7 @@ const AssignmentForm = () => {
                         <button
                             type="button"
                             style={{ ...styles.button, ...styles.buttonSecondary }}
-                            onClick={() => navigate('/teacher/assignments')}
+                            onClick={() => handleCancel()}
                             disabled={submitting}
                         >
                             <i className="fas fa-times"></i>
@@ -639,6 +721,15 @@ const AssignmentForm = () => {
                     </div>
                 </form>
             </div>
+
+            {/* Unsaved Changes Modal */}
+            <ConfirmModal
+                show={showUnsavedChangesModal}
+                title="Thay đổi chưa được lưu"
+                message="Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn rời khỏi trang này không?"
+                onConfirm={confirmNavigation}
+                onCancel={cancelNavigation}
+            />
         </AppLayout>
     );
 };

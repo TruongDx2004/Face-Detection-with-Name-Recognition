@@ -4,6 +4,7 @@ import ApiService from '../../services/api-service';
 import authService from '../../services/auth-service';
 import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
+import ConfirmModal from '../../components/ConfirmModal';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 
 // Styles
@@ -331,6 +332,13 @@ const TeacherAssignments = () => {
     const [filterStatus, setFilterStatus] = useState('active');
     const [currentTime, setCurrentTime] = useState(new Date());
     const [currentUser, setCurrentUser] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        onCancel: null
+    });
 
     useEffect(() => {
         loadAssignments();
@@ -377,10 +385,21 @@ const TeacherAssignments = () => {
     };
 
     const handleDelete = async (assignment) => {
-        if (!window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignment.title}"?`)) {
-            return;
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xác nhận xóa bài tập',
+            message: `Bạn có chắc chắn muốn xóa bài tập "${assignment.title}"? Hành động này không thể hoàn tác.`,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                await performDeleteAssignment(assignment);
+            },
+            onCancel: () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
 
+    const performDeleteAssignment = async (assignment) => {
         try {
             const response = await ApiService.deleteAssignment(assignment.id);
             if (response.success) {
@@ -470,6 +489,11 @@ const TeacherAssignments = () => {
                 breadcrumb={breadcrumb}
                 actions={[
                     {
+                        label: 'Ngân hàng bài tập',
+                        icon: 'fas fa-database',
+                        onClick: () => navigate('/teacher/assignment-templates')
+                    },
+                    {
                         label: 'Tạo bài tập mới',
                         icon: 'fas fa-plus',
                         onClick: () => navigate('/teacher/assignments/new')
@@ -544,6 +568,15 @@ const TeacherAssignments = () => {
                     </div>
                 )}
             </div>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                show={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={confirmModal.onCancel}
+            />
         </AppLayout>
     );
 };

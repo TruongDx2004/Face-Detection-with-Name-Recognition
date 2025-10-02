@@ -20,6 +20,7 @@ const subjectRoutes = require('../routes/subjectRoutes');
 const courseSectionRoutes = require('../routes/courseSectionRoutes');
 const scheduleRoutes = require('../routes/scheduleRoutes');
 const assignmentRoutes = require('../routes/assignmentRoutes');
+const assignmentTemplateRoutes = require('../routes/assignmentTemplateRoutes');
 const examRoutes = require('../routes/examRoutes');
 const gradebookRoutes = require('../routes/gradebookRoutes');
 const studentGradeRoutes = require('../routes/studentGradeRoutes');
@@ -151,6 +152,7 @@ class App {
         this.app.use('/api/course-sections', courseSectionRoutes);
         this.app.use('/api/schedules', scheduleRoutes);
         this.app.use('/api/assignments', assignmentRoutes);
+        this.app.use('/api/assignment-templates', assignmentTemplateRoutes);
         this.app.use('/api/exams', examRoutes);
         this.app.use('/api/gradebook', gradebookRoutes);
         this.app.use('/api', studentGradeRoutes);
@@ -168,6 +170,7 @@ class App {
         this.app.use('/course-sections', courseSectionRoutes);
         this.app.use('/schedules', scheduleRoutes);
         this.app.use('/assignments', assignmentRoutes);
+        this.app.use('/assignment-templates', assignmentTemplateRoutes);
         this.app.use('/exams', examRoutes);
         this.app.use('/gradebook', gradebookRoutes);
         this.app.use('/', studentGradeRoutes);

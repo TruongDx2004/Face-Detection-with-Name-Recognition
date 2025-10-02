@@ -43,14 +43,13 @@ class Assignment {
 
         const [result] = await pool.execute(
             `INSERT INTO assignments 
-                (course_section_id, title, description, assignment_type, max_score, due_date, instructions, attachment_path) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                (course_section_id, title, description, assignment_type, due_date, instructions, attachment_path) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 course_section_id,
                 title,
                 description,
                 assignment_type,
-                max_score,
                 formattedDueDate,
                 instructions,
                 attachment_path

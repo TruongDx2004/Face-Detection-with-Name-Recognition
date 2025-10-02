@@ -263,7 +263,7 @@ const GradeConfiguration = () => {
 
         } catch (error) {
             console.error('Error saving configuration:', error);
-            showNotification('Lỗi khi lưu cấu hình', 'error');
+            showNotification('Lỗi khi lưu cấu hình: ', error);
         } finally {
             setSaving(false);
         }

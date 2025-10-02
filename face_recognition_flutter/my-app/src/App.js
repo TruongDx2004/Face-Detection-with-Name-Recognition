@@ -24,6 +24,8 @@ import TeacherCourseSections from './pages/teacher/TeacherCourseSections';
 import GradeConfiguration from './pages/teacher/GradeConfiguration';
 import ExamForm from './pages/teacher/ExamForm';
 import ExamResults from './pages/teacher/ExamResults';
+import AssignmentTemplateBank from './pages/teacher/AssignmentTemplateBank';
+import AssignmentTemplateBankForm from './pages/teacher/AssignmentTemplateForm';
 
 import Login from './pages/Login';
 import apiService from './services/api-service';
@@ -62,6 +64,10 @@ function App() {
         <Route path="/teacher/exams/create" element={<ExamForm />} />
         <Route path="/teacher/exams/edit/:id" element={<ExamForm />} />
         <Route path="/teacher/exams/:examId/results" element={<ExamResults />} />
+        <Route path="/teacher/assignment-templates" element={<AssignmentTemplateBank />} />
+        <Route path="/teacher/assignment-templates/:id" element={<AssignmentTemplateBankForm />} />
+        <Route path="/teacher/assignment-templates/new" element={<AssignmentTemplateBankForm />} />
+        <Route path="/teacher/assignment-templates/:id/edit" element={<AssignmentTemplateBankForm />} />
       </Routes>
     </BrowserRouter>
   );

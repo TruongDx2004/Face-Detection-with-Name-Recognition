@@ -129,7 +129,7 @@ router.post('/',
  *       500:
  *         description: Server error
  */
-router.get('/', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AssignmentController.getTeacherAssignments);
+router.get('/', authorize(USER_ROLES.TEACHER, USER_ROLES.ADMIN), AssignmentController.getAssignments);
 
 /**
  * @swagger

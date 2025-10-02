@@ -95,19 +95,37 @@ class AssignmentController {
             const formattedDueDate = dayjs(due_date).format("YYYY-MM-DD HH:mm:ss");
 
             // Tạo assignment
+            // Kiểm tra không trùng bài tập cho cùng một lớp học phần
+            // Kiểm tra theo title và assignment_type để tránh duplicate
+            const [existingAssignments] = await db.execute(
+                `SELECT id, title FROM assignments 
+                 WHERE course_section_id = ? AND title = ? AND assignment_type = ? AND is_active = TRUE`,
+                [course_section_id, title, assignment_type]
+            );
+
+            if (existingAssignments.length > 0) {
+                return res.status(409).json({
+                    error: 'Bài tập với tiêu đề này đã tồn tại trong lớp học phần',
+                    existing_assignment: {
+                        id: existingAssignments[0].id,
+                        title: existingAssignments[0].title
+                    }
+                });
+            }
+
             const [result] = await db.execute(
                 `INSERT INTO assignments 
-                (course_section_id, title, description, assignment_type, max_score, due_date, instructions, attachment_path) 
+                (course_section_id, title, description, assignment_type, due_date, instructions, attachment_path, template_id) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     course_section_id,
                     title,
                     description,
                     assignment_type,
-                    max_score,
                     formattedDueDate,
                     instructions,
-                    req.file ? req.file.path : null
+                    req.file ? req.file.path : null,
+                    req.body.template_id || null
                 ]
             );
 
@@ -727,6 +745,87 @@ class AssignmentController {
             console.error('Get student submissions error:', error);
             res.status(500).json({
                 error: 'Failed to get student submissions',
+                message: error.message
+            });
+        }
+    }
+
+    // Lấy assignments theo filters
+    async getAssignments(req, res) {
+        try {
+            const { course_section_id, teacher_id, assignment_type, status } = req.query;
+            const current_user_id = req.user.id;
+            const user_role = req.user.role;
+
+            let query = `
+                SELECT a.*, 
+                       cs.name as course_name, 
+                       s.name as subject_name,
+                       c.name as class_name,
+                       COUNT(asub.id) as submission_count,
+                       COUNT(CASE WHEN asub.status = 'graded' THEN 1 END) as graded_count
+                FROM assignments a
+                JOIN course_sections cs ON a.course_section_id = cs.id
+                JOIN subjects s ON cs.subject_id = s.id
+                JOIN classes c ON cs.class_id = c.id
+                LEFT JOIN assignment_submissions asub ON a.id = asub.assignment_id
+                WHERE a.is_active = TRUE
+            `;
+
+            const params = [];
+
+            // Filter by course section
+            if (course_section_id) {
+                query += ` AND a.course_section_id = ?`;
+                params.push(course_section_id);
+            }
+
+            // Filter by teacher (only if admin or same teacher)
+            if (teacher_id) {
+                if (user_role !== 'admin' && parseInt(teacher_id) !== current_user_id) {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'You can only view your own assignments'
+                    });
+                }
+                query += ` AND cs.teacher_id = ?`;
+                params.push(teacher_id);
+            } else if (user_role === 'teacher') {
+                // If no teacher_id specified and user is teacher, only show their assignments
+                query += ` AND cs.teacher_id = ?`;
+                params.push(current_user_id);
+            }
+
+            // Filter by assignment type
+            if (assignment_type) {
+                query += ` AND a.assignment_type = ?`;
+                params.push(assignment_type);
+            }
+
+            // Filter by status
+            if (status) {
+                if (status === 'active') {
+                    query += ` AND a.due_date > NOW()`;
+                } else if (status === 'closed') {
+                    query += ` AND a.due_date <= NOW()`;
+                }
+            }
+
+            query += ` GROUP BY a.id ORDER BY a.created_at DESC`;
+
+            const [assignments] = await db.execute(query, params);
+
+            res.json({
+                success: true,
+                message: 'Assignments retrieved successfully',
+                data: assignments
+            });
+
+        } catch (error) {
+            console.error('Get assignments error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to get assignments',
                 message: error.message
             });
         }
