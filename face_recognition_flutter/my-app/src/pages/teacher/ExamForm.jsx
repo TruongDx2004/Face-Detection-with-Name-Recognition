@@ -6,6 +6,8 @@ import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 import WordQuestionImporter from '../../components/WordQuestionImporter';
+import RichTextEditor from '../../components/RichTextEditor';
+import RichTextInput from '../../components/RichTextInput';
 
 // Styles
 const styles = {
@@ -404,11 +406,11 @@ const ExamForm = () => {
 
                     <div style={styles.formGroup}>
                         <label style={styles.formLabel}>Mô tả</label>
-                        <textarea
-                            style={styles.formTextarea}
+                        <RichTextEditor
                             value={formData.description}
-                            onChange={(e) => handleInputChange('description', e.target.value)}
-                            placeholder="Mô tả về bài kiểm tra"
+                            onChange={(value) => handleInputChange('description', value)}
+                            placeholder="Mô tả về bài kiểm tra - Sử dụng toolbar để định dạng văn bản"
+                            height="100px"
                         />
                     </div>
 
@@ -490,11 +492,11 @@ const ExamForm = () => {
 
                     <div style={styles.formGroup}>
                         <label style={styles.formLabel}>Hướng dẫn</label>
-                        <textarea
-                            style={styles.formTextarea}
+                        <RichTextEditor
                             value={formData.instructions}
-                            onChange={(e) => handleInputChange('instructions', e.target.value)}
-                            placeholder="Hướng dẫn làm bài cho học sinh"
+                            onChange={(value) => handleInputChange('instructions', value)}
+                            placeholder="Hướng dẫn làm bài cho học sinh - Sử dụng toolbar để định dạng văn bản"
+                            height="120px"
                         />
                     </div>
                 </div>
@@ -543,11 +545,11 @@ const ExamForm = () => {
 
                             <div style={styles.formGroup}>
                                 <label style={styles.formLabel}>Nội dung câu hỏi</label>
-                                <textarea
-                                    style={styles.formTextarea}
+                                <RichTextEditor
                                     value={question.question_text}
-                                    onChange={(e) => updateQuestion(index, 'question_text', e.target.value)}
-                                    placeholder="Nhập nội dung câu hỏi"
+                                    onChange={(value) => updateQuestion(index, 'question_text', value)}
+                                    placeholder="Nhập nội dung câu hỏi - Sử dụng toolbar để định dạng văn bản và chèn công thức hóa học"
+                                    height="120px"
                                 />
                             </div>
 
@@ -584,16 +586,17 @@ const ExamForm = () => {
                                     <label style={styles.formLabel}>Các đáp án (click để chọn đáp án đúng)</label>
                                     {question.options.map((option, optionIndex) => (
                                         <div key={optionIndex} style={{ marginBottom: '8px' }}>
-                                            <input
-                                                type="text"
-                                                style={{
-                                                    ...styles.optionInput,
-                                                    ...(question.correct_answer === option ? styles.correctOption : {})
-                                                }}
+                                            <RichTextInput
                                                 value={option}
-                                                onChange={(e) => updateQuestionOption(index, optionIndex, e.target.value)}
+                                                onChange={(value) => updateQuestionOption(index, optionIndex, value)}
                                                 onClick={() => setCorrectAnswer(index, optionIndex)}
-                                                placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)}`}
+                                                placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)} - Sử dụng toolbar để định dạng`}
+                                                style={{
+                                                    ...(question.correct_answer === option ? {
+                                                        backgroundColor: '#dcfce7',
+                                                        border: '2px solid #16a34a'
+                                                    } : {})
+                                                }}
                                             />
                                         </div>
                                     ))}
@@ -603,12 +606,11 @@ const ExamForm = () => {
                             {(question.question_type === 'true_false' || question.question_type === 'short_answer') && (
                                 <div style={styles.formGroup}>
                                     <label style={styles.formLabel}>Đáp án đúng</label>
-                                    <input
-                                        type="text"
-                                        style={styles.formInput}
+                                    <RichTextInput
                                         value={question.correct_answer}
-                                        onChange={(e) => updateQuestion(index, 'correct_answer', e.target.value)}
-                                        placeholder="Nhập đáp án đúng"
+                                        onChange={(value) => updateQuestion(index, 'correct_answer', value)}
+                                        placeholder="Nhập đáp án đúng - Sử dụng toolbar để định dạng"
+                                        style={{ backgroundColor: '#dcfce7', border: '1px solid #16a34a' }}
                                     />
                                 </div>
                             )}
