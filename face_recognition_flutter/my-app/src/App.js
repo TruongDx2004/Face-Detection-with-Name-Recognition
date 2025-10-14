@@ -26,6 +26,8 @@ import ExamForm from './pages/teacher/ExamForm';
 import ExamResults from './pages/teacher/ExamResults';
 import AssignmentTemplateBank from './pages/teacher/AssignmentTemplateBank';
 import AssignmentTemplateBankForm from './pages/teacher/AssignmentTemplateForm';
+import ExamTemplateBank from './pages/teacher/ExamTemplateBank';
+import ExamTemplateForm from './pages/teacher/ExamTemplateForm';
 
 import Login from './pages/Login';
 import apiService from './services/api-service';
@@ -68,6 +70,10 @@ function App() {
         <Route path="/teacher/assignment-templates/:id" element={<AssignmentTemplateBankForm />} />
         <Route path="/teacher/assignment-templates/new" element={<AssignmentTemplateBankForm />} />
         <Route path="/teacher/assignment-templates/:id/edit" element={<AssignmentTemplateBankForm />} />
+        <Route path="/teacher/exam-templates" element={<ExamTemplateBank />} />
+        <Route path="/teacher/exam-templates/create" element={<ExamTemplateForm />} />
+        <Route path="/teacher/exam-templates/:id" element={<ExamTemplateForm />} />
+        <Route path="/teacher/exam-templates/:id/edit" element={<ExamTemplateForm />} />
       </Routes>
     </BrowserRouter>
   );

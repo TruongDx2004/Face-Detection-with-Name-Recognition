@@ -1,0 +1,738 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ApiService from '../../services/api-service';
+import authService from '../../services/auth-service';
+import useNotification from '../../hooks/useNotification';
+import Notification from '../../components/Notification';
+import ConfirmModal from '../../components/ConfirmModal';
+import { AppLayout, Header } from '../../components/layout/AppLayout';
+import apiService from '../../services/api-service';
+
+// Template Card Component
+const TemplateCard = ({ template, onUse, onEdit, onDelete, isOwner, onView }) => {
+    const [hovered, setHovered] = useState(false);
+
+    const getDifficultyStyle = (level) => {
+        switch (level) {
+            case 'easy': return { backgroundColor: '#dcfce7', color: '#166534' };
+            case 'medium': return { backgroundColor: '#fef3c7', color: '#92400e' };
+            case 'hard': return { backgroundColor: '#fecaca', color: '#dc2626' };
+            default: return { backgroundColor: '#f1f5f9', color: '#475569' };
+        }
+    };
+
+    const getDifficultyLabel = (level) => {
+        switch (level) {
+            case 'easy': return 'Dễ';
+            case 'medium': return 'Trung bình';
+            case 'hard': return 'Khó';
+            default: return level;
+        }
+    };
+
+    return (
+        <div
+            style={{
+                ...styles.templateCard,
+                ...(hovered ? styles.templateCardHover : {})
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            onClick={() => onView(template)}
+        >
+            <div style={styles.templateHeader}>
+                <div>
+                    <div style={styles.templateTitle}>{template.title}</div>
+                </div>
+                <div style={{
+                    ...styles.templateType,
+                    ...getDifficultyStyle(template.difficulty_level)
+                }}>
+                    {getDifficultyLabel(template.difficulty_level)}
+                </div>
+            </div>
+
+            {template.description && (
+                <div style={styles.templateDescription}>
+                    {template.description}
+                </div>
+            )}
+
+            <div style={styles.templateMeta}>
+                <span>
+                    <i className="fas fa-clock" style={{ marginRight: '4px', color: '#3b82f6' }}></i>
+                    {template.duration_minutes} phút
+                </span>
+                <span>
+                    <i className="fas fa-star" style={{ marginRight: '4px', color: '#f59e0b' }}></i>
+                    {template.total_points} điểm
+                </span>
+                <span>
+                    <i className="fas fa-copy" style={{ marginRight: '4px', color: '#10b981' }}></i>
+                    Đã dùng {template.usage_count || 0} lần
+                </span>
+                {!isOwner && (
+                    <span>
+                        <i className="fas fa-user" style={{ marginRight: '4px', color: '#64748b' }}></i>
+                        {template.teacher_name}
+                    </span>
+                )}
+            </div>
+
+            {template.tags && template.tags.length > 0 && (
+                <div style={styles.templateTags}>
+                    {(Array.isArray(template.tags) ? template.tags : JSON.parse(template.tags || '[]')).map((tag, index) => (
+                        <span key={index} style={styles.tag}>
+                            #{tag}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div style={styles.templateActions} onClick={(e) => e.stopPropagation()}>
+                <button
+                    style={{ ...styles.button, ...styles.buttonSuccess }}
+                    onClick={() => onUse(template)}
+                >
+                    <i className="fas fa-plus"></i>
+                    Tạo bài thi
+                </button>
+                {isOwner && (
+                    <>
+                        <button
+                            style={{ ...styles.button, ...styles.buttonSecondary }}
+                            onClick={() => onEdit(template)}
+                        >
+                            <i className="fas fa-edit"></i>
+                            Sửa
+                        </button>
+                        <button
+                            style={{ ...styles.button, ...styles.buttonDanger }}
+                            onClick={() => onDelete(template)}
+                        >
+                            <i className="fas fa-trash"></i>
+                            Xóa
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Styles
+const styles = {
+    container: {
+        padding: '20px'
+    },
+    tabContainer: {
+        display: 'flex',
+        marginBottom: '24px',
+        borderBottom: '2px solid #e2e8f0'
+    },
+    tab: {
+        padding: '12px 24px',
+        cursor: 'pointer',
+        border: 'none',
+        backgroundColor: 'transparent',
+        fontSize: '16px',
+        fontWeight: '500',
+        color: '#64748b',
+        borderBottom: '2px solid transparent',
+        transition: 'all 0.2s ease'
+    },
+    activeTab: {
+        color: '#3b82f6',
+        borderBottomColor: '#3b82f6'
+    },
+    section: {
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        padding: '24px',
+        marginBottom: '24px',
+        border: '1px solid #e2e8f0'
+    },
+    templateGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+        gap: '20px'
+    },
+    templateCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        padding: '20px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+        transition: 'all 0.2s ease',
+        cursor: 'pointer'
+    },
+    templateCardHover: {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)'
+    },
+    templateHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: '12px'
+    },
+    templateTitle: {
+        fontSize: '18px',
+        fontWeight: '600',
+        color: '#1a202c',
+        marginBottom: '4px'
+    },
+    templateType: {
+        fontSize: '12px',
+        padding: '4px 8px',
+        borderRadius: '6px',
+        fontWeight: '500',
+        textTransform: 'uppercase'
+    },
+    templateDescription: {
+        fontSize: '14px',
+        color: '#64748b',
+        marginBottom: '16px',
+        display: '-webkit-box',
+        WebkitLineClamp: 3,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden'
+    },
+    templateMeta: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: '12px',
+        color: '#64748b',
+        marginBottom: '16px'
+    },
+    templateTags: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '6px',
+        marginBottom: '16px'
+    },
+    tag: {
+        fontSize: '11px',
+        padding: '4px 8px',
+        backgroundColor: '#f1f5f9',
+        color: '#475569',
+        borderRadius: '4px',
+        border: '1px solid #e2e8f0'
+    },
+    templateActions: {
+        display: 'flex',
+        gap: '8px',
+        paddingTop: '16px',
+        borderTop: '1px solid #e2e8f0'
+    },
+    button: {
+        padding: '8px 16px',
+        borderRadius: '6px',
+        border: 'none',
+        fontSize: '14px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px'
+    },
+    buttonPrimary: {
+        backgroundColor: '#3b82f6',
+        color: '#ffffff'
+    },
+    buttonSecondary: {
+        backgroundColor: '#f1f5f9',
+        color: '#374151',
+        border: '1px solid #e2e8f0'
+    },
+    buttonSuccess: {
+        backgroundColor: '#10b981',
+        color: '#ffffff'
+    },
+    buttonWarning: {
+        backgroundColor: '#f59e0b',
+        color: '#ffffff'
+    },
+    buttonDanger: {
+        backgroundColor: '#ef4444',
+        color: '#ffffff'
+    },
+    filterContainer: {
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'center',
+        marginBottom: '24px',
+        padding: '16px',
+        backgroundColor: '#f8fafc',
+        borderRadius: '8px',
+        border: '1px solid #e2e8f0'
+    },
+    filterSelect: {
+        padding: '8px 12px',
+        borderRadius: '6px',
+        border: '1px solid #d1d5db',
+        fontSize: '14px',
+        backgroundColor: '#ffffff'
+    },
+    searchInput: {
+        padding: '8px 12px',
+        borderRadius: '6px',
+        border: '1px solid #d1d5db',
+        fontSize: '14px',
+        backgroundColor: '#ffffff',
+        minWidth: '200px'
+    },
+    emptyState: {
+        textAlign: 'center',
+        padding: '60px 20px',
+        color: '#64748b'
+    },
+    emptyStateIcon: {
+        fontSize: '48px',
+        marginBottom: '16px',
+        color: '#cbd5e1'
+    },
+    loadingSpinner: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '60px',
+        fontSize: '18px',
+        color: '#64748b'
+    },
+    tagFilterContainer: {
+        marginTop: '16px'
+    },
+    tagFilterLabel: {
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#374151',
+        marginBottom: '8px',
+        display: 'block'
+    },
+    tagList: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '8px'
+    },
+    tagFilter: {
+        fontSize: '12px',
+        padding: '6px 12px',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        backgroundColor: '#ffffff',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        userSelect: 'none'
+    },
+    tagFilterActive: {
+        backgroundColor: '#3b82f6',
+        color: '#ffffff',
+        borderColor: '#3b82f6'
+    },
+    clearFilters: {
+        fontSize: '12px',
+        padding: '4px 8px',
+        color: '#64748b',
+        textDecoration: 'underline',
+        cursor: 'pointer',
+        border: 'none',
+        backgroundColor: 'transparent'
+    }
+};
+
+const ExamTemplateBank = () => {
+    const navigate = useNavigate();
+    const { notifications, showNotification, removeNotification } = useNotification();
+
+    // State management
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('my-templates');
+    const [myTemplates, setMyTemplates] = useState([]);
+    const [publicTemplates, setPublicTemplates] = useState([]);
+    const [filterType, setFilterType] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [availableTags, setAvailableTags] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        onCancel: null
+    });
+
+    useEffect(() => {
+        loadData();
+    }, [activeTab]);
+
+    useEffect(() => {
+        extractAvailableTags();
+    }, [myTemplates, publicTemplates]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const userResponse = await ApiService.getProfile();
+            setCurrentUser(userResponse.data);
+
+            if (activeTab === 'my-templates') {
+                await loadMyTemplates(userResponse.data.id);
+            } else {
+                await loadPublicTemplates();
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Không thể tải dữ liệu', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadMyTemplates = async (teacherId) => {
+        try {
+            const params = {};
+            if (filterType !== 'all') params.difficulty_level = filterType;
+            if (searchTerm) params.search = searchTerm;
+
+            const response = await ApiService.getMyExamTemplates();
+            if (response.data) {
+                setMyTemplates(response.data || []);
+            }
+        } catch (error) {
+            console.error('Error loading my templates:', error);
+            showNotification('Không thể tải templates của bạn', 'error');
+        }
+    };
+
+    const loadPublicTemplates = async () => {
+        try {
+            const params = {};
+            if (filterType !== 'all') params.difficulty_level = filterType;
+            if (searchTerm) params.search = searchTerm;
+
+            const response = await ApiService.getPublicExamTemplates();
+            if (response.data) {
+                setPublicTemplates(response.data || []);
+            }
+        } catch (error) {
+            console.error('Error loading public templates:', error);
+            showNotification('Không thể tải templates công khai', 'error');
+        }
+    };
+
+    const handleEditTemplate = (template) => {
+        navigate(`/teacher/exam-templates/${template.id}/edit`);
+    };
+
+    const handleDeleteTemplate = async (template) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xác nhận xóa template',
+            message: `Bạn có chắc chắn muốn xóa template "${template.title}"?`,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                await performDeleteTemplate(template);
+            },
+            onCancel: () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const performDeleteTemplate = async (template) => {
+        try {
+            const response = await ApiService.deleteExamTemplate(template.id);
+            if (response.data) {
+                showNotification('Xóa template thành công', 'success');
+                loadData();
+            } else {
+                throw new Error(response.message || 'Không thể xóa template');
+            }
+        } catch (error) {
+            console.error('Error deleting template:', error);
+            showNotification(error.message || 'Không thể xóa template', 'error');
+        }
+    };
+
+    const handleViewTemplate = (template) => {
+        navigate(`/teacher/exam-templates/${template.id}`);
+    };
+
+    const handleSearch = () => {
+        loadData();
+    };
+
+    const extractAvailableTags = () => {
+        const allTemplates = [...myTemplates, ...publicTemplates];
+        const tagSet = new Set();
+        
+        allTemplates.forEach(template => {
+            if (template.tags) {
+                const tags = Array.isArray(template.tags) ? template.tags : JSON.parse(template.tags || '[]');
+                tags.forEach(tag => tagSet.add(tag));
+            }
+        });
+        
+        setAvailableTags(Array.from(tagSet).sort());
+    };
+
+    const handleTagToggle = (tag) => {
+        setSelectedTags(prev => 
+            prev.includes(tag) 
+                ? prev.filter(t => t !== tag)
+                : [...prev, tag]
+        );
+    };
+
+    const handleUseTemplate = async (template) => {
+        navigate('/teacher/exams/create', { 
+            state: { fromTemplate: template } 
+        });
+    };
+
+    const getCurrentTemplates = () => {
+        let templates = activeTab === 'my-templates' ? myTemplates : publicTemplates;
+        
+        // Filter by tags
+        if (selectedTags.length > 0) {
+            templates = templates.filter(template => {
+                if (!template.tags) return false;
+                const templateTags = Array.isArray(template.tags) ? template.tags : JSON.parse(template.tags || '[]');
+                return selectedTags.some(selectedTag => templateTags.includes(selectedTag));
+            });
+        }
+        
+        return templates;
+    };
+
+
+    const getDifficultyColor = (level) => {
+        switch (level) {
+            case 'easy': return { backgroundColor: '#dcfce7', color: '#166534' };
+            case 'medium': return { backgroundColor: '#fef3c7', color: '#92400e' };
+            case 'hard': return { backgroundColor: '#fecaca', color: '#dc2626' };
+            default: return { backgroundColor: '#f1f5f9', color: '#475569' };
+        }
+    };
+
+    const getDifficultyLabel = (level) => {
+        switch (level) {
+            case 'easy': return 'Dễ';
+            case 'medium': return 'Trung bình';
+            case 'hard': return 'Khó';
+            default: return level;
+        }
+    };
+
+    const breadcrumb = [
+        { label: 'Trang chủ', path: '/teacher' },
+        { label: 'Bài kiểm tra', path: '/teacher/exams' },
+        { label: 'Ngân hàng bài kiểm tra', path: '/teacher/exam-templates' }
+    ];
+
+    if (loading) {
+        return (
+            <AppLayout
+                user={currentUser}
+                onLogout={() => { authService.logout(); navigate('/login'); }}
+                currentTime={new Date()}
+                title="Ngân hàng bài kiểm tra"
+            >
+                <div style={styles.loadingSpinner}>
+                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '10px' }}></i>
+                    Đang tải dữ liệu...
+                </div>
+            </AppLayout>
+        );
+    }
+
+    return (
+        <AppLayout
+            user={currentUser}
+            onLogout={() => { authService.logout(); navigate('/login'); }}
+            currentTime={new Date()}
+            title="Ngân hàng bài kiểm tra"
+        >
+            {/* Notifications */}
+            <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000 }}>
+                {notifications.map((notification) => (
+                    <Notification
+                        key={notification.id}
+                        notification={notification}
+                        onRemove={removeNotification}
+                    />
+                ))}
+            </div>
+
+            {/* Header */}
+            <Header
+                title="Ngân hàng bài kiểm tra"
+                titleIcon="fas fa-graduation-cap"
+                showBack={true}
+                onBack={() => navigate('/teacher/exams')}
+                breadcrumb={breadcrumb}
+                actions={[
+                    {
+                        label: 'Tạo template mới',
+                        icon: 'fas fa-plus',
+                        onClick: () => navigate('/teacher/exam-templates/create')
+                    },
+                    {
+                        label: 'Làm mới',
+                        icon: 'fas fa-sync-alt',
+                        onClick: loadData
+                    }
+                ]}
+            />
+
+            <div style={styles.container}>
+
+                {/* Tabs */}
+                <div style={styles.tabContainer}>
+                    <button
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'my-templates' ? styles.activeTab : {})
+                        }}
+                        onClick={() => setActiveTab('my-templates')}
+                    >
+                        <i className="fas fa-user" style={{ marginRight: '8px' }}></i>
+                        Templates của tôi ({myTemplates.length})
+                    </button>
+                    <button
+                        style={{
+                            ...styles.tab,
+                            ...(activeTab === 'public-templates' ? styles.activeTab : {})
+                        }}
+                        onClick={() => setActiveTab('public-templates')}
+                    >
+                        <i className="fas fa-globe" style={{ marginRight: '8px' }}></i>
+                        Templates công khai ({publicTemplates.length})
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div style={styles.section}>
+                    {/* Filters */}
+                    <div style={styles.filterContainer}>
+                        <select
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                            style={styles.filterSelect}
+                        >
+                            <option value="all">Tất cả mức độ</option>
+                            <option value="easy">Dễ</option>
+                            <option value="medium">Trung bình</option>
+                            <option value="hard">Khó</option>
+                        </select>
+
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm template..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={styles.searchInput}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+
+                        <button
+                            style={{ ...styles.button, ...styles.buttonPrimary }}
+                            onClick={handleSearch}
+                        >
+                            <i className="fas fa-search"></i>
+                            Tìm kiếm
+                        </button>
+                    </div>
+
+                    {/* Tag Filters */}
+                    {availableTags.length > 0 && (
+                        <div style={styles.tagFilterContainer}>
+                            <label style={styles.tagFilterLabel}>
+                                <i className="fas fa-tags" style={{ marginRight: '6px' }}></i>
+                                Lọc theo tags:
+                            </label>
+                            <div style={styles.tagList}>
+                                {availableTags.map(tag => (
+                                    <span
+                                        key={tag}
+                                        style={{
+                                            ...styles.tagFilter,
+                                            ...(selectedTags.includes(tag) ? styles.tagFilterActive : {})
+                                        }}
+                                        onClick={() => handleTagToggle(tag)}
+                                    >
+                                        #{tag}
+                                    </span>
+                                ))}
+                                {selectedTags.length > 0 && (
+                                    <button
+                                        style={styles.clearFilters}
+                                        onClick={() => setSelectedTags([])}
+                                    >
+                                        Xóa bộ lọc
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Templates Grid */}
+                    {getCurrentTemplates().length === 0 ? (
+                        <div style={styles.emptyState}>
+                            <div style={styles.emptyStateIcon}>
+                                <i className="fas fa-folder-open"></i>
+                            </div>
+                            <div style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>
+                                {activeTab === 'my-templates' ? 'Chưa có template nào' : 'Không tìm thấy template công khai'}
+                            </div>
+                            <div style={{ fontSize: '14px', marginBottom: '20px' }}>
+                                {activeTab === 'my-templates' 
+                                    ? 'Tạo template đầu tiên để tái sử dụng bài kiểm tra'
+                                    : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm'
+                                }
+                            </div>
+                            {activeTab === 'my-templates' && (
+                                <button
+                                    style={{ ...styles.button, ...styles.buttonPrimary }}
+                                    onClick={() => navigate('/teacher/exam-templates/create')}
+                                >
+                                    <i className="fas fa-plus"></i>
+                                    Tạo template đầu tiên
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={styles.templateGrid}>
+                            {getCurrentTemplates().map(template => (
+                                <TemplateCard
+                                    key={template.id}
+                                    template={template}
+                                    onUse={handleUseTemplate}
+                                    onEdit={handleEditTemplate}
+                                    onDelete={handleDeleteTemplate}
+                                    onView={handleViewTemplate}
+                                    isOwner={activeTab === 'my-templates'}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                show={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={confirmModal.onCancel}
+            />
+        </AppLayout>
+    );
+};
+
+export default ExamTemplateBank;

@@ -359,7 +359,7 @@ class AssignmentController {
                 JOIN course_sections cs ON a.course_section_id = cs.id
                 JOIN subjects s ON cs.subject_id = s.id
                 LEFT JOIN assignment_submissions asub ON a.id = asub.assignment_id AND asub.student_id = ?
-                WHERE a.course_section_id = ?
+                WHERE a.course_section_id = ? AND a.is_active = TRUE
                 ORDER BY a.due_date ASC`,
                 [student_id, courseSectionId]
             );

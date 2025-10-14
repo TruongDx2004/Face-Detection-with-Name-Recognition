@@ -419,6 +419,14 @@ const TeacherExams = () => {
                             ➕ Tạo bài kiểm tra mới
                         </button>
                     </div>
+                    <div style={styles.formGroup}>
+                        <button
+                            style={{ ...styles.button, ...styles.buttonSecondary, backgroundColor: '#10b981', color: '#ffffff' }}
+                            onClick={() => navigate('/teacher/exam-templates')}
+                        >
+                            📚 Ngân hàng Templates
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -455,12 +463,20 @@ const TeacherExams = () => {
                     <div style={styles.emptyStateText}>
                         Hãy tạo bài kiểm tra đầu tiên để bắt đầu
                     </div>
-                    <button
-                        style={{ ...styles.button, ...styles.buttonPrimary }}
-                        onClick={handleCreateExam}
-                    >
-                        ➕ Tạo bài kiểm tra mới
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                            style={{ ...styles.button, ...styles.buttonPrimary }}
+                            onClick={handleCreateExam}
+                        >
+                            ➕ Tạo bài kiểm tra mới
+                        </button>
+                        <button
+                            style={{ ...styles.button, ...styles.buttonSecondary, backgroundColor: '#10b981', color: '#ffffff' }}
+                            onClick={() => navigate('/teacher/exam-templates')}
+                        >
+                            📚 Ngân hàng Templates
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div style={styles.examGrid}>

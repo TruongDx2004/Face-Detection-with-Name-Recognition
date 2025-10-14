@@ -152,11 +152,11 @@ class ExamResultScreen extends StatelessWidget {
                       label: 'Tổng số câu',
                       value: '${exam.questions.length}',
                     ),
-                    _buildDetailRow(
-                      icon: Icons.check_circle_outline,
-                      label: 'Câu đã trả lời',
-                      value: '${examResult.answers.length}',
-                    ),
+                    // _buildDetailRow(
+                    //   icon: Icons.check_circle_outline,
+                    //   label: 'Câu đã trả lời',
+                    //   value: '${examResult.answers.length}',
+                    // ),
                     _buildDetailRow(
                       icon: Icons.access_time,
                       label: 'Thời gian làm bài',
@@ -220,23 +220,23 @@ class ExamResultScreen extends StatelessWidget {
                       minHeight: 8,
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Tỷ lệ hoàn thành'),
-                        Text(
-                          '${examResult.answers.length}/${exam.questions.length}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: examResult.answers.length / exam.questions.length,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-                      minHeight: 8,
-                    ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //   children: [
+                    //     const Text('Tỷ lệ hoàn thành'),
+                    //     Text(
+                    //       '${examResult.answers.length}/${exam.questions.length}',
+                    //       style: const TextStyle(fontWeight: FontWeight.bold),
+                    //     ),
+                    //   ],
+                    // ),
+                    // const SizedBox(height: 8),
+                    // LinearProgressIndicator(
+                    //   value: examResult.answers.length / exam.questions.length,
+                    //   backgroundColor: Colors.grey.shade300,
+                    //   valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                    //   minHeight: 8,
+                    // ),
                   ],
                 ),
               ),

@@ -5,6 +5,7 @@ import '../../models/assignment_models.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart'; // ignore: unused_import
 import '../../widgets/loading_dialog.dart'; // ignore: unused_import
+import '../../widgets/html_text_display.dart';
 import 'exam_taking_screen.dart';
 
 class ExamDetailScreen extends StatefulWidget {
@@ -194,9 +195,9 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              widget.exam.description,
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            HtmlTextDisplay(
+                              htmlContent: widget.exam.description,
+                              baseStyle: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ],
                         ),

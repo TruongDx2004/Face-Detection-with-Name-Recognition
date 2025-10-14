@@ -422,7 +422,7 @@ class ApiService {
     async getCourseSectionsByClass(classId, params = {}) {
         return await this.makeRequest('GET', `/course-sections/class/${classId}`, null, params);
     }
-    
+
     // ============ EXAM ENDPOINTS ============
     async getExams(params = {}) {
         return await this.makeRequest('GET', '/exams', null, params);
@@ -459,6 +459,39 @@ class ApiService {
     async getExamStatistics(examId) {
         return await this.makeRequest('GET', `/exams/${examId}/statistics`);
     }
+
+    // ============ EXAM TEMPLATE ENDPOINTS ==================
+    async getMyExamTemplates(params = {}) {
+        return await this.makeRequest('GET', '/exam-templates/my', null, params);
+    }
+
+    async getPublicExamTemplates(params = {}) {
+        return await this.makeRequest('GET', '/exam-templates/public', null, params);
+    }
+
+    async deleteExamTemplate(templateId) {
+        return await this.makeRequest('DELETE', `/exam-templates/${templateId}`);
+    }
+
+    async getExamTemplateTags() {
+        return await this.makeRequest('GET', '/exam-templates/tags');
+    }
+
+    async getExamTemplateById(templateId) {
+        return await this.makeRequest('GET', `/exam-templates/${templateId}`);
+    }
+
+    // Tạo mới exam template
+    async createExamTemplate(templateData) {
+        return await this.makeRequest('POST', '/exam-templates', templateData);
+    }
+
+    // Cập nhật exam template
+    async updateExamTemplate(templateId, templateData) {
+        return await this.makeRequest('PUT', `/exam-templates/${templateId}`, templateData);
+    }
+
+
 
     // ============ ASSIGNMENT TEMPLATE ENDPOINTS ============
     async createTemplate(templateData) {

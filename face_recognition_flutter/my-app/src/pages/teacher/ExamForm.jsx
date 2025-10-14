@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ApiService from '../../services/api-service';
 import authService from '../../services/auth-service';
 import useNotification from '../../hooks/useNotification';
@@ -141,8 +141,12 @@ const styles = {
 const ExamForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { notifications, showNotification, removeNotification } = useNotification();
     const isEdit = Boolean(id);
+    
+    // Check if we're creating from template
+    const fromTemplate = location.state?.fromTemplate;
 
     const [formData, setFormData] = useState({
         course_section_id: '',
@@ -187,8 +191,10 @@ const ExamForm = () => {
     useEffect(() => {
         if (isEdit) {
             fetchExam();
+        } else if (fromTemplate) {
+            loadFromTemplate();
         }
-    }, [id]);
+    }, [id, fromTemplate]);
 
     const fetchCourseSections = async (teacherId) => {
         try {
@@ -224,6 +230,46 @@ const ExamForm = () => {
             console.error('Error fetching exam:', error);
             showNotification('Không thể tải thông tin bài kiểm tra', 'error');
             navigate('/teacher/exams');
+        }
+    };
+
+    const loadFromTemplate = () => {
+        try {
+            const template = fromTemplate;
+            
+            // Convert template questions to exam format
+            const convertedQuestions = template.questions.map((q, index) => ({
+                id: Date.now() + index,
+                question_text: q.questionText,
+                question_type: q.questionType,
+                points: q.points,
+                question_order: index + 1,
+                correct_answer: q.correctAnswer,
+                options: q.options || ['', '', '', '']
+            }));
+
+            // Set form data from template
+            setFormData(prev => ({
+                ...prev,
+                title: template.title,
+                description: template.description || '',
+                duration_minutes: template.duration_minutes,
+                max_score: template.total_points,
+                // Keep other fields empty for teacher to fill
+                course_section_id: '',
+                exam_type: 'quiz',
+                exam_date: '',
+                start_time: '',
+                end_time: '',
+                instructions: ''
+            }));
+
+            setQuestions(convertedQuestions);
+            
+            showNotification(`Đã tải template "${template.title}" thành công`, 'success');
+        } catch (error) {
+            console.error('Error loading template:', error);
+            showNotification('Lỗi khi tải template', 'error');
         }
     };
 
@@ -356,7 +402,7 @@ const ExamForm = () => {
             user={currentUser}
             onLogout={handleLogout}
             currentTime={currentTime}
-            title={isEdit ? 'Chỉnh sửa bài kiểm tra' : 'Tạo bài kiểm tra mới'}
+            title={isEdit ? 'Chỉnh sửa bài kiểm tra' : fromTemplate ? `Tạo bài thi từ template: ${fromTemplate.title}` : 'Tạo bài kiểm tra mới'}
         >
 
             {/* Notifications */}
@@ -371,6 +417,29 @@ const ExamForm = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
+                {/* Template Info Banner */}
+                {fromTemplate && (
+                    <div style={{
+                        ...styles.section,
+                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #0ea5e9',
+                        marginBottom: '20px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ fontSize: '24px' }}>📚</span>
+                            <div>
+                                <h4 style={{ margin: 0, color: '#0ea5e9' }}>
+                                    Tạo bài thi từ template: {fromTemplate.title}
+                                </h4>
+                                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b' }}>
+                                    Template đã được tải với {fromTemplate.questions?.length || 0} câu hỏi. 
+                                    Bạn có thể chỉnh sửa và thêm thông tin cần thiết.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Basic Information */}
                 <div style={styles.section}>
                     <h3>Thông tin cơ bản</h3>

@@ -3,7 +3,6 @@ import Notification from '../components/Notification';
 import Sidebar from '../components/Sidebar';
 import LoadingOverlay from '../components/LoadingOverlay';
 import useNotification from '../hooks/useNotification';
-import useTime from '../hooks/useTime';
 import styles from '../components/styles';
 import apiService from '../services/api-service';
 import authService from '../services/auth-service';

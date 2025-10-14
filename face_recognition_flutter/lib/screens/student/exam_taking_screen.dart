@@ -6,6 +6,7 @@ import '../../models/assignment_models.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart'; // ignore: unused_import
 import '../../widgets/loading_dialog.dart'; // ignore: unused_import
+import '../../widgets/html_text_display.dart';
 import 'exam_result_screen.dart';
 
 class ExamTakingScreen extends StatefulWidget {
@@ -550,8 +551,8 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
               const SizedBox(height: 16),
               
               // Question text
-              Text(
-                question.questionText,
+              ExamQuestionDisplay(
+                questionText: question.questionText,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -581,39 +582,10 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
       children: question.options.map((option) {
         final isSelected = currentAnswer?.answer == option;
         
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            onTap: () => _saveAnswer(question.id, option, null),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isSelected ? Colors.green : Colors.grey.shade300,
-                  width: isSelected ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                color: isSelected ? Colors.green.withOpacity(0.1) : Colors.transparent,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                    color: isSelected ? Colors.green : Colors.grey,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      option,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return ExamAnswerDisplay(
+          answerText: option,
+          isSelected: isSelected,
+          onTap: () => _saveAnswer(question.id, option, null),
         );
       }).toList(),
     );
@@ -630,34 +602,10 @@ class _ExamTakingScreenState extends State<ExamTakingScreen>
   }
 
   Widget _buildTrueFalseOption(String label, String value, bool isSelected, int questionId) {
-    return InkWell(
+    return ExamAnswerDisplay(
+      answerText: label,
+      isSelected: isSelected,
       onTap: () => _saveAnswer(questionId, value, null),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          color: isSelected ? Colors.green.withOpacity(0.1) : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: isSelected ? Colors.green : Colors.grey,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
