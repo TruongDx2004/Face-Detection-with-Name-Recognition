@@ -85,7 +85,7 @@ module.exports = {
     // Error messages
     ERROR_MESSAGES: {
         UNAUTHORIZED: 'Unauthorized access',
-        FORBIDDEN: 'Insufficient permissions',
+        FORBIDDEN: 'Bạn không có quyền truy cập',
         NOT_FOUND: 'Tính năng đang được phát triển',
         VALIDATION_ERROR: 'Validation error',
         INTERNAL_ERROR: 'Internal server error',

@@ -72,10 +72,11 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   int _consecutiveHeadTurnDetections = 0;
   int _consecutiveLookStraightDetections = 0;
 
-  // Frame throttling (increased for better performance)
+  // Adaptive frame throttling for performance optimization
   DateTime? _lastProcessTime;
   static const Duration _minProcessInterval =
-      Duration(milliseconds: 150); // Reduced from 100ms
+      Duration(milliseconds: 400); // Tăng từ 150ms để giảm queue overload
+  int _slowFrameCount = 0;
 
   final LocationService _locationService = LocationService();
   
@@ -174,10 +175,21 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
   Future<void> _initializeCamera() async {
     try {
+      _logger.i('📷 Initializing camera...');
+      
       _cameras = await availableCameras();
+      _logger.i('📷 Available cameras found: ${_cameras?.length ?? 0}');
+      
       if (_cameras == null || _cameras!.isEmpty) {
+        _logger.e('❌ No cameras available');
         _setStatus('Không tìm thấy camera', Colors.red);
         return;
+      }
+
+      // Log all available cameras
+      for (int i = 0; i < _cameras!.length; i++) {
+        final camera = _cameras![i];
+        _logger.i('📷 Camera $i: ${camera.name}, direction: ${camera.lensDirection}');
       }
 
       // Prefer front camera
@@ -187,32 +199,65 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
       if (frontCameraIndex != -1) {
         _selectedCameraIndex = frontCameraIndex;
+        _logger.i('📷 Front camera found at index: $frontCameraIndex');
       } else {
         _selectedCameraIndex = 0;
+        _logger.w('⚠️ No front camera found, using default index: 0');
       }
 
+      _logger.i('📷 Selected camera: ${_cameras![_selectedCameraIndex].name}');
       await _setupCamera(_selectedCameraIndex);
     } catch (e) {
       _logger.e('❌ Camera initialization error: $e');
+      _logger.e('Stack trace: ${StackTrace.current}');
       _setStatus('Có lỗi xảy ra, vui lòng thử lại sau', Colors.red);
     }
   }
 
   Future<void> _setupCamera(int cameraIndex) async {
     try {
+      _logger.i('🔧 Setting up camera at index: $cameraIndex');
+      
       if (_cameraController != null) {
+        _logger.d('🧹 Disposing existing camera controller...');
         await _cameraController!.dispose();
         _imageStreamSubscription?.cancel();
       }
 
+      final selectedCamera = _cameras![cameraIndex];
+      _logger.i('🔧 Creating camera controller for: ${selectedCamera.name}');
+      _logger.i('   Resolution: medium');
+      _logger.i('   Audio: disabled');
+      _logger.i('   Format: yuv420');
+
+      // Try different camera configurations for better compatibility
+      ResolutionPreset resolution = ResolutionPreset.medium;
+      ImageFormatGroup format = ImageFormatGroup.yuv420;
+      
+      // Fallback to lower resolution if this is a retry
+      if (_selectedCameraIndex > 0) {
+        resolution = ResolutionPreset.low;
+        _logger.i('🔄 Using lower resolution for compatibility');
+      }
+      
+      _logger.i('🔧 Camera configuration:');
+      _logger.i('   Resolution: $resolution');
+      _logger.i('   Format: $format');
+      _logger.i('   Audio: disabled');
+
       _cameraController = CameraController(
-        _cameras![cameraIndex],
-        ResolutionPreset.medium, // Balanced performance
+        selectedCamera,
+        resolution,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.yuv420,
+        imageFormatGroup: format,
       );
 
+      _logger.d('🔧 Initializing camera controller...');
       await _cameraController!.initialize();
+      
+      _logger.i('✅ Camera controller initialized successfully');
+      _logger.i('   Camera size: ${_cameraController!.value.previewSize}');
+      _logger.i('   Is initialized: ${_cameraController!.value.isInitialized}');
 
       if (mounted) {
         setState(() {
@@ -221,11 +266,15 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
         });
 
         _setStatus('Camera đã sẵn sàng', Colors.green);
+        _logger.i('✅ Camera setup completed, starting challenges...');
         _generateRandomChallenges();
         _startLivenessDetection();
+      } else {
+        _logger.w('⚠️ Widget not mounted after camera setup');
       }
     } catch (e) {
       _logger.e('❌ Camera setup error: $e');
+      _logger.e('Stack trace: ${StackTrace.current}');
       _setStatus('Có lỗi xảy ra, vui lòng thử lại sau', Colors.red);
     }
   }
@@ -316,51 +365,132 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
   void _startImageStream() {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      _logger.e('❌ Cannot start image stream - camera not initialized');
+      _logger.e('   Camera controller null: ${_cameraController == null}');
+      if (_cameraController != null) {
+        _logger.e('   Camera initialized: ${_cameraController!.value.isInitialized}');
+      }
       return;
     }
 
-    _cameraController!.startImageStream((CameraImage image) async {
-      // Frame throttling
-      final now = DateTime.now();
-      if (_lastProcessTime != null &&
-          now.difference(_lastProcessTime!) < _minProcessInterval) {
-        return;
-      }
-      _lastProcessTime = now;
+    _logger.i('📷 Starting camera image stream...');
 
-      if (!_livenessCheckActive || _isProcessing) {
-        return;
-      }
+    try {
+      _cameraController!.startImageStream((CameraImage image) async {
+        // Comprehensive frame debugging
+        _logger.d('📸 NEW FRAME CALLBACK TRIGGERED');
+        
+        try {
+          // Frame throttling
+          final now = DateTime.now();
+          if (_lastProcessTime != null &&
+              now.difference(_lastProcessTime!) < _minProcessInterval) {
+            _logger.d('⏭️ Frame throttled (too soon)');
+            return;
+          }
+          _lastProcessTime = now;
 
-      _processFrameAsync(image);
-    });
+          _logger.d('📸 Frame details:');
+          _logger.d('   Image null: ${image == null}');
+          
+          if (image != null) {
+            try {
+              _logger.d('   Size: ${image.width ?? 'NULL'}x${image.height ?? 'NULL'}');
+              _logger.d('   Format: ${image.format?.group ?? 'NULL'}');
+              _logger.d('   Planes: ${image.planes?.length ?? 'NULL'}');
+            } catch (e) {
+              _logger.e('❌ Error accessing image properties: $e');
+            }
+          }
+          
+          _logger.d('   Liveness active: $_livenessCheckActive');
+          _logger.d('   Is processing: $_isProcessing');
+          _logger.d('   Widget mounted: $mounted');
+
+          if (!_livenessCheckActive) {
+            _logger.d('⏭️ Skipping frame - liveness check not active');
+            return;
+          }
+          
+          if (_isProcessing) {
+            _logger.d('⏭️ Skipping frame - already processing');
+            return;
+          }
+          
+          if (!mounted) {
+            _logger.w('⚠️ Widget not mounted, skipping frame');
+            return;
+          }
+
+          _logger.d('🔄 Frame accepted, starting processing...');
+          _processFrameAsync(image);
+          
+        } catch (e) {
+          _logger.e('❌ Error in image stream callback: $e');
+          _logger.e('Stack trace: ${StackTrace.current}');
+        }
+      });
+      
+      _logger.i('✅ Camera image stream started successfully');
+    } catch (e) {
+      _logger.e('❌ Failed to start image stream: $e');
+      _logger.e('Stack trace: ${StackTrace.current}');
+    }
   }
 
   void _processFrameAsync(CameraImage image) async {
+    final frameStopwatch = Stopwatch()..start();
+    
     try {
+      _logger.d('🔄 Starting frame processing...');
+      
       setState(() {
         _isProcessing = true;
       });
 
+      _logger.d('🧠 Calling ML Kit face service...');
       final result = await _faceService.processCameraImage(image);
+      
+      frameStopwatch.stop();
+      _logger.d('⏱️ ML Kit processing completed in ${frameStopwatch.elapsedMilliseconds}ms');
 
       if (result != null && mounted) {
+        _logger.d('📊 Face detection result:');
+        _logger.d('   Has face: ${result.hasFace}');
+        _logger.d('   Confidence: ${result.confidence}');
+        _logger.d('   Landmarks count: ${result.landmarks.length}');
+        
         setState(() {
           _currentFaceResult = result;
           _faceDetected = result.hasFace;
         });
 
         if (result.hasFace && result.landmarks.isNotEmpty) {
+          _logger.d('✅ Face detected with landmarks, processing liveness challenge...');
           _processLivenessChallenge(result);
         } else {
+          _logger.d('❌ No face or no landmarks, resetting consecutive detections');
           _resetConsecutiveDetections(_challenges[_currentChallengeIndex].type);
         }
-      } else {}
+      } else {
+        if (result == null) {
+          _logger.w('⚠️ ML Kit returned null result');
+        }
+        if (!mounted) {
+          _logger.w('⚠️ Widget not mounted, skipping result processing');
+        }
+      }
+    } catch (e) {
+      _logger.e('❌ Frame processing error: $e');
+      _logger.e('Stack trace: ${StackTrace.current}');
     } finally {
       if (mounted) {
         setState(() {
           _isProcessing = false;
         });
+        _logger.d('✅ Frame processing completed');
+      } else {
+        _logger.w('⚠️ Widget not mounted during cleanup');
       }
     }
   }

@@ -123,6 +123,27 @@ class HtmlTextDisplay extends StatelessWidget {
   /// Tiền xử lý HTML để cải thiện hiển thị
   String _preprocessHtml(String html) {
     String processed = html;
+    
+    // Enhanced preprocessing for ReactQuill content
+    // Handle ReactQuill's <p> tags
+    processed = processed.replaceAll('<p><br></p>', '<br>');
+    processed = processed.replaceAll('<p></p>', '<br>');
+    
+    // Handle ReactQuill's styling
+    processed = processed.replaceAll(RegExp(r'<p class="[^"]*"([^>]*)>'), '<p\$1>');
+    processed = processed.replaceAll(RegExp(r'<span class="[^"]*"([^>]*)>'), '<span\$1>');
+    
+    // Handle ReactQuill's chemistry formulas with specific styling
+    processed = processed.replaceAll(
+      RegExp(r'<span[^>]*font-family:\s*monospace[^>]*color:\s*#2563eb[^>]*>([^<]+)</span>'),
+      '<span style="font-family: monospace; color: #2563eb; background: #f0f9ff; padding: 2px 4px; border-radius: 3px;">\$1</span>'
+    );
+    
+    // Enhanced subscript/superscript handling for ReactQuill
+    processed = processed.replaceAll('<sub>', '<sub>');
+    processed = processed.replaceAll('</sub>', '</sub>');
+    processed = processed.replaceAll('<sup>', '<sup>');
+    processed = processed.replaceAll('</sup>', '</sup>');
 
     // Wrap trong p tag nếu chưa có
     if (!processed.trim().startsWith('<')) {

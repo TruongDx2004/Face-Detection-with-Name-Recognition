@@ -904,7 +904,7 @@ const AttendanceSessionManagement = () => {
               >
                 <option value="">Tất cả</option>
                 <option value="true">Đang hoạt động</option>
-                <option value="false">Đã kết thúc</option>
+                <option value="false">Đang đóng</option>
               </select>
             </div>
 
@@ -1020,7 +1020,7 @@ const AttendanceSessionManagement = () => {
                                 )
                               }}>
                                 <i className={`fas fa-${session.is_active ? 'play' : 'stop'}`}></i>
-                                {session.is_active ? 'Hoạt động' : 'Đã kết thúc'}
+                                {session.is_active ? 'Hoạt động' : 'Đang đóng'}
                               </span>
                             </td>
                             

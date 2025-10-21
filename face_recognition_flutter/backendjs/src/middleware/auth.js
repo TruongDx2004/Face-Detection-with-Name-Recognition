@@ -72,7 +72,7 @@ const authorize = (...roles) => {
 
         if (!roles.includes(req.user.role)) {
             console.log("ROLE" + req.user.role);
-            return res.status(403).json({ error: 'Insufficient permissions' });
+            return res.status(403).json({ error: 'Bạn không có quyền quy cập' });
         }
 
         next();

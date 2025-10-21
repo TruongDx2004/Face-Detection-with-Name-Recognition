@@ -6,10 +6,8 @@ import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 import WordQuestionImporter from '../../components/WordQuestionImporter';
-import RichTextEditor from '../../components/RichTextEditor';
-import RichTextInput from '../../components/RichTextInput';
 import AdvancedRichTextEditor from '../../components/AdvancedRichTextEditor';
-import EditorMigrationNotice from '../../components/EditorMigrationNotice';
+import QuestionEditor from '../../components/QuestionEditor';
 
 // Styles
 const styles = {
@@ -18,7 +16,22 @@ const styles = {
         borderRadius: '12px',
         padding: '24px',
         marginBottom: '24px',
-        border: '1px solid #e2e8f0'
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+    },
+    sectionHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px'
+    },
+    sectionTitle: {
+        fontSize: '18px',
+        fontWeight: '600',
+        color: '#1e293b',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
     },
     formGroup: {
         marginBottom: '20px'
@@ -28,34 +41,34 @@ const styles = {
         fontSize: '14px',
         fontWeight: '500',
         color: '#374151',
-        marginBottom: '6px'
+        marginBottom: '8px'
+    },
+    required: {
+        color: '#ef4444'
     },
     formInput: {
-        width: '95%',
+        width: '100%',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #d1d5db',
         fontSize: '14px',
-        transition: 'all 0.2s ease'
-    },
-    formTextarea: {
-        width: '98%',
-        padding: '12px',
-        borderRadius: '8px',
-        border: '1px solid #d1d5db',
-        fontSize: '14px',
-        minHeight: '100px',
-        resize: 'vertical',
-        transition: 'all 0.2s ease'
+        transition: 'all 0.2s ease',
+        boxSizing: 'border-box'
     },
     formSelect: {
-        width: '98%',
+        width: '100%',
         padding: '12px',
         borderRadius: '8px',
         border: '1px solid #d1d5db',
         fontSize: '14px',
         backgroundColor: '#ffffff',
-        transition: 'all 0.2s ease'
+        transition: 'all 0.2s ease',
+        boxSizing: 'border-box'
+    },
+    formRow: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '20px'
     },
     button: {
         padding: '12px 24px',
@@ -78,69 +91,76 @@ const styles = {
         color: '#374151',
         border: '1px solid #e2e8f0'
     },
-    buttonDanger: {
-        backgroundColor: '#a53030ff',
-        color: '#ffffff'
-    },
     buttonSuccess: {
         backgroundColor: '#10b981',
         color: '#ffffff'
     },
-    formRow: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '16px'
+    buttonDanger: {
+        backgroundColor: '#ef4444',
+        color: '#ffffff'
     },
-    questionCard: {
-        backgroundColor: '#f8fafc',
-        border: '1px solid #e2e8f0',
-        borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '16px'
-    },
-    questionHeader: {
+    actionButtons: {
         display: 'flex',
-        justifyContent: 'between',
-        alignItems: 'center',
-        marginBottom: '12px'
-    },
-    questionNumber: {
-        fontSize: '14px',
-        fontWeight: '600',
-        color: '#374151'
-    },
-    optionInput: {
-        width: '98%',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        border: '1px solid #d1d5db',
-        fontSize: '14px',
-        marginBottom: '8px'
-    },
-    correctOption: {
-        backgroundColor: '#dcfce7',
-        border: '1px solid #16a34a'
-    },
-    fileUpload: {
-        display: 'flex',
-        alignItems: 'center',
         gap: '12px',
-        padding: '12px',
-        border: '2px dashed #d1d5db',
-        borderRadius: '8px',
-        backgroundColor: '#f9fafb'
-    },
-    fileInput: {
-        display: 'none'
+        justifyContent: 'flex-end',
+        paddingTop: '20px',
+        borderTop: '1px solid #e2e8f0'
     },
     errorText: {
         color: '#ef4444',
         fontSize: '12px',
         marginTop: '4px'
+    },
+    successText: {
+        color: '#10b981',
+        fontSize: '12px',
+        marginTop: '4px'
+    },
+    infoCard: {
+        backgroundColor: '#f0f9ff',
+        border: '1px solid #0ea5e9',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '20px'
+    },
+    infoCardTitle: {
+        fontSize: '14px',
+        fontWeight: '600',
+        color: '#0369a1',
+        marginBottom: '8px'
+    },
+    infoCardText: {
+        fontSize: '13px',
+        color: '#0369a1',
+        lineHeight: '1.5'
+    },
+    statsContainer: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '16px',
+        marginBottom: '20px'
+    },
+    statCard: {
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        padding: '16px',
+        textAlign: 'center'
+    },
+    statValue: {
+        fontSize: '24px',
+        fontWeight: '700',
+        color: '#1e293b',
+        marginBottom: '4px'
+    },
+    statLabel: {
+        fontSize: '12px',
+        color: '#64748b',
+        fontWeight: '500'
     }
 };
 
-const ExamForm = () => {
+const ExamFormAdvanced = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -170,26 +190,23 @@ const ExamForm = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [errors, setErrors] = useState({});
     const [showImporter, setShowImporter] = useState(false);
-    const [showMigrationNotice, setShowMigrationNotice] = useState(true);
 
     useEffect(() => {
         const fetchUserAndSections = async () => {
             try {
                 const user = await ApiService.getProfile();
                 setCurrentUser(user.data);
-
-                // Gọi tiếp courseSections
                 await fetchCourseSections(user.data.id);
             } catch (error) {
                 console.error('Error fetching user profile:', error);
                 showNotification('Không thể tải thông tin người dùng', 'error');
             }
         };
+        
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-
         fetchUserAndSections();
         return () => clearInterval(timer);
-    }, []); // chỉ chạy 1 lần khi component mount
+    }, []);
 
     useEffect(() => {
         if (isEdit) {
@@ -202,7 +219,6 @@ const ExamForm = () => {
     const fetchCourseSections = async (teacherId) => {
         try {
             const response = await ApiService.getCourseSectionsByTeacher(teacherId);
-            console.log('Course Sections:', response.data);
             setCourseSections(response.data.courseSections || []);
         } catch (error) {
             console.error('Error fetching course sections:', error);
@@ -240,7 +256,6 @@ const ExamForm = () => {
         try {
             const template = fromTemplate;
             
-            // Convert template questions to exam format
             const convertedQuestions = template.questions.map((q, index) => ({
                 id: Date.now() + index,
                 question_text: q.questionText,
@@ -248,17 +263,16 @@ const ExamForm = () => {
                 points: q.points,
                 question_order: index + 1,
                 correct_answer: q.correctAnswer,
-                options: q.options || ['', '', '', '']
+                options: q.options || ['', '', '', ''],
+                explanation: q.explanation || ''
             }));
 
-            // Set form data from template
             setFormData(prev => ({
                 ...prev,
                 title: template.title,
                 description: template.description || '',
                 duration_minutes: template.duration_minutes,
                 max_score: template.total_points,
-                // Keep other fields empty for teacher to fill
                 course_section_id: '',
                 exam_type: 'quiz',
                 exam_date: '',
@@ -268,7 +282,6 @@ const ExamForm = () => {
             }));
 
             setQuestions(convertedQuestions);
-            
             showNotification(`Đã tải template "${template.title}" thành công`, 'success');
         } catch (error) {
             console.error('Error loading template:', error);
@@ -282,7 +295,6 @@ const ExamForm = () => {
             [field]: value
         }));
 
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
@@ -299,7 +311,8 @@ const ExamForm = () => {
             points: 1,
             question_order: questions.length + 1,
             correct_answer: '',
-            options: ['', '', '', '']
+            options: ['', '', '', ''],
+            explanation: ''
         };
         setQuestions([...questions, newQuestion]);
     };
@@ -307,21 +320,6 @@ const ExamForm = () => {
     const updateQuestion = (index, field, value) => {
         setQuestions(prev => prev.map((q, i) =>
             i === index ? { ...q, [field]: value } : q
-        ));
-    };
-
-    const updateQuestionOption = (questionIndex, optionIndex, value) => {
-        setQuestions(prev => prev.map((q, i) =>
-            i === questionIndex ? {
-                ...q,
-                options: q.options.map((opt, oi) => oi === optionIndex ? value : opt)
-            } : q
-        ));
-    };
-
-    const setCorrectAnswer = (questionIndex, optionIndex) => {
-        setQuestions(prev => prev.map((q, i) =>
-            i === questionIndex ? { ...q, correct_answer: q.options[optionIndex] } : q
         ));
     };
 
@@ -338,11 +336,10 @@ const ExamForm = () => {
         setShowImporter(false);
     };
 
-    const handleLogout = () => {
-        authService.logout();
-        navigate('/login');
+    const calculateTotalPoints = () => {
+        return questions.reduce((total, q) => total + parseFloat(q.points || 0), 0);
     };
-    
+
     const validateForm = () => {
         const newErrors = {};
 
@@ -354,6 +351,10 @@ const ExamForm = () => {
 
         if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
             newErrors.end_time = 'Giờ kết thúc phải sau giờ bắt đầu';
+        }
+
+        if (questions.length === 0) {
+            newErrors.questions = 'Phải có ít nhất 1 câu hỏi';
         }
 
         setErrors(newErrors);
@@ -372,13 +373,15 @@ const ExamForm = () => {
         try {
             const examData = {
                 ...formData,
+                max_score: calculateTotalPoints(),
                 questions: questions.map(q => ({
                     question_text: q.question_text,
                     question_type: q.question_type,
                     points: q.points,
                     question_order: q.question_order,
                     correct_answer: q.correct_answer,
-                    options: q.question_type === 'multiple_choice' ? q.options : null
+                    options: q.question_type === 'multiple_choice' ? q.options : null,
+                    explanation: q.explanation
                 }))
             };
 
@@ -399,15 +402,18 @@ const ExamForm = () => {
         }
     };
 
-    return (
+    const handleLogout = () => {
+        authService.logout();
+        navigate('/login');
+    };
 
+    return (
         <AppLayout
             user={currentUser}
             onLogout={handleLogout}
             currentTime={currentTime}
             title={isEdit ? 'Chỉnh sửa bài kiểm tra' : fromTemplate ? `Tạo bài thi từ template: ${fromTemplate.title}` : 'Tạo bài kiểm tra mới'}
         >
-
             {/* Notifications */}
             <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000 }}>
                 {notifications.map((notification) => (
@@ -420,42 +426,53 @@ const ExamForm = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
-                {/* Migration Notice */}
-                {showMigrationNotice && (
-                    <EditorMigrationNotice 
-                        onDismiss={() => setShowMigrationNotice(false)}
-                    />
-                )}
-
                 {/* Template Info Banner */}
                 {fromTemplate && (
-                    <div style={{
-                        ...styles.section,
-                        backgroundColor: '#f0f9ff',
-                        border: '1px solid #0ea5e9',
-                        marginBottom: '20px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '24px' }}>📚</span>
-                            <div>
-                                <h4 style={{ margin: 0, color: '#0ea5e9' }}>
-                                    Tạo bài thi từ template: {fromTemplate.title}
-                                </h4>
-                                <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748b' }}>
-                                    Template đã được tải với {fromTemplate.questions?.length || 0} câu hỏi. 
-                                    Bạn có thể chỉnh sửa và thêm thông tin cần thiết.
-                                </p>
-                            </div>
+                    <div style={styles.infoCard}>
+                        <div style={styles.infoCardTitle}>
+                            📚 Tạo bài thi từ template: {fromTemplate.title}
+                        </div>
+                        <div style={styles.infoCardText}>
+                            Template đã được tải với {fromTemplate.questions?.length || 0} câu hỏi. 
+                            Bạn có thể chỉnh sửa và thêm thông tin cần thiết.
                         </div>
                     </div>
                 )}
 
+                {/* Statistics */}
+                <div style={styles.statsContainer}>
+                    <div style={styles.statCard}>
+                        <div style={styles.statValue}>{questions.length}</div>
+                        <div style={styles.statLabel}>Số câu hỏi</div>
+                    </div>
+                    <div style={styles.statCard}>
+                        <div style={styles.statValue}>{calculateTotalPoints()}</div>
+                        <div style={styles.statLabel}>Tổng điểm</div>
+                    </div>
+                    <div style={styles.statCard}>
+                        <div style={styles.statValue}>{formData.duration_minutes}</div>
+                        <div style={styles.statLabel}>Phút làm bài</div>
+                    </div>
+                    <div style={styles.statCard}>
+                        <div style={styles.statValue}>
+                            {questions.filter(q => q.question_type === 'multiple_choice').length}
+                        </div>
+                        <div style={styles.statLabel}>Trắc nghiệm</div>
+                    </div>
+                </div>
+
                 {/* Basic Information */}
                 <div style={styles.section}>
-                    <h3>Thông tin cơ bản</h3>
+                    <div style={styles.sectionHeader}>
+                        <div style={styles.sectionTitle}>
+                            📋 Thông tin cơ bản
+                        </div>
+                    </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.formLabel}>Lớp học phần *</label>
+                        <label style={styles.formLabel}>
+                            Lớp học phần <span style={styles.required}>*</span>
+                        </label>
                         <select
                             style={styles.formSelect}
                             value={formData.course_section_id}
@@ -472,7 +489,9 @@ const ExamForm = () => {
                     </div>
 
                     <div style={styles.formGroup}>
-                        <label style={styles.formLabel}>Tiêu đề *</label>
+                        <label style={styles.formLabel}>
+                            Tiêu đề <span style={styles.required}>*</span>
+                        </label>
                         <input
                             type="text"
                             style={styles.formInput}
@@ -508,20 +527,6 @@ const ExamForm = () => {
                             </select>
                         </div>
 
-                        {/* <div style={styles.formGroup}>
-                            <label style={styles.formLabel}>Điểm tối đa</label>
-                            <input
-                                type="number"
-                                style={styles.formInput}
-                                value={formData.max_score}
-                                onChange={(e) => handleInputChange('max_score', parseFloat(e.target.value))}
-                                min="0"
-                                step="0.1"
-                            />
-                        </div> */}
-                    </div>
-
-                    <div style={styles.formRow}>
                         <div style={styles.formGroup}>
                             <label style={styles.formLabel}>Thời gian làm bài (phút)</label>
                             <input
@@ -532,9 +537,13 @@ const ExamForm = () => {
                                 min="1"
                             />
                         </div>
+                    </div>
 
+                    <div style={styles.formRow}>
                         <div style={styles.formGroup}>
-                            <label style={styles.formLabel}>Ngày thi *</label>
+                            <label style={styles.formLabel}>
+                                Ngày thi <span style={styles.required}>*</span>
+                            </label>
                             <input
                                 type="date"
                                 style={styles.formInput}
@@ -543,11 +552,10 @@ const ExamForm = () => {
                             />
                             {errors.exam_date && <div style={styles.errorText}>{errors.exam_date}</div>}
                         </div>
-                    </div>
-
-                    <div style={styles.formRow}>
                         <div style={styles.formGroup}>
-                            <label style={styles.formLabel}>Giờ bắt đầu *</label>
+                            <label style={styles.formLabel}>
+                                Giờ bắt đầu <span style={styles.required}>*</span>
+                            </label>
                             <input
                                 type="time"
                                 style={styles.formInput}
@@ -556,9 +564,13 @@ const ExamForm = () => {
                             />
                             {errors.start_time && <div style={styles.errorText}>{errors.start_time}</div>}
                         </div>
+                    </div>
 
+                    <div style={styles.formRow}>
                         <div style={styles.formGroup}>
-                            <label style={styles.formLabel}>Giờ kết thúc *</label>
+                            <label style={styles.formLabel}>
+                                Giờ kết thúc <span style={styles.required}>*</span>
+                            </label>
                             <input
                                 type="time"
                                 style={styles.formInput}
@@ -567,6 +579,18 @@ const ExamForm = () => {
                             />
                             {errors.end_time && <div style={styles.errorText}>{errors.end_time}</div>}
                         </div>
+                        <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Tổng điểm (tự động tính)</label>
+                            <input
+                                type="number"
+                                style={{ ...styles.formInput, backgroundColor: '#f9fafb' }}
+                                value={calculateTotalPoints()}
+                                readOnly
+                            />
+                            <div style={styles.successText}>
+                                Tính từ tổng điểm các câu hỏi
+                            </div>
+                        </div>
                     </div>
 
                     <div style={styles.formGroup}>
@@ -574,7 +598,7 @@ const ExamForm = () => {
                         <AdvancedRichTextEditor
                             value={formData.instructions}
                             onChange={(value) => handleInputChange('instructions', value)}
-                            placeholder="Hướng dẫn làm bài cho học sinh - Sử dụng toolbar để định dạng văn bản và chèn công thức"
+                            placeholder="Hướng dẫn làm bài cho học sinh - Sử dụng toolbar để định dạng văn bản"
                             height="120px"
                         />
                     </div>
@@ -582,8 +606,10 @@ const ExamForm = () => {
 
                 {/* Questions Section */}
                 <div style={styles.section}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h3>Câu hỏi ({questions.length})</h3>
+                    <div style={styles.sectionHeader}>
+                        <div style={styles.sectionTitle}>
+                            ❓ Câu hỏi ({questions.length})
+                        </div>
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <button
                                 type="button"
@@ -602,6 +628,8 @@ const ExamForm = () => {
                         </div>
                     </div>
 
+                    {errors.questions && <div style={styles.errorText}>{errors.questions}</div>}
+
                     {showImporter && (
                         <WordQuestionImporter
                             onQuestionsImported={handleQuestionsImported}
@@ -610,130 +638,44 @@ const ExamForm = () => {
                     )}
 
                     {questions.map((question, index) => (
-                        <div key={question.id} style={styles.questionCard}>
-                            <div style={styles.questionHeader}>
-                                <span style={styles.questionNumber}>Câu hỏi {index + 1}</span>
-                                <button
-                                    type="button"
-                                    style={{ ...styles.button, ...styles.buttonDanger, fontSize: '12px', padding: '6px 12px', marginLeft: 'auto' }}
-                                    onClick={() => removeQuestion(index)}
-                                >
-                                    🗑️ Xóa
-                                </button>
-                            </div>
-
-                            <div style={styles.formGroup}>
-                                <label style={styles.formLabel}>Nội dung câu hỏi</label>
-                                <AdvancedRichTextEditor
-                                    value={question.question_text}
-                                    onChange={(value) => updateQuestion(index, 'question_text', value)}
-                                    placeholder="Nhập nội dung câu hỏi - Sử dụng toolbar để định dạng văn bản và chèn công thức hóa học"
-                                    height="120px"
-                                />
-                            </div>
-
-                            <div style={styles.formRow}>
-                                <div style={styles.formGroup}>
-                                    <label style={styles.formLabel}>Loại câu hỏi</label>
-                                    <select
-                                        style={styles.formSelect}
-                                        value={question.question_type}
-                                        onChange={(e) => updateQuestion(index, 'question_type', e.target.value)}
-                                    >
-                                        <option value="multiple_choice">Trắc nghiệm</option>
-                                        <option value="true_false">Đúng/Sai</option>
-                                        <option value="short_answer">Trả lời ngắn</option>
-                                        <option value="essay">Tự luận</option>
-                                    </select>
-                                </div>
-
-                                {/* <div style={styles.formGroup}>
-                                    <label style={styles.formLabel}>Điểm</label>
-                                    <input
-                                        type="number"
-                                        style={styles.formInput}
-                                        value={question.points}
-                                        onChange={(e) => updateQuestion(index, 'points', parseFloat(e.target.value))}
-                                        min="0"
-                                        step="0.1"
-                                    />
-                                </div> */}
-                            </div>
-
-                            {question.question_type === 'multiple_choice' && (
-                                <div style={styles.formGroup}>
-                                    <label style={styles.formLabel}>Các đáp án (click để chọn đáp án đúng)</label>
-                                    {question.options.map((option, optionIndex) => (
-                                        <div key={optionIndex} style={{ 
-                                            marginBottom: '8px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            padding: '8px',
-                                            backgroundColor: question.correct_answer === option ? '#dcfce7' : '#f8fafc',
-                                            border: question.correct_answer === option ? '2px solid #16a34a' : '1px solid #e2e8f0',
-                                            borderRadius: '6px'
-                                        }}>
-                                            <input
-                                                type="radio"
-                                                name={`correct-${question.id || index}`}
-                                                checked={question.correct_answer === option}
-                                                onChange={() => setCorrectAnswer(index, optionIndex)}
-                                                style={{ marginRight: '8px' }}
-                                            />
-                                            <div style={{ flex: 1 }}>
-                                                <AdvancedRichTextEditor
-                                                    value={option}
-                                                    onChange={(value) => updateQuestionOption(index, optionIndex, value)}
-                                                    placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)} - Sử dụng toolbar để định dạng và chèn công thức`}
-                                                    height="60px"
-                                                    showToolbar={true}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {(question.question_type === 'true_false' || question.question_type === 'short_answer') && (
-                                <div style={styles.formGroup}>
-                                    <label style={styles.formLabel}>Đáp án đúng</label>
-                                    <div style={{ 
-                                        backgroundColor: '#dcfce7', 
-                                        border: '2px solid #16a34a', 
-                                        borderRadius: '6px',
-                                        padding: '8px'
-                                    }}>
-                                        <AdvancedRichTextEditor
-                                            value={question.correct_answer}
-                                            onChange={(value) => updateQuestion(index, 'correct_answer', value)}
-                                            placeholder="Nhập đáp án đúng - Sử dụng toolbar để định dạng và chèn công thức"
-                                            height="60px"
-                                            showToolbar={true}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <QuestionEditor
+                            key={question.id || index}
+                            question={question}
+                            questionIndex={index}
+                            onQuestionUpdate={updateQuestion}
+                            onDeleteQuestion={removeQuestion}
+                            canDelete={questions.length > 1}
+                        />
                     ))}
+
+                    {questions.length === 0 && (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '40px',
+                            color: '#64748b',
+                            fontStyle: 'italic'
+                        }}>
+                            Chưa có câu hỏi nào. Hãy thêm câu hỏi đầu tiên!
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}
                 <div style={styles.section}>
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <div style={styles.actionButtons}>
                         <button
                             type="button"
                             style={{ ...styles.button, ...styles.buttonSecondary }}
                             onClick={() => navigate('/teacher/exams')}
                         >
-                            Hủy
+                            ❌ Hủy
                         </button>
                         <button
                             type="submit"
                             style={{ ...styles.button, ...styles.buttonPrimary }}
                             disabled={loading}
                         >
-                            {loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Tạo bài kiểm tra')}
+                            {loading ? '⏳ Đang lưu...' : (isEdit ? '💾 Cập nhật' : '✅ Tạo bài kiểm tra')}
                         </button>
                     </div>
                 </div>
@@ -742,4 +684,4 @@ const ExamForm = () => {
     );
 };
 
-export default ExamForm;
+export default ExamFormAdvanced;

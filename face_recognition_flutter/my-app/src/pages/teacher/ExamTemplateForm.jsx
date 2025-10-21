@@ -6,6 +6,7 @@ import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 import RichTextEditor from '../../components/RichTextEditor';
+import AdvancedRichTextEditor from '../../components/AdvancedRichTextEditor';
 
 // Styles
 const styles = {
@@ -784,7 +785,7 @@ const ExamTemplateForm = () => {
                                                 <label style={styles.label}>
                                                     Nội dung câu hỏi <span style={styles.required}>*</span>
                                                 </label>
-                                                <RichTextEditor
+                                                <AdvancedRichTextEditor
                                                     value={question.questionText}
                                                     onChange={(value) => updateQuestion(activeQuestionIndex, 'questionText', value)}
                                                     placeholder="Nhập nội dung câu hỏi - Sử dụng toolbar để định dạng văn bản và chèn công thức hóa học"
@@ -878,11 +879,11 @@ const ExamTemplateForm = () => {
                                             {question.questionType === 'short_answer' && (
                                                 <div style={styles.formGroup}>
                                                     <label style={styles.label}>Đáp án mẫu</label>
-                                                    <textarea
+                                                    <AdvancedRichTextEditor
                                                         value={question.correctAnswer}
-                                                        onChange={(e) => updateQuestion(activeQuestionIndex, 'correctAnswer', e.target.value)}
-                                                        placeholder="Nhập đáp án mẫu..."
-                                                        style={styles.textarea}
+                                                        onChange={(value) => updateQuestion(activeQuestionIndex, 'correctAnswer', value)}
+                                                        placeholder="Nhập đáp án mẫu - Sử dụng toolbar để định dạng và chèn công thức..."
+                                                        height="80px"
                                                     />
                                                     <div style={styles.helpText}>
                                                         Đáp án mẫu giúp giáo viên chấm điểm nhanh hơn

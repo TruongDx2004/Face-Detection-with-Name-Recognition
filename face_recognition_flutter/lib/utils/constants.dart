@@ -7,8 +7,8 @@ class ApiConstants {
   // For iOS Simulator/Physical Device, use 'http://localhost:8000' or your machine's IP address.
   // Example for a deployed server: 'https://your-domain.com'
   // static const String baseUrl = 'http://10.0.2.2:8000';
-  // static const String baseUrl = 'http://10.12.157.85:8000';
-  static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = 'http://172.20.10.9:8000';
+  // static const String baseUrl = 'http://localhost:8000';
   // Auth Endpoints
   static const String login = '/auth/login';
   static const String profile = '/auth/profile';

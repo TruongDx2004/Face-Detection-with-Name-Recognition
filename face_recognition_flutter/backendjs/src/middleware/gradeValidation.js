@@ -26,7 +26,7 @@ const validateStudentAccess = (req, res, next) => {
     
     return res.status(403).json({
         success: false,
-        message: 'Access denied: Insufficient permissions'
+        message: 'Truy cập bị từ chối'
     });
 };
 

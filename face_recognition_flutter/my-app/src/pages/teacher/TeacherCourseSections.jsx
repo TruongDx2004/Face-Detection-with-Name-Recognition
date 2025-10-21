@@ -151,7 +151,7 @@ const CourseSectionCard = ({ courseSection, onClick, onManageGrades }) => {
                     ...styles.cardBadge,
                     ...(courseSection.is_active ? styles.badgeActive : styles.badgeInactive)
                 }}>
-                    {courseSection.is_active ? 'Đang diễn ra' : 'Đã kết thúc'}
+                    {courseSection.is_active ? 'Đang diễn ra' : 'Đang đóng'}
                 </div>
             </div>
 
