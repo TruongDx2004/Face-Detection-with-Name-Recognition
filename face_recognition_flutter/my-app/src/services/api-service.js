@@ -589,8 +589,15 @@ class ApiService {
 
     async downloadSubmissionFile(filename) {
         try {
-            const url = `${this.baseUrl}/assignments/submissions/files/${filename}`;
+            // File submissions được lưu trong uploads/assignments/ và phục vụ qua /uploads/
+            // Extract just filename if full path is provided
+            const actualFilename = filename.includes('/') ? filename.split('/').pop() : filename;
+            const url = `${this.baseUrl}/${actualFilename}`;
             const headers = this.getHeaders();
+            
+            console.log('Download URL:', url);
+            console.log('Original filename:', filename);
+            console.log('Actual filename:', actualFilename);
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -660,7 +667,8 @@ class ApiService {
     // Download assignment file
     async downloadAssignmentFile(filename) {
         try {
-            const url = `${this.baseUrl}/assignments/files/${filename}`;
+            // Assignment files cũng được lưu trong uploads/assignments/ và phục vụ qua /uploads/
+            const url = `${this.baseUrl}${filename}`;
             const headers = this.getHeaders();
 
             const response = await fetch(url, {
