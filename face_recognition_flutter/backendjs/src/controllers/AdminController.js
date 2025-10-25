@@ -353,7 +353,7 @@ class AdminController {
                 }
 
                 // Hash password
-                const password_hash = await bcrypt.hash(password || '123456', 10);
+                const password_hash = await bcrypt.hash(String(password || '123456'), 10);
 
                 // Insert user
                 const [userResult] = await connection.execute(
@@ -396,7 +396,7 @@ class AdminController {
             res.json(result);
         } catch (error) {
             console.error('Get classes error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -411,7 +411,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Create class error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -431,7 +431,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Update class error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -447,7 +447,7 @@ class AdminController {
             res.json({ message: 'Class deleted successfully' });
         } catch (error) {
             console.error('Delete class error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -459,7 +459,7 @@ class AdminController {
             res.json(result);
         } catch (error) {
             console.error('Get subjects error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -474,7 +474,7 @@ class AdminController {
             });
         } catch (error) {
             console.error('Create subject error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 

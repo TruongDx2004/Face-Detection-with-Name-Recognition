@@ -3,7 +3,6 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 import MathFormulaEditor from './MathFormulaEditor';
-import { registerCustomButtons } from '../utils/quillCustomizations';
 
 // Import KaTeX for formula support
 import katex from 'katex';

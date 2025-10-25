@@ -194,7 +194,7 @@ router.get('/sessions/:session_id/report', AttendanceController.getAttendanceRep
  *       404:
  *         description: Session not found
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.get('/session/:session_id', AttendanceController.getSessionDetails);
 

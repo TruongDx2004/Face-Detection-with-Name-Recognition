@@ -1,5 +1,5 @@
 // backendjs/src/validators/assignmentValidator.js
-const Joi = require('joi');
+const Joi = require('joi'); // Sử dụng thư viện Joi để định nghĩa các schema validation
 
 // Validation schema for creating/updating assignments
 const assignmentSchema = Joi.object({

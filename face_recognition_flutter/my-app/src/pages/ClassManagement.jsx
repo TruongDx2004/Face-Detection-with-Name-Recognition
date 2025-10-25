@@ -296,7 +296,7 @@ const StudentManagement = ({ classData, onClose, onRefresh }) => {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { showNotification } = useNotification();
-
+  console.log('Class Data in StudentManagement:', classData);
   useEffect(() => {
     if (classData?.id) {
       fetchClassStudents();
@@ -854,8 +854,7 @@ const ClassManagement = () => {
     }
   };
 
-  const handleManageStudents = (classId) => {
-    const classData = classes.find(c => c.id === classId);
+  const handleManageStudents = (classData) => {
     setCurrentClass(classData);
     setShowStudentModal(true);
   };
@@ -1259,7 +1258,7 @@ const ClassManagement = () => {
       <Modal
         isOpen={showClassModal}
         onClose={() => !modalLoading && setShowClassModal(false)}
-        title={currentClass ? 'Chỉnh sửa lớp học' : 'Thêm lớp học mới'}
+        title={currentClass ? 'Chỉnh sửa lớp học ' : 'Thêm lớp học mới'}
       >
         <ClassForm
           classData={currentClass}

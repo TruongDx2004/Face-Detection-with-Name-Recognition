@@ -97,7 +97,7 @@ class App {
             standardHeaders: true,
             legacyHeaders: false
         });
-        this.app.use(limiter);
+        //this.app.use(limiter);
 
         // Body parsing middleware
         this.app.use(express.json({ limit: '10mb' }));

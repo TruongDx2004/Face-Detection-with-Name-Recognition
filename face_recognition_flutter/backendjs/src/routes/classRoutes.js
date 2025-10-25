@@ -97,7 +97,7 @@ router.use(authenticateToken);
  *       401:
  *         description: Unauthorized
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.get('/', ClassController.getAllClasses);
 

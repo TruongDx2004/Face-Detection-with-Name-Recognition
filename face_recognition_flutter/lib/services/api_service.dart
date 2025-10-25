@@ -1,7 +1,6 @@
 // lib/services/api_service_new.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:face_attendance/models/register_request.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:mime/mime.dart';
@@ -212,21 +211,6 @@ class ApiService {
       );
     } catch (e) {
       _logger.e('Login error: $e');
-      return ApiResponse.error(_getUserFriendlyErrorMessage(e.toString()));
-    }
-  }
-
-  Future<ApiResponse<User>> register(RegisterRequest request) async {
-    try {
-      final response =
-          await _makeRequest('POST', '/auth/register', body: request.toJson());
-
-      return _handleResponse<User>(
-        response,
-        (data) => User.fromJson(data),
-      );
-    } catch (e) {
-      _logger.e('Register error: $e');
       return ApiResponse.error(_getUserFriendlyErrorMessage(e.toString()));
     }
   }

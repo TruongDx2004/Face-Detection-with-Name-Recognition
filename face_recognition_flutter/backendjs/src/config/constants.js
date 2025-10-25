@@ -84,24 +84,24 @@ module.exports = {
 
     // Error messages
     ERROR_MESSAGES: {
-        UNAUTHORIZED: 'Unauthorized access',
+        UNAUTHORIZED: 'Vui lòng đăng nhập để tiếp tục',
         FORBIDDEN: 'Bạn không có quyền truy cập',
         NOT_FOUND: 'Tính năng đang được phát triển',
-        VALIDATION_ERROR: 'Validation error',
-        INTERNAL_ERROR: 'Internal server error',
-        FACE_NOT_RECOGNIZED: 'Face not recognized',
-        MODEL_NOT_TRAINED: 'Face recognition model not trained',
-        SESSION_NOT_ACTIVE: 'Attendance session is not active',
-        ALREADY_MARKED: 'Attendance already marked for this session'
+        VALIDATION_ERROR: 'Dữ liệu không hợp lệ',
+        INTERNAL_ERROR: 'Có lỗi xảy ra, vui lòng thử lại sau',
+        FACE_NOT_RECOGNIZED: 'Không nhận diện được khuôn mặt',
+        MODEL_NOT_TRAINED: 'Mô hình chưa được huấn luyện',
+        SESSION_NOT_ACTIVE: 'Phiên điểm danh không hoạt động',
+        ALREADY_MARKED: 'Điểm danh đã được thực hiện'
     },
 
     // Success messages
     SUCCESS_MESSAGES: {
-        LOGIN_SUCCESS: 'Login successful',
-        REGISTER_SUCCESS: 'User registered successfully',
-        FACE_REGISTER_SUCCESS: 'Face registration successful',
-        ATTENDANCE_MARKED: 'Attendance marked successfully',
-        MODEL_TRAINED: 'Model training completed successfully',
-        SESSION_CREATED: 'Attendance session created successfully'
+        LOGIN_SUCCESS: 'Dăng nhập thành công',
+        REGISTER_SUCCESS: 'Đăng ký thành công',
+        FACE_REGISTER_SUCCESS: 'Khuôn mặt đã được đăng ký thành công',
+        ATTENDANCE_MARKED: 'Điểm danh thành công',
+        MODEL_TRAINED: 'Mô hình đã được huấn luyện thành công',
+        SESSION_CREATED: 'Phiên điểm danh đã được tạo thành công'
     }
 };

@@ -99,7 +99,7 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Create attendance session error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -155,7 +155,7 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Get attendance sessions error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -454,7 +454,7 @@ class AttendanceController {
             console.error('Get session details error:', error);
             res.status(500).json({
                 success: false,
-                error: 'Internal server error'
+                error: 'Có lỗi xảy ra, vui lòng thử lại!'
             });
         }
     }
@@ -533,7 +533,7 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Get attendance report error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -965,7 +965,7 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Get my sessions error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -1030,7 +1030,7 @@ class AttendanceController {
             });
         } catch (error) {
             console.error('Get attendance history error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -1086,7 +1086,7 @@ class AttendanceController {
             console.error('Get course section attendance sessions error:', error);
             res.status(500).json({
                 success: false,
-                error: 'Internal server error'
+                error: 'Có lỗi xảy ra, vui lòng thử lại!'
             });
         }
     }
@@ -1137,7 +1137,7 @@ class AttendanceController {
             console.error('Get course section students error:', error);
             res.status(500).json({
                 success: false,
-                error: 'Internal server error'
+                error: 'Có lỗi xảy ra, vui lòng thử lại!'
             });
         }
     }
@@ -1192,7 +1192,7 @@ class AttendanceController {
             console.error('Get course sections by teacher error:', error);
             res.status(500).json({
                 success: false,
-                error: 'Internal server error'
+                error: 'Có lỗi xảy ra, vui lòng thử lại!'
             });
         }
     }
@@ -1291,7 +1291,7 @@ class AttendanceController {
             console.error('Get session attendance records error:', error);
             res.status(500).json({
                 success: false,
-                error: 'Internal server error'
+                error: 'Có lỗi xảy ra, vui lòng thử lại!'
             });
         }
     }

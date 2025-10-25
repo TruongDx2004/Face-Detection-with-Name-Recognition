@@ -88,7 +88,7 @@ class CourseSectionController {
                 class_id, subject_id, semester, academic_year
             });
             if (duplicateCheck.total > 0) {
-                return ResponseHelper.error(res, 'Course section already exists for this class, subject, semester and academic year', 400);
+                return ResponseHelper.error(res, 'Lớp học phần đã tồn tại cho lớp, môn học, học kỳ và năm học này', 400);
             }
 
             const courseSection = await CourseSection.create({

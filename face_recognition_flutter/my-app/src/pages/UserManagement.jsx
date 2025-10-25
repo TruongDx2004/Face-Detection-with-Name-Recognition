@@ -1096,7 +1096,7 @@ const UserManagement = () => {
             }
         } catch (error) {
             console.error('Import users error:', error);
-            showNotification('Có lỗi xảy ra khi nhập dữ liệu: ' + error.message, 'error');
+            showNotification('Có lỗi xảy ra khi nhập dữ liệu', 'error');
         } finally {
             setModalLoading(false);
         }

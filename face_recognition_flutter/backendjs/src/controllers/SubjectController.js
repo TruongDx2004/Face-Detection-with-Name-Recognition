@@ -34,7 +34,7 @@ class SubjectController {
             // Get total count for pagination
             let countQuery = 'SELECT COUNT(*) as total FROM subjects WHERE 1=1';
             const countParams = [];
-            
+
             if (name) {
                 countQuery += ' AND name LIKE ?';
                 countParams.push(`%${name}%`);
@@ -72,7 +72,7 @@ class SubjectController {
     async createSubject(req, res) {
         try {
             const { name, code, description, credits = 3 } = req.body.name;
-            
+
             // Validation
             if (!name || !code) {
                 return responseHelper.error(res, 'Subject name and code are required', 400);
@@ -247,7 +247,7 @@ class SubjectController {
             );
 
             if (courseSections[0].count > 0) {
-                return responseHelper.error(res, 'Cannot delete subject that is being used in course sections', 400);
+                return responseHelper.error(res, 'Môn học đang được sử dụng trong các lớp học, không thể xóa', 400);
             }
 
             // Soft delete by setting is_active to false instead of hard delete
@@ -395,11 +395,20 @@ class SubjectController {
 
     // Import nhiều subjects từ Excel
     async importSubjects(req, res) {
-        const subjectsToImport = req.body.name;
+        const subjectsToImport = req.body;
+        console.log('Subjects to import:', subjectsToImport);
         const importResults = [];
 
         if (!Array.isArray(subjectsToImport)) {
-            return responseHelper.error(res, 'Data must be an array of subjects', 400);
+            return responseHelper.error(res, 'Invalid input: data must be an array of subjects', 400);
+        }
+
+        if (subjectsToImport.length === 0) {
+            return responseHelper.error(res, 'No subject data provided', 400);
+        }
+
+        if (subjectsToImport.length > 100) {
+            return responseHelper.error(res, 'Maximum 100 subjects per import', 400);
         }
 
         const connection = await db.getConnection();
@@ -407,42 +416,43 @@ class SubjectController {
 
         try {
             for (const [index, subject] of subjectsToImport.entries()) {
-                const result = { 
-                    row: index + 2, 
-                    status: 'success', 
-                    message: 'Subject created successfully',
+                const result = {
+                    row: index + 2, // vì dòng 1 thường là header
+                    status: 'success',
+                    message: 'Subject imported successfully',
                     data: subject
                 };
+
                 const { name, code, description, credits } = subject;
 
-                // Validate required fields
-                if (!name || name.trim() === '') {
+                // Validate: Required fields
+                if (!name || !name.trim()) {
                     result.status = 'failure';
                     result.message = 'Missing required field: name';
                     importResults.push(result);
                     continue;
                 }
-
-                if (!code || code.trim() === '') {
+                if (!code || !code.trim()) {
                     result.status = 'failure';
                     result.message = 'Missing required field: code';
                     importResults.push(result);
                     continue;
                 }
 
-                // Validate credits
-                if (credits && (credits < 1 || credits > 10)) {
+                // Validate: Credits range
+                if (credits && (isNaN(credits) || credits < 1 || credits > 10)) {
                     result.status = 'failure';
-                    result.message = 'Credits must be between 1 and 10';
+                    result.message = 'Credits must be a number between 1 and 10';
                     importResults.push(result);
                     continue;
                 }
 
-                // Check for existing subject by name or code
+                // Check for duplicates in DB
                 const [existing] = await connection.execute(
                     'SELECT id, name, code FROM subjects WHERE name = ? OR code = ?',
                     [name.trim(), code.trim()]
                 );
+
                 if (existing.length > 0) {
                     const existingSubject = existing[0];
                     if (existingSubject.name === name.trim()) {
@@ -456,10 +466,15 @@ class SubjectController {
                     continue;
                 }
 
-                // Insert subject
+                // Insert new subject
                 const [insertResult] = await connection.execute(
-                    'INSERT INTO subjects (name, code, description, credits) VALUES (?, ?, ?, ?)', 
-                    [name.trim(), code.trim(), description?.trim() || null, credits || 3]
+                    'INSERT INTO subjects (name, code, description, credits) VALUES (?, ?, ?, ?)',
+                    [
+                        name.trim(),
+                        code.trim(),
+                        description?.trim() || null,
+                        credits || 3 // default 3 credits
+                    ]
                 );
 
                 result.subject_id = insertResult.insertId;
@@ -467,7 +482,8 @@ class SubjectController {
             }
 
             await connection.commit();
-            
+
+            // Summary
             const successCount = importResults.filter(r => r.status === 'success').length;
             const failureCount = importResults.filter(r => r.status === 'failure').length;
 
@@ -478,7 +494,7 @@ class SubjectController {
                     failure: failureCount
                 },
                 results: importResults
-            }, 'Import process completed');
+            }, 'Subject import process completed successfully');
 
         } catch (error) {
             await connection.rollback();

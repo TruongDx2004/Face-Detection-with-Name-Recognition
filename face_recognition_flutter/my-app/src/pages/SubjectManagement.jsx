@@ -384,27 +384,56 @@ const SubjectManagement = () => {
         }
     };
 
+    // Template mẫu để người dùng tải về và nhập liệu môn học
     const createSubjectTemplate = () => {
         return {
             template: [
-                { name: 'Toán rời rạc' },
-                { name: 'Bảo mật thông tin' },
+                {
+                    name: 'Toán rời rạc',
+                    code: 'MATH101',
+                    description: 'Học về cấu trúc rời rạc trong tin học',
+                    credits: 3
+                },
+                {
+                    name: 'Bảo mật thông tin',
+                    code: 'SEC202',
+                    description: 'Nhập môn an toàn thông tin và mã hoá',
+                    credits: 3
+                },
+                {
+                    name: 'Lập trình trên thiết bị di động',
+                    code: 'MOB401',
+                    description: 'Phát triển ứng dụng di động trên Android hoặc iOS',
+                    credits: 3
+                },
+                {
+                    name: 'Chủ nghĩa Mác - Lênin',
+                    code: 'POL101',
+                    description: 'Học phần lý luận chính trị nền tảng',
+                    credits: 2
+                }
             ],
             instructions: {
-                required_fields: ['name'],
+                required_fields: ['name', 'code'],
+                optional_fields: ['description', 'credits'],
                 field_descriptions: {
-                    name: 'Tên môn học (bắt buộc, duy nhất)'
+                    name: 'Tên môn học (bắt buộc, duy nhất)',
+                    code: 'Mã môn học (bắt buộc, duy nhất)',
+                    description: 'Mô tả ngắn gọn về môn học (tùy chọn)',
+                    credits: 'Số tín chỉ (1–10, mặc định = 3 nếu bỏ trống)'
                 },
                 notes: [
-                    'Tên môn học phải là duy nhất trong hệ thống',
-                    'Tên môn học không được để trống',
-                    'Xóa các dòng ví dụ trước khi import',
-                    'Tối đa 100 môn học mỗi lần import',
-                    'Chỉ hỗ trợ file Excel (.xlsx, .xls)'
+                    'Tên và mã môn học phải là duy nhất trong hệ thống.',
+                    'Tên và mã không được để trống hoặc trùng lặp.',
+                    'Nếu không nhập "credits", hệ thống sẽ tự động gán là 3.',
+                    'Xóa các dòng ví dụ trước khi import để tránh lỗi trùng.',
+                    'Tối đa 100 môn học mỗi lần import.',
+                    'Chỉ hỗ trợ file Excel (.xlsx, .xls).'
                 ]
             }
         };
     };
+
 
     const handleSubjectImport = (result) => {
         console.log('Subject import result:', result);
@@ -677,6 +706,21 @@ const SubjectManagement = () => {
                             >
                                 <i className="fas fa-file-export"></i>
                             </button>
+
+                            <button
+                                style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary }}
+                                onClick={() => setShowSubjectImportModal(true)}
+                            >
+                                <i className="fas fa-file-import"></i>
+                                Import Excel
+                            </button>
+                            <button
+                                style={{ ...classManagementStyles.btn, ...classManagementStyles.btnPrimary }}
+                                onClick={handleAddSubject}
+                            >
+                                <i className="fas fa-plus"></i>
+                                Thêm môn học
+                            </button>
                         </div>
                     </div>
                 </header>
@@ -744,20 +788,6 @@ const SubjectManagement = () => {
                             >
                                 <i className="fas fa-filter"></i>
                                 Xóa bộ lọc
-                            </button>
-                            <button
-                                style={{ ...classManagementStyles.btn, ...classManagementStyles.btnSecondary }}
-                                onClick={() => setShowSubjectImportModal(true)}
-                            >
-                                <i className="fas fa-file-import"></i>
-                                Import Excel
-                            </button>
-                            <button
-                                style={{ ...classManagementStyles.btn, ...classManagementStyles.btnPrimary }}
-                                onClick={handleAddSubject}
-                            >
-                                <i className="fas fa-plus"></i>
-                                Thêm môn học
                             </button>
                         </div>
                     </div>

@@ -33,15 +33,12 @@ class MLKitFaceService {
   // Optimized processing control
   bool _isProcessingFrame = false;
   final Queue<CameraImage> _frameQueue = Queue<CameraImage>();
-  static const int _maxQueueSize = 1; // Giảm từ 3 xuống 1 để tránh lag
   DateTime? _lastSuccessfulProcessTime;
   int _processingTimeMs = 0;
 
   Future<bool> initialize() async {
     try {
       if (_isInitialized) return true;
-
-      _logger.i('🚀 Initializing Improved ML Kit Face Service...');
 
       // Detect device-specific configurations
       await _detectDeviceConfiguration();
@@ -56,15 +53,8 @@ class MLKitFaceService {
           performanceMode: FaceDetectorMode.fast, // Thử fast mode trước
         ),
       );
-      
-      _logger.i('✅ ML Kit FaceDetector configured:');
-      _logger.i('   minFaceSize: 0.05 (5% of image)');
-      _logger.i('   performanceMode: fast');
-      _logger.i('   enableLandmarks: true');
-      _logger.i('   enableClassification: true');
 
       _isInitialized = true;
-      _logger.i('✅ Improved ML Kit initialized with device-specific settings');
       
       return true;
     } catch (e) {
@@ -79,11 +69,9 @@ class MLKitFaceService {
       if (Platform.isAndroid) {
         // For Android devices, especially newer ones
         _useAlternativeImageFormat = true;
-        _logger.i('📱 Android device detected - using optimized settings');
       } else if (Platform.isIOS) {
         // For iOS devices
         _deviceSpecificRotation = InputImageRotation.rotation0deg;
-        _logger.i('📱 iOS device detected - using iOS-specific rotation');
       }
     } catch (e) {
       _logger.w('⚠️ Could not detect device configuration: $e');
@@ -93,8 +81,6 @@ class MLKitFaceService {
   // Method để reinitialize ML Kit khi có vấn đề
   Future<bool> _reinitializeMLKit() async {
     try {
-      _logger.i('🔄 Reinitializing ML Kit due to null result...');
-      
       // Dispose current detector safely
       try {
         await _faceDetector.close();
@@ -114,7 +100,6 @@ class MLKitFaceService {
         ),
       );
       
-      _logger.i('✅ ML Kit reinitialized successfully');
       return true;
     } catch (e) {
       _logger.e('❌ Failed to reinitialize ML Kit: $e');
@@ -125,8 +110,6 @@ class MLKitFaceService {
   // Thêm method để test với cấu hình ML Kit khác
   Future<bool> reinitializeWithDifferentSettings() async {
     try {
-      _logger.i('🔄 Reinitializing ML Kit with alternative settings...');
-      
       // Dispose current detector
       try {
         await _faceDetector.close();
@@ -146,12 +129,6 @@ class MLKitFaceService {
         ),
       );
       
-      _logger.i('✅ ML Kit reconfigured with ultra-permissive settings:');
-      _logger.i('   minFaceSize: 0.01 (1% of image)');
-      _logger.i('   performanceMode: accurate');
-      _logger.i('   landmarks: disabled');
-      _logger.i('   classification: disabled');
-      
       return true;
     } catch (e) {
       _logger.e('❌ Failed to reinitialize ML Kit: $e');
@@ -164,13 +141,6 @@ class MLKitFaceService {
       _frameQueue.clear();
       await _faceDetector.close();
       _isInitialized = false;
-      
-      // Log performance statistics
-      _logger.i('📊 ML Kit Performance Stats:');
-      _logger.i('   Frames processed: $_frameProcessedCount');
-      _logger.i('   Frames dropped: $_frameDroppedCount');
-      _logger.i('   Detection failures: $_faceDetectionFailures');
-      _logger.i('✅ ML Kit disposed');
     } catch (e) {
       _logger.e('❌ ML Kit dispose error: $e');
     }
@@ -178,92 +148,27 @@ class MLKitFaceService {
 
   Future<FaceDetectionResult?> processCameraImage(CameraImage image) async {
     try {
-      // Debug camera image data với comprehensive null checks
-      _logger.d('📷 Camera Image Debug:');
-      
+      // ignore: unnecessary_null_comparison
       if (image == null) {
         _logger.e('❌ CRITICAL: Camera image is completely NULL!');
         return null;
       }
       
-      try {
-        _logger.d('   Image object exists: ✅');
-        _logger.d('   Width: ${image.width ?? 'NULL'}');
-        _logger.d('   Height: ${image.height ?? 'NULL'}');
-        
-        // Safe format access
-        try {
-          _logger.d('   Format group: ${image.format?.group ?? 'NULL'}');
-          _logger.d('   Format raw: ${image.format ?? 'NULL'}');
-        } catch (e) {
-          _logger.e('❌ Error accessing image format: $e');
-        }
-        
-        // Safe planes access
-        try {
-          final planesCount = image.planes?.length ?? 0;
-          _logger.d('   Planes count: $planesCount');
-          
-          if (image.planes == null) {
-            _logger.e('❌ CRITICAL: Image planes is NULL!');
-            return null;
-          }
-          
-          if (image.planes!.isEmpty) {
-            _logger.e('❌ CRITICAL: Image planes is EMPTY!');
-            return null;
-          }
-          
-          // Check each plane
-          for (int i = 0; i < image.planes!.length; i++) {
-            final plane = image.planes![i];
-            if (plane == null) {
-              _logger.e('❌ CRITICAL: Plane $i is NULL!');
-              continue;
-            }
-            
-            try {
-              final bytesLength = plane.bytes?.length ?? 0;
-              final bytesPerRow = plane.bytesPerRow ?? 0;
-              // final pixelStride = plane.pixelStride ?? 0;
-              
-              _logger.d('   Plane $i:');
-              _logger.d('     - Bytes length: $bytesLength');
-              _logger.d('     - Bytes per row: $bytesPerRow');
-              // _logger.d('     - Pixel stride: $pixelStride');
-              
-              if (plane.bytes == null) {
-                _logger.e('❌ CRITICAL: Plane $i bytes is NULL!');
-              } else if (plane.bytes!.isEmpty) {
-                _logger.e('❌ CRITICAL: Plane $i bytes is EMPTY!');
-              }
-            } catch (e) {
-              _logger.e('❌ Error accessing plane $i properties: $e');
-            }
-          }
-        } catch (e) {
-          _logger.e('❌ Error accessing image planes: $e');
-        }
-        
-        // Validate image dimensions
-        final width = image.width ?? 0;
-        final height = image.height ?? 0;
-        
-        if (width <= 0 || height <= 0) {
-          _logger.e('❌ CRITICAL: Invalid image dimensions: ${width}x${height}');
-          return null;
-        }
-        
-        _logger.d('✅ Image validation passed: ${width}x${height}');
-        
-      } catch (e) {
-        _logger.e('❌ CRITICAL: Error during image debug analysis: $e');
-        _logger.e('Stack trace: ${StackTrace.current}');
+      // Basic validation
+      if (image.planes == null || image.planes!.isEmpty) {
+        _logger.e('❌ CRITICAL: Image planes is NULL or EMPTY!');
+        return null;
+      }
+      
+      final width = image.width ?? 0;
+      final height = image.height ?? 0;
+      
+      if (width <= 0 || height <= 0) {
+        _logger.e('❌ CRITICAL: Invalid image dimensions: ${width}x${height}');
         return null;
       }
 
       if (!_isInitialized) {
-        _logger.w('⚠️ ML Kit not initialized, initializing now...');
         final initResult = await initialize();
         if (!initResult) {
           _logger.e('❌ Failed to initialize ML Kit');
@@ -279,7 +184,6 @@ class MLKitFaceService {
         final timeSinceLastSuccess = now.difference(_lastSuccessfulProcessTime!).inMilliseconds;
         if (timeSinceLastSuccess < _processingTimeMs * 2) {
           _frameDroppedCount++;
-          _logger.d('⏭️ Frame skipped - processing too slow (${_processingTimeMs}ms)');
           return null;
         }
       }
@@ -287,11 +191,8 @@ class MLKitFaceService {
       // Skip processing if queue is full OR already processing
       if (_isProcessingFrame) {
         _frameDroppedCount++;
-        _logger.d('⏭️ Frame dropped - already processing (queue: ${_frameQueue.length}/$_maxQueueSize)');
         return null;
       }
-
-      _logger.d('🔄 Processing frame (queue size: ${_frameQueue.length}, processing_time: ${_processingTimeMs}ms)');
 
       // Process directly (no queueing for simplicity)
       return await _processImageDirectly(image);
@@ -308,8 +209,6 @@ class MLKitFaceService {
     final stopwatch = Stopwatch()..start();
 
     try {
-      _logger.d('🔄 Starting image processing...');
-
       // Try multiple image conversion methods for better compatibility
       InputImage? inputImage = await _convertCameraImageWithFallback(image);
 
@@ -318,15 +217,6 @@ class MLKitFaceService {
         _faceDetectionFailures++;
         return null;
       }
-
-      _logger.d('✅ Image converted successfully in ${stopwatch.elapsedMilliseconds}ms');
-
-      // Process with ML Kit dengan comprehensive error handling
-      _logger.d('🧠 Running ML Kit face detection...');
-      _logger.d('   Input image size: ${inputImage.metadata?.size}');
-      _logger.d('   Input image rotation: ${inputImage.metadata?.rotation}');
-      _logger.d('   Input image format: ${inputImage.metadata?.format}');
-      _logger.d('   Expected min face size: ${(image.width * image.height * 0.05).toInt()} pixels');
       
       final faceStopwatch = Stopwatch()..start();
       List<Face>? faces;
@@ -338,23 +228,14 @@ class MLKitFaceService {
         if (faces == null) {
           _consecutiveNullResults++;
           _logger.e('❌ CRITICAL: ML Kit returned NULL result! (${_consecutiveNullResults} consecutive)');
-          _logger.e('   This indicates ML Kit processing failure');
-          _logger.e('   Possible causes:');
-          _logger.e('   - Invalid InputImage format');
-          _logger.e('   - ML Kit model not loaded');
-          _logger.e('   - Memory issues');
-          _logger.e('   - Platform compatibility issues');
           
           // Strategy 1: Try to reinitialize ML Kit (first time)
           if (_consecutiveNullResults <= 3 && !_hasTriedReinitialization) {
-            _logger.i('🔄 Strategy 1: Attempting to reinitialize ML Kit...');
             _hasTriedReinitialization = true;
             final reinitSuccess = await _reinitializeMLKit();
             if (reinitSuccess) {
-              _logger.i('✅ ML Kit reinitialized, retrying...');
               try {
                 faces = await _faceDetector.processImage(inputImage);
-                _logger.i('🔄 Retry after reinit: ${faces?.length ?? 'NULL'} faces');
                 if (faces != null) {
                   _consecutiveNullResults = 0; // Reset on success
                 }
@@ -367,16 +248,13 @@ class MLKitFaceService {
           
           // Strategy 2: Try different image conversion (after 5 nulls)
           if (faces == null && _consecutiveNullResults >= 5) {
-            _logger.i('🔄 Strategy 2: Trying with alternative image conversion...');
             try {
               // Force use method 2 conversion
               final alternativeImage = await _convertCameraImageMethod2(image);
               if (alternativeImage != null) {
                 faces = await _faceDetector.processImage(alternativeImage);
-                _logger.i('🔄 Alternative conversion result: ${faces?.length ?? 'NULL'} faces');
                 if (faces != null) {
                   _consecutiveNullResults = 0; // Reset on success
-                  _logger.i('✅ Success with alternative image conversion!');
                 }
               }
             } catch (e) {
@@ -386,16 +264,13 @@ class MLKitFaceService {
           
           // Strategy 3: Ultra-permissive settings (after 10 nulls)
           if (faces == null && _consecutiveNullResults >= 10 && !_hasTriedAlternativeSettings) {
-            _logger.i('🔄 Strategy 3: Trying ultra-permissive ML Kit settings...');
             final success = await reinitializeWithDifferentSettings();
             if (success) {
               _hasTriedAlternativeSettings = true;
               try {
                 faces = await _faceDetector.processImage(inputImage);
-                _logger.i('🔄 Ultra-permissive result: ${faces?.length ?? 'NULL'} faces');
                 if (faces != null) {
                   _consecutiveNullResults = 0; // Reset on success
-                  _logger.i('✅ Success with ultra-permissive settings!');
                 }
               } catch (e) {
                 _logger.e('❌ Ultra-permissive retry failed: $e');
@@ -405,13 +280,11 @@ class MLKitFaceService {
           
           if (faces == null) {
             _faceDetectionFailures++;
-            _logger.e('❌ All strategies failed, returning null');
             return null;
           }
         } else {
           // Reset null counter on successful processing
           if (_consecutiveNullResults > 0) {
-            _logger.i('✅ ML Kit processing recovered after ${_consecutiveNullResults} null results');
             _consecutiveNullResults = 0;
           }
         }
@@ -423,33 +296,21 @@ class MLKitFaceService {
         return null;
       }
 
-      _logger.d('🔍 ML Kit completed in ${faceStopwatch.elapsedMilliseconds}ms, found ${faces.length} faces');
-      
       if (faces.isEmpty) {
         _consecutiveNoFaceDetections++;
-        _logger.w('❌ No faces detected (${_consecutiveNoFaceDetections} consecutive). Possible reasons:');
-        _logger.w('   - Face smaller than ${(image.width * image.height * 0.05).toInt()} pixels');
-        _logger.w('   - Poor lighting conditions');
-        _logger.w('   - Face not facing camera');
-        _logger.w('   - Image conversion issues');
-        _logger.w('   - ML Kit model not loaded properly');
         
         // Tự động thử cấu hình khác sau 20 lần không phát hiện được
         if (_consecutiveNoFaceDetections >= 20 && !_hasTriedAlternativeSettings) {
-          _logger.i('🔄 Attempting to reconfigure ML Kit with more permissive settings...');
           _hasTriedAlternativeSettings = true;
           
           final success = await reinitializeWithDifferentSettings();
           if (success) {
-            _logger.i('✅ ML Kit reconfigured, retrying detection...');
             _consecutiveNoFaceDetections = 0; // Reset counter
             
             // Retry detection với settings mới
             final retryFaces = await _faceDetector.processImage(inputImage);
-            _logger.i('🔄 Retry result: found ${retryFaces.length} faces');
             
             if (retryFaces.isNotEmpty) {
-              _logger.i('🎉 Face detected with alternative settings!');
               // Update faces với kết quả mới
               faces.clear();
               faces.addAll(retryFaces);
@@ -473,17 +334,6 @@ class MLKitFaceService {
         final confidence = _calculateEnhancedConfidence(face, image);
         final boundingBox = _convertBoundingBox(face.boundingBox);
 
-        // Detailed face info
-        _logger.d('👤 Face Details:');
-        _logger.d('   Bounding box: ${face.boundingBox}');
-        _logger.d('   Landmarks count: ${face.landmarks.length}');
-        _logger.d('   Head Euler Y: ${face.headEulerAngleY}');
-        _logger.d('   Head Euler X: ${face.headEulerAngleX}');
-        _logger.d('   Smiling probability: ${face.smilingProbability}');
-        _logger.d('   Left eye open: ${face.leftEyeOpenProbability}');
-        _logger.d('   Right eye open: ${face.rightEyeOpenProbability}');
-        _logger.d('   Calculated confidence: $confidence');
-
         result = FaceDetectionResult(
           hasFace: true,
           landmarks: landmarks,
@@ -491,11 +341,7 @@ class MLKitFaceService {
           boundingBox: boundingBox,
           face: face,
         );
-
-        _logger.i('✅ Face detected: confidence=${confidence.toStringAsFixed(2)}, '
-            'size=${(face.boundingBox.width * face.boundingBox.height).toInt()}px²');
       } else {
-        _logger.w('❌ No faces detected by ML Kit');
         result = FaceDetectionResult(
           hasFace: false,
           landmarks: [],
@@ -512,16 +358,7 @@ class MLKitFaceService {
         _lastSuccessfulProcessTime = DateTime.now();
       }
       
-      // Performance stats
-      if (_frameProcessedCount % 30 == 0) { // Log stats every 30 frames
-        final stats = getDebugInfo();
-        _logger.i('📊 Performance Stats (every 30 frames):');
-        _logger.i('   Success rate: ${stats['success_rate']}');
-        _logger.i('   Frames processed: ${stats['frames_processed']}');
-        _logger.i('   Frames dropped: ${stats['frames_dropped']}');
-        _logger.i('   Detection failures: ${stats['detection_failures']}');
-        _logger.i('   Avg processing time: ${_processingTimeMs}ms');
-      }
+      // Performance stats (removed debug logging)
       
       return result;
     } catch (e) {
@@ -532,53 +369,32 @@ class MLKitFaceService {
     } finally {
       stopwatch.stop();
       _processingTimeMs = stopwatch.elapsedMilliseconds;
-      _logger.d('⏱️ Total processing time: ${_processingTimeMs}ms');
       _isProcessingFrame = false;
-      
-      // No more queue processing - simplified approach
     }
   }
 
   Future<InputImage?> _convertCameraImageWithFallback(CameraImage image) async {
-    _logger.d('🔄 Starting image conversion...');
-    
     try {
-      _logger.d('🔧 Trying primary conversion method...');
       final result = await _convertCameraImageMethod1(image);
-      _logger.d('✅ Primary conversion successful');
       return result;
     } catch (e1) {
       _logger.w('⚠️ Primary conversion failed: $e1');
-      _logger.w('Stack trace: ${StackTrace.current}');
       
       try {
-        _logger.d('🔧 Trying fallback conversion method...');
         final result = await _convertCameraImageMethod2(image);
-        _logger.d('✅ Fallback conversion successful');
         return result;
       } catch (e2) {
         _logger.e('❌ All conversion methods failed: $e2');
-        _logger.e('Stack trace: ${StackTrace.current}');
         return null;
       }
     }
   }
 
   Future<InputImage?> _convertCameraImageMethod1(CameraImage image) async {
-    _logger.d('🔧 Method 1: Converting camera image to bytes...');
-    
     try {
       final bytes = _convertCameraImageToBytes(image);
-      _logger.d('✅ Method 1: Bytes conversion completed, length: ${bytes.length}');
-
       final rotation = _getImageRotation(image);
       final format = _getInputImageFormat(image);
-      
-      _logger.d('🔧 Method 1: Image metadata:');
-      _logger.d('   Size: ${image.width}x${image.height}');
-      _logger.d('   Rotation: $rotation');
-      _logger.d('   Format: $format');
-      _logger.d('   Bytes per row: ${image.planes[0].bytesPerRow}');
       
       final inputImageData = InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
@@ -587,13 +403,11 @@ class MLKitFaceService {
         bytesPerRow: image.planes[0].bytesPerRow,
       );
 
-      _logger.d('🔧 Method 1: Creating InputImage...');
       final inputImage = InputImage.fromBytes(
         bytes: bytes,
         metadata: inputImageData,
       );
       
-      _logger.d('✅ Method 1: InputImage created successfully');
       return inputImage;
     } catch (e) {
       _logger.e('❌ Method 1: Failed to convert image: $e');
@@ -602,17 +416,8 @@ class MLKitFaceService {
   }
 
   Future<InputImage?> _convertCameraImageMethod2(CameraImage image) async {
-    _logger.d('🔧 Method 2: Converting with alternative method...');
-    
     try {
       final bytes = _convertCameraImageToBytesAlternative(image);
-      _logger.d('✅ Method 2: Alternative bytes conversion completed, length: ${bytes.length}');
-
-      _logger.d('🔧 Method 2: Using simplified metadata:');
-      _logger.d('   Size: ${image.width}x${image.height}');
-      _logger.d('   Rotation: rotation0deg (fixed)');
-      _logger.d('   Format: nv21 (fixed)');
-      _logger.d('   Bytes per row: ${image.planes[0].bytesPerRow}');
 
       final inputImageData = InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
@@ -621,13 +426,11 @@ class MLKitFaceService {
         bytesPerRow: image.planes[0].bytesPerRow,
       );
 
-      _logger.d('🔧 Method 2: Creating InputImage...');
       final inputImage = InputImage.fromBytes(
         bytes: bytes,
         metadata: inputImageData,
       );
       
-      _logger.d('✅ Method 2: InputImage created successfully');
       return inputImage;
     } catch (e) {
       _logger.e('❌ Method 2: Failed to convert image: $e');
@@ -684,8 +487,6 @@ class MLKitFaceService {
   }
 
   Uint8List _convertYUV420ToBytes(CameraImage image) {
-    _logger.d('🔧 Converting YUV420 to bytes...');
-    
     try {
       if (image.planes.length < 3) {
         throw Exception('YUV420 requires at least 3 planes, got ${image.planes.length}');
@@ -694,16 +495,10 @@ class MLKitFaceService {
       final yPlane = image.planes[0];
       final uPlane = image.planes[1];
       final vPlane = image.planes[2];
-      
-      _logger.d('   Y plane: ${yPlane.bytes.length} bytes');
-      _logger.d('   U plane: ${uPlane.bytes.length} bytes');
-      _logger.d('   V plane: ${vPlane.bytes.length} bytes');
 
       final ySize = yPlane.bytes.length;
       final uvSize = uPlane.bytes.length + vPlane.bytes.length;
       final totalSize = ySize + uvSize;
-      
-      _logger.d('   Total size: $totalSize bytes');
 
       final bytes = Uint8List(totalSize);
       bytes.setRange(0, ySize, yPlane.bytes);
@@ -720,7 +515,6 @@ class MLKitFaceService {
         }
       }
       
-      _logger.d('✅ YUV420 conversion completed: ${bytes.length} bytes');
       return bytes;
     } catch (e) {
       _logger.e('❌ YUV420 conversion failed: $e');

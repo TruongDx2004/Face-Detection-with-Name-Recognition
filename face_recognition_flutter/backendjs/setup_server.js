@@ -105,6 +105,233 @@ async function checkMySQLConnection() {
     }
 }
 
+async function executeMigrations(dbConnection) {
+    printStep("EXECUTING MIGRATIONS");
+
+    try {
+        // Migration 1: Add missing class fields
+        printInfo("Running migration: add_missing_class_fields.sql");
+        const classMigrationStatements = [
+            // Check and add code column
+            `SET @col_exists = 0;`,
+            `SELECT count(*) INTO @col_exists 
+             FROM information_schema.columns 
+             WHERE table_schema = database() 
+             AND table_name = 'classes' 
+             AND column_name = 'code';`,
+            `SET @query = IF(@col_exists = 0, 
+                'ALTER TABLE classes ADD COLUMN code VARCHAR(50) UNIQUE AFTER name', 
+                'SELECT "Column code already exists" as msg');`,
+            `PREPARE stmt FROM @query;`,
+            `EXECUTE stmt;`,
+            `DEALLOCATE PREPARE stmt;`,
+
+            // Check and add year column
+            `SET @col_exists = 0;`,
+            `SELECT count(*) INTO @col_exists 
+             FROM information_schema.columns 
+             WHERE table_schema = database() 
+             AND table_name = 'classes' 
+             AND column_name = 'year';`,
+            `SET @query = IF(@col_exists = 0, 
+                'ALTER TABLE classes ADD COLUMN year VARCHAR(4) DEFAULT "2024" AFTER code', 
+                'SELECT "Column year already exists" as msg');`,
+            `PREPARE stmt FROM @query;`,
+            `EXECUTE stmt;`,
+            `DEALLOCATE PREPARE stmt;`,
+
+            // Check and add status column
+            `SET @col_exists = 0;`,
+            `SELECT count(*) INTO @col_exists 
+             FROM information_schema.columns 
+             WHERE table_schema = database() 
+             AND table_name = 'classes' 
+             AND column_name = 'status';`,
+            `SET @query = IF(@col_exists = 0, 
+                'ALTER TABLE classes ADD COLUMN status ENUM("active", "inactive") DEFAULT "active" AFTER description', 
+                'SELECT "Column status already exists" as msg');`,
+            `PREPARE stmt FROM @query;`,
+            `EXECUTE stmt;`,
+            `DEALLOCATE PREPARE stmt;`,
+
+            // Update existing records
+            `UPDATE classes SET 
+                code = CONCAT('CLS', LPAD(id, 3, '0')),
+                year = '2024',
+                status = 'active'
+             WHERE code IS NULL OR year IS NULL OR status IS NULL;`,
+
+            // Add indexes
+            `CREATE INDEX IF NOT EXISTS idx_classes_code ON classes(code);`,
+            `CREATE INDEX IF NOT EXISTS idx_classes_year ON classes(year);`,
+            `CREATE INDEX IF NOT EXISTS idx_classes_status ON classes(status);`
+        ];
+
+        for (const statement of classMigrationStatements) {
+            try {
+                await dbConnection.execute(statement);
+            } catch (error) {
+                // Continue with other statements even if one fails
+                console.warn(`Warning in class migration: ${error.message}`);
+            }
+        }
+        printSuccess("Class fields migration completed");
+
+        // Migration 2: Create assignment templates tables
+        printInfo("Running migration: add_assignment_templates.sql");
+        const assignmentTemplateStatements = [
+            `CREATE TABLE IF NOT EXISTS assignment_templates (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                teacher_id INT NOT NULL,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                assignment_type ENUM('homework', 'project', 'lab', 'essay') DEFAULT 'homework',
+                default_max_score DECIMAL(5,2) DEFAULT 10.00,
+                instructions TEXT,
+                attachment_path VARCHAR(255),
+                tags JSON COMMENT 'Tags để tìm kiếm và phân loại template',
+                usage_count INT DEFAULT 0 COMMENT 'Số lần template được sử dụng',
+                is_public BOOLEAN DEFAULT FALSE COMMENT 'Template có được chia sẻ với giáo viên khác không',
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_teacher_templates (teacher_id, is_active),
+                INDEX idx_public_templates (is_public, is_active),
+                INDEX idx_assignment_type (assignment_type)
+            )`,
+
+            `CREATE TABLE IF NOT EXISTS assignment_template_usage (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                assignment_id INT NOT NULL,
+                template_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+                FOREIGN KEY (template_id) REFERENCES assignment_templates(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_assignment_template (assignment_id, template_id)
+            )`,
+
+            // Add template_id column to assignments table if it doesn't exist
+            `SET @col_exists = 0;`,
+            `SELECT count(*) INTO @col_exists 
+             FROM information_schema.columns 
+             WHERE table_schema = database() 
+             AND table_name = 'assignments' 
+             AND column_name = 'template_id';`,
+            `SET @query = IF(@col_exists = 0, 
+                'ALTER TABLE assignments ADD COLUMN template_id INT NULL COMMENT "ID của template được sử dụng (nếu có)", ADD FOREIGN KEY (template_id) REFERENCES assignment_templates(id) ON DELETE SET NULL', 
+                'SELECT "Column template_id already exists" as msg');`,
+            `PREPARE stmt FROM @query;`,
+            `EXECUTE stmt;`,
+            `DEALLOCATE PREPARE stmt;`
+        ];
+
+        for (const statement of assignmentTemplateStatements) {
+            try {
+                await dbConnection.execute(statement);
+            } catch (error) {
+                console.warn(`Warning in assignment template migration: ${error.message}`);
+            }
+        }
+
+        // Insert sample assignment templates
+        try {
+            const sampleTemplates = [
+                {
+                    teacher_id: 2,
+                    title: 'Bài tập Python cơ bản',
+                    description: 'Bài tập lập trình Python về cú pháp cơ bản',
+                    assignment_type: 'homework',
+                    default_max_score: 10.00,
+                    instructions: 'Viết chương trình Python để giải quyết các bài toán cơ bản về:\n1. Biến và kiểu dữ liệu\n2. Cấu trúc điều khiển\n3. Hàm\n\nYêu cầu:\n- Code phải có comment rõ ràng\n- Test với ít nhất 3 test case\n- Nộp file .py',
+                    tags: JSON.stringify(['python', 'programming', 'basic', 'homework']),
+                    is_public: true
+                },
+                {
+                    teacher_id: 2,
+                    title: 'Project nhóm Python',
+                    description: 'Dự án phát triển ứng dụng Python theo nhóm',
+                    assignment_type: 'project',
+                    default_max_score: 50.00,
+                    instructions: 'Phát triển một ứng dụng Python hoàn chỉnh theo nhóm 3-4 người:\n\n1. Phân tích yêu cầu\n2. Thiết kế hệ thống\n3. Lập trình\n4. Test và debug\n5. Tài liệu hướng dẫn sử dụng\n\nDeliverable:\n- Source code\n- Tài liệu thiết kế\n- User manual\n- Video demo',
+                    tags: JSON.stringify(['python', 'project', 'teamwork', 'application']),
+                    is_public: true
+                },
+                {
+                    teacher_id: 2,
+                    title: 'Lab thực hành',
+                    description: 'Bài lab thực hành trong lớp',
+                    assignment_type: 'lab',
+                    default_max_score: 15.00,
+                    instructions: 'Thực hiện các bài tập thực hành trong phòng lab:\n\n1. Làm theo hướng dẫn\n2. Hoàn thành các task được giao\n3. Trả lời câu hỏi\n4. Demo kết quả\n\nLưu ý:\n- Hoàn thành trong thời gian lab\n- Được hỗ trợ từ giảng viên\n- Không được copy code',
+                    tags: JSON.stringify(['lab', 'practical', 'hands-on']),
+                    is_public: true
+                },
+                {
+                    teacher_id: 2,
+                    title: 'Bài luận kỹ thuật',
+                    description: 'Viết báo cáo phân tích kỹ thuật',
+                    assignment_type: 'essay',
+                    default_max_score: 20.00,
+                    instructions: 'Viết một bài báo cáo phân tích về chủ đề được giao:\n\nCấu trúc báo cáo:\n1. Tóm tắt (Abstract)\n2. Giới thiệu\n3. Phân tích chính\n4. Kết luận\n5. Tài liệu tham khảo\n\nYêu cầu:\n- Độ dài: 2000-3000 từ\n- Font: Times New Roman, 12pt\n- Ít nhất 5 tài liệu tham khảo',
+                    tags: JSON.stringify(['essay', 'technical', 'analysis', 'writing']),
+                    is_public: true
+                }
+            ];
+
+            for (const template of sampleTemplates) {
+                await dbConnection.execute(
+                    `INSERT IGNORE INTO assignment_templates (teacher_id, title, description, assignment_type, default_max_score, instructions, tags, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [template.teacher_id, template.title, template.description, template.assignment_type, template.default_max_score, template.instructions, template.tags, template.is_public]
+                );
+            }
+        } catch (error) {
+            console.warn(`Warning inserting sample templates: ${error.message}`);
+        }
+
+        printSuccess("Assignment templates migration completed");
+
+        // Migration 3: Create exam templates table
+        printInfo("Running migration: create_exam_templates_table.sql");
+        const examTemplateStatement = `
+            CREATE TABLE IF NOT EXISTS exam_templates (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                subject_id INT,
+                teacher_id INT NOT NULL,
+                difficulty_level ENUM('easy', 'medium', 'hard') DEFAULT 'medium',
+                duration_minutes INT NOT NULL DEFAULT 60,
+                total_points DECIMAL(5,2) NOT NULL DEFAULT 100.00,
+                questions JSON NOT NULL,
+                tags JSON,
+                usage_count INT DEFAULT 0,
+                is_public BOOLEAN DEFAULT FALSE,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                
+                KEY idx_teacher_id (teacher_id),
+                KEY idx_subject_id (subject_id),
+                KEY idx_difficulty (difficulty_level),
+                KEY idx_is_public (is_public),
+                KEY idx_is_active (is_active),
+                KEY idx_created_at (created_at),
+                KEY idx_usage_count (usage_count)
+            )
+        `;
+
+        await dbConnection.execute(examTemplateStatement);
+        printSuccess("Exam templates migration completed");
+
+        printSuccess("All migrations executed successfully");
+
+    } catch (error) {
+        printError(`Migration execution failed: ${error.message}`);
+        throw error;
+    }
+}
+
 async function setupDatabase() {
     printStep("SETTING UP DATABASE");
 
@@ -387,6 +614,9 @@ async function setupDatabase() {
         for (const statement of sqlStatements) {
             await dbConnection.execute(statement);
         }
+
+        // Execute migration files
+        await executeMigrations(dbConnection);
 
         // Chèn dữ liệu mẫu
         const users = [
@@ -823,7 +1053,7 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({
         error: 'Something went wrong!',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Có lỗi xảy ra, vui lòng thử lại!'
     });
 });
 

@@ -1,12 +1,5 @@
 // lib/models/attendance_models.dart
 import 'package:flutter/material.dart';
-// ignore: unused_import
-import 'package:geolocator/geolocator.dart';
-// ignore: unused_import
-import 'package:location/location.dart' as loc;
-// ignore: unused_import
-import 'package:logger/logger.dart';
-
 /// Enum cho trạng thái điểm danh
 enum AttendanceStatus {
   present,
@@ -81,7 +74,7 @@ class AttendanceSession {
   final int? presentCount;
   final int? lateCount;
   final int? absentCount;
-  final String? attendanceStatus; // for student: 'present', 'absent', 'late', 'not_marked'
+  final AttendanceStatus? attendanceStatus; // for student: 'present', 'absent', 'late', 'not_marked'
 
   AttendanceSession({
     required this.id,
@@ -149,7 +142,9 @@ class AttendanceSession {
       presentCount: int.tryParse(json['present_count']?.toString() ?? '0'),
       lateCount: int.tryParse(json['late_count']?.toString() ?? '0'),
       absentCount: int.tryParse(json['absent_count']?.toString() ?? '0'),
-      attendanceStatus: json['attendance_status'] as String?,
+      attendanceStatus: json['attendance_status'] != null
+          ? AttendanceStatus.fromString(json['attendance_status'] as String)
+          : null,
     );
   }
 
@@ -177,7 +172,7 @@ class AttendanceSession {
       'present_count': presentCount,
       'late_count': lateCount,
       'absent_count': absentCount,
-      'attendance_status': attendanceStatus,
+      'attendance_status': attendanceStatus?.toString(),
     };
   }
 }

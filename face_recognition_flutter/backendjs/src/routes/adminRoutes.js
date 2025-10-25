@@ -90,7 +90,7 @@ const router = express.Router();
  *       403:
  *         description: Forbidden (user not admin)
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.get('/users', authenticateToken, authorize('admin'), AdminController.getUsers);
 
@@ -153,7 +153,7 @@ router.get('/users', authenticateToken, authorize('admin'), AdminController.getU
  *       403:
  *         description: Forbidden
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.post('/users', authenticateToken, authorize('admin'), AdminController.createUser);
 
@@ -207,7 +207,7 @@ router.post('/users', authenticateToken, authorize('admin'), AdminController.cre
  *       404:
  *         description: User not found
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.put('/users/:id', authenticateToken, authorize('admin'), AdminController.updateUser);
 
@@ -237,7 +237,7 @@ router.put('/users/:id', authenticateToken, authorize('admin'), AdminController.
  *       404:
  *         description: User not found
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.delete('/users/:id', authenticateToken, authorize('admin'), AdminController.deleteUser);
 
@@ -281,7 +281,7 @@ router.post('/subjects', authenticateToken, authorize('admin'), AdminController.
  *       403:
  *         description: Forbidden
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.get('/statistics', authenticateToken, authorize('admin'), AdminController.getSystemStats);
 
@@ -324,7 +324,7 @@ router.get('/statistics', authenticateToken, authorize('admin'), AdminController
  *       404:
  *         description: User not found
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.put('/users/:id/reset-password', authenticateToken, authorize('admin'), AdminController.resetUserPassword);
 
@@ -368,7 +368,7 @@ router.put('/users/:id/reset-password', authenticateToken, authorize('admin'), A
  *       403:
  *         description: Forbidden
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.get('/reports/attendance', authenticateToken, authorize('admin'), AdminController.getAttendanceReports);
 

@@ -349,7 +349,7 @@ router.put('/:id', authenticateToken, ExamController.updateExam);
  *       404:
  *         description: Exam not found
  *       500:
- *         description: Internal server error
+ *         description: Có lỗi xảy ra, vui lòng thử lại!
  */
 router.post('/:examId/questions/replace', authenticateToken, ExamController.replaceExamQuestions);
 

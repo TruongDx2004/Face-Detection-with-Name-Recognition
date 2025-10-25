@@ -24,7 +24,7 @@ class AuthController {
 
 
             if (rows.length === 0) {
-                return res.status(401).json({ error: 'Invalid credentials' });
+                return res.status(401).json({ error: 'Sai thông tin đăng nhập' });
             }
 
             const user = rows[0];
@@ -32,7 +32,7 @@ class AuthController {
             // Verify password
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
             if (!isValidPassword) {
-                return res.status(401).json({ error: 'Invalid credentials' });
+                return res.status(401).json({ error: 'Sai thông tin đăng nhập' });
             }
 
             // Nếu là học sinh, lấy thêm student_code và class_name
@@ -69,7 +69,7 @@ class AuthController {
             });
         } catch (error) {
             console.error('Login error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 
@@ -114,7 +114,7 @@ class AuthController {
             });
         } catch (error) {
             console.error('Registration error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(500).json({ error: 'Có lỗi xảy ra, vui lòng thử lại!' });
         }
     }
 

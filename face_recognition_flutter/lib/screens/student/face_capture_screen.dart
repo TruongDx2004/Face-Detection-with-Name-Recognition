@@ -76,6 +76,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   DateTime? _lastProcessTime;
   static const Duration _minProcessInterval =
       Duration(milliseconds: 400); // Tăng từ 150ms để giảm queue overload
+  // ignore: unused_field
   int _slowFrameCount = 0;
 
   final LocationService _locationService = LocationService();
@@ -391,17 +392,9 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           _lastProcessTime = now;
 
           _logger.d('📸 Frame details:');
-          _logger.d('   Image null: ${image == null}');
+          _logger.d('   Image null');
           
-          if (image != null) {
-            try {
-              _logger.d('   Size: ${image.width ?? 'NULL'}x${image.height ?? 'NULL'}');
-              _logger.d('   Format: ${image.format?.group ?? 'NULL'}');
-              _logger.d('   Planes: ${image.planes?.length ?? 'NULL'}');
-            } catch (e) {
-              _logger.e('❌ Error accessing image properties: $e');
-            }
-          }
+          
           
           _logger.d('   Liveness active: $_livenessCheckActive');
           _logger.d('   Is processing: $_isProcessing');
