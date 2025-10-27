@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
 /// Widget để hiển thị HTML content với hỗ trợ đầy đủ
 /// Sử dụng flutter_html package cho việc render chính xác HTML
@@ -11,21 +11,26 @@ class HtmlTextDisplay extends StatelessWidget {
   final Color? backgroundColor;
 
   const HtmlTextDisplay({
-    Key? key,
+    super.key,
     required this.htmlContent,
     this.baseStyle,
     this.textAlign = TextAlign.start,
     this.padding,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final defaultStyle = baseStyle ?? theme.textTheme.bodyMedium;
 
+    // Debug: In ra nội dung HTML
+    print('HtmlTextDisplay - Original content: $htmlContent');
+    print('HtmlTextDisplay - Contains HTML tags: ${_containsHtmlTags(htmlContent)}');
+
     // Nếu không có HTML tags, hiển thị text thường
     if (!_containsHtmlTags(htmlContent)) {
+      print('HtmlTextDisplay - Rendering as plain text');
       return Container(
         padding: padding,
         color: backgroundColor,
@@ -37,63 +42,40 @@ class HtmlTextDisplay extends StatelessWidget {
       );
     }
 
+    final processedHtml = _preprocessHtml(htmlContent);
+    print('HtmlTextDisplay - Processed HTML: $processedHtml');
+
     return Container(
       padding: padding,
       color: backgroundColor,
-      child: Html(
-        data: _preprocessHtml(htmlContent),
-        style: {
-          "body": Style(
-            margin: Margins.zero,
-            padding: HtmlPaddings.zero,
-            fontSize: FontSize(defaultStyle?.fontSize ?? 14),
-            fontFamily: defaultStyle?.fontFamily,
-            color: defaultStyle?.color,
-            textAlign: _convertTextAlign(textAlign),
-          ),
-          "p": Style(
-            margin: Margins.zero,
-            padding: HtmlPaddings.zero,
-          ),
-          "strong": Style(
-            fontWeight: FontWeight.bold,
-          ),
-          "b": Style(
-            fontWeight: FontWeight.bold,
-          ),
-          "em": Style(
-            fontStyle: FontStyle.italic,
-          ),
-          "i": Style(
-            fontStyle: FontStyle.italic,
-          ),
-          "u": Style(
-            textDecoration: TextDecoration.underline,
-          ),
-          "sub": Style(
-            fontSize: FontSize((defaultStyle?.fontSize ?? 14) * 0.75),
-            verticalAlign: VerticalAlign.sub,
-          ),
-          "sup": Style(
-            fontSize: FontSize((defaultStyle?.fontSize ?? 14) * 0.75),
-            verticalAlign: VerticalAlign.top,
-          ),
-          "span.chemical": Style(
-            fontFamily: 'monospace',
-            color: Colors.blue[700],
-            fontWeight: FontWeight.w500,
-          ),
-          "span.formula": Style(
-            fontFamily: 'monospace',
-            color: Colors.blue[700],
-            fontWeight: FontWeight.w500,
-            backgroundColor: Colors.blue[50],
-            padding: HtmlPaddings.symmetric(horizontal: 4),
-            border: Border.all(color: Colors.blue[200]!),
-          ),
-        },
-        onLinkTap: (url, attributes, element) {
-          // Handle link taps if needed
+      child: HtmlWidget(
+        processedHtml,
+        textStyle: defaultStyle,
+        customStylesBuilder: (element) {
+          if (element.localName == 'sub') {
+            return {'font-size': '0.75em', 'vertical-align': 'sub'};
+          }
+          if (element.localName == 'sup') {
+            return {'font-size': '0.75em', 'vertical-align': 'super'};
+          }
+          if (element.classes.contains('chemical')) {
+            return {
+              'font-family': 'monospace',
+              'color': '#1976d2',
+              'font-weight': '500',
+            };
+          }
+          if (element.classes.contains('formula')) {
+            return {
+              'font-family': 'monospace',
+              'color': '#1976d2',
+              'font-weight': '500',
+              'background-color': '#e3f2fd',
+              'padding': '2px 4px',
+              'border': '1px solid #bbdefb',
+            };
+          }
+          return null;
         },
       ),
     );
@@ -104,21 +86,6 @@ class HtmlTextDisplay extends StatelessWidget {
     return text.contains(RegExp(r'<[^>]+>'));
   }
 
-  /// Chuyển đổi TextAlign thành TextAlign cho HTML
-  TextAlign _convertTextAlign(TextAlign align) {
-    switch (align) {
-      case TextAlign.left:
-        return TextAlign.left;
-      case TextAlign.right:
-        return TextAlign.right;
-      case TextAlign.center:
-        return TextAlign.center;
-      case TextAlign.justify:
-        return TextAlign.justify;
-      default:
-        return TextAlign.start;
-    }
-  }
 
   /// Tiền xử lý HTML để cải thiện hiển thị
   String _preprocessHtml(String html) {
@@ -215,11 +182,11 @@ class ExamQuestionDisplay extends StatelessWidget {
   final EdgeInsets? padding;
 
   const ExamQuestionDisplay({
-    Key? key,
+    super.key,
     required this.questionText,
     this.style,
     this.padding,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -241,13 +208,13 @@ class ExamAnswerDisplay extends StatelessWidget {
   final VoidCallback? onTap;
 
   const ExamAnswerDisplay({
-    Key? key,
+    super.key,
     required this.answerText,
     this.isSelected = false,
     this.isCorrect = false,
     this.showCorrectAnswer = false,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

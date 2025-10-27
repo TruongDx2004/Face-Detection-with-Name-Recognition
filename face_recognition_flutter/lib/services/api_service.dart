@@ -160,7 +160,7 @@ class ApiService {
     final uri =
         Uri.parse('$baseUrl$endpoint').replace(queryParameters: queryParams);
 
-    _logger.d('Making $method request to: $uri');
+    _logger.d('Making $method requesssst to: $uri');
     if (body != null) _logger.d('Request body: $body');
 
     final requestTimeout = timeout ?? const Duration(seconds: 30);

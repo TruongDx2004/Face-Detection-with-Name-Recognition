@@ -1,13 +1,8 @@
 // lib/utils/constants.dart
 
 class ApiConstants {
-  // Base URL for your FastAPI backend
-  // IMPORTANT: Replace with your actual backend URL if not running locally
-  // For Android Emulator, 'http://10.0.2.2:8000' maps to your host machine's localhost.
-  // For iOS Simulator/Physical Device, use 'http://localhost:8000' or your machine's IP address.
-  // Example for a deployed server: 'https://your-domain.com'
-  // static const String baseUrl = 'http://10.0.2.2:8000';
-  static const String baseUrl = 'http://172.20.10.9:8000';
+  static const String baseUrl = 'http://10.0.2.2:8000';
+  // static const String baseUrl = 'http://172.20.10.9:8000';
   // static const String baseUrl = 'http://localhost:8000';
   // Auth Endpoints
   static const String login = '/auth/login';
@@ -41,15 +36,3 @@ class AppConstants {
   static const Duration apiTimeout = Duration(seconds: 30);
 }
 
-// You can define other constants as needed, e.g.,
-// class SharedPreferencesKeys {
-//   static const String authToken = 'authToken';
-//   static const String userId = 'userId';
-// }
-
-// If you have specific roles or statuses that need string representation in the UI
-// class UserRoles {
-//   static const String student = 'student';
-//   static const String teacher = 'teacher';
-//   static const String admin = 'admin';
-// }

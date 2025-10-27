@@ -25,11 +25,13 @@ const examTemplateRoutes = require('../routes/examTemplateRoutes');
 const examRoutes = require('../routes/examRoutes');
 const gradebookRoutes = require('../routes/gradebookRoutes');
 const studentGradeRoutes = require('../routes/studentGradeRoutes');
+const { router: notificationRoutes, initializeController } = require('../routes/notificationRoutes');
 
 // Import old routes (to be migrated)
 // const oldAttendanceRoutes = require('../routes/attendance'); // REMOVED - migrated to attendanceRoutes
 
 const { swaggerUi, swaggerSpec } = require('../swagger');
+const { initializeNotificationModels } = require('../middleware/modelInitializer');
 
 class App {
     constructor() {
@@ -38,6 +40,18 @@ class App {
         this.setupMiddleware();
         this.setupRoutes();
         this.setupErrorHandling();
+        this.initializeModels();
+    }
+
+    // Initialize models and services
+    initializeModels() {
+        try {
+            // Initialize notification models
+            initializeNotificationModels();
+            console.log('✅ All models initialized successfully');
+        } catch (error) {
+            console.error('❌ Model initialization failed:', error);
+        }
     }
 
     // Tạo các thư mục cần thiết
@@ -158,6 +172,7 @@ class App {
         this.app.use('/api/exams', examRoutes);
         this.app.use('/api/gradebook', gradebookRoutes);
         this.app.use('/api', studentGradeRoutes);
+        this.app.use('/api/notifications', notificationRoutes);
 
         // Legacy routes (to be migrated)
         // this.app.use('/api/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
@@ -177,6 +192,7 @@ class App {
         this.app.use('/exams', examRoutes);
         this.app.use('/gradebook', gradebookRoutes);
         this.app.use('/', studentGradeRoutes);
+        this.app.use('/notifications', notificationRoutes);
         // this.app.use('/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
     }
 

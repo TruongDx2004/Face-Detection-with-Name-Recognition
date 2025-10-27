@@ -268,7 +268,7 @@ const TeacherCourseSections = () => {
             user={currentUser}
             onLogout={() => {
                 authService.logout();
-                navigate('/login');
+                navigate('/');
             }}
             currentTime={currentTime}
             title="Quản lý học phần"

@@ -1,7 +1,7 @@
 // services/api-service.js
 class ApiService {
     constructor() {
-        this.baseUrl = 'http://localhost:8000'; // Thay đổi theo API của bạn
+        this.baseUrl = 'http://localhost:8000'; // Updated for notification API
         this.token = localStorage.getItem('auth_token');
     }
 
@@ -685,6 +685,74 @@ class ApiService {
             console.error('Download file error:', error);
             throw error;
         }
+    }
+
+    // ============ NOTIFICATION & EVENT ENDPOINTS ============
+    async getNotificationConfig() {
+        return await this.makeRequest('GET', '/notifications/config');
+    }
+
+    async getNotificationCategories() {
+        return await this.makeRequest('GET', '/notifications/categories');
+    }
+
+    // Student notification endpoints
+    async getNotifications(params = {}) {
+        return await this.makeRequest('GET', '/notifications', null, params);
+    }
+
+    async getNotificationById(id) {
+        return await this.makeRequest('GET', `/notifications/${id}`);
+    }
+
+    async registerForEvent(eventId, notes = null) {
+        return await this.makeRequest('POST', `/notifications/${eventId}/register`, { notes });
+    }
+
+    async cancelEventRegistration(eventId) {
+        return await this.makeRequest('DELETE', `/notifications/${eventId}/register`);
+    }
+
+    async getMyEventRegistrations(params = {}) {
+        return await this.makeRequest('GET', '/notifications/my/registrations', null, params);
+    }
+
+    // Admin notification endpoints
+    async getAdminNotifications(params = {}) {
+        return await this.makeRequest('GET', '/notifications/admin/notifications', null, params);
+    }
+
+    async createNotification(notificationData) {
+        if (notificationData instanceof FormData) {
+            return await this.makeMultipartRequest('POST', '/notifications/admin/notifications', notificationData);
+        }
+        return await this.makeRequest('POST', '/notifications/admin/notifications', notificationData);
+    }
+
+    async updateNotification(id, notificationData) {
+        if (notificationData instanceof FormData) {
+            return await this.makeMultipartRequest('PUT', `/notifications/admin/notifications/${id}`, notificationData);
+        }
+        return await this.makeRequest('PUT', `/notifications/admin/notifications/${id}`, notificationData);
+    }
+
+    async deleteNotification(id) {
+        return await this.makeRequest('DELETE', `/notifications/admin/notifications/${id}`);
+    }
+
+    async getEventRegistrations(eventId, params = {}) {
+        return await this.makeRequest('GET', `/notifications/admin/notifications/${eventId}/registrations`, null, params);
+    }
+
+    async updateRegistrationStatus(registrationId, status, adminNotes = null) {
+        return await this.makeRequest('PUT', `/notifications/admin/registrations/${registrationId}/status`, {
+            status,
+            admin_notes: adminNotes
+        });
+    }
+
+    async getNotificationStats(notificationId) {
+        return await this.makeRequest('GET', `/notifications/admin/notifications/${notificationId}/stats`);
     }
 
     // ============ UTILITY METHODS ============

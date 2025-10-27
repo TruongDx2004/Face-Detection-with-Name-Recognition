@@ -308,7 +308,7 @@ const GradeConfiguration = () => {
             user={currentUser}
             onLogout={() => {
                 authService.logout();
-                navigate('/login');
+                navigate('/');
             }}
             currentTime={currentTime}
             title="Cấu hình sổ điểm"

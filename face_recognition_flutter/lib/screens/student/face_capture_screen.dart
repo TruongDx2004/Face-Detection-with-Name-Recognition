@@ -77,7 +77,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   static const Duration _minProcessInterval =
       Duration(milliseconds: 400); // Tăng từ 150ms để giảm queue overload
   // ignore: unused_field
-  int _slowFrameCount = 0;
+  final int _slowFrameCount = 0;
 
   final LocationService _locationService = LocationService();
   

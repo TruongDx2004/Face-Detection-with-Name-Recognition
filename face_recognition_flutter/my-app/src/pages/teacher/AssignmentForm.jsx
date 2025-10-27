@@ -254,7 +254,7 @@ const AssignmentForm = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const validateForm = () => {

@@ -269,7 +269,7 @@ const ExamResults = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const handleViewDetails = (resultId) => {

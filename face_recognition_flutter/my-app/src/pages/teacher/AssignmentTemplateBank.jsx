@@ -585,7 +585,7 @@ const AssignmentTemplateBank = () => {
         return (
             <AppLayout
                 user={currentUser}
-                onLogout={() => { authService.logout(); navigate('/login'); }}
+                onLogout={() => { authService.logout(); navigate('/'); }}
                 currentTime={new Date()}
                 title="Ngân hàng bài tập"
             >
@@ -600,7 +600,7 @@ const AssignmentTemplateBank = () => {
     return (
         <AppLayout
             user={currentUser}
-            onLogout={() => { authService.logout(); navigate('/login'); }}
+            onLogout={() => { authService.logout(); navigate('/'); }}
             currentTime={new Date()}
             title="Ngân hàng bài tập"
         >

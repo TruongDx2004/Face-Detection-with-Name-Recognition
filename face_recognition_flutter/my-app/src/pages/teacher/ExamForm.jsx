@@ -6,10 +6,7 @@ import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 import WordQuestionImporter from '../../components/WordQuestionImporter';
-import RichTextEditor from '../../components/RichTextEditor';
-import RichTextInput from '../../components/RichTextInput';
 import AdvancedRichTextEditor from '../../components/AdvancedRichTextEditor';
-import EditorMigrationNotice from '../../components/EditorMigrationNotice';
 
 // Styles
 const styles = {
@@ -340,7 +337,7 @@ const ExamForm = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
     
     const validateForm = () => {
@@ -420,13 +417,7 @@ const ExamForm = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
-                {/* Migration Notice */}
-                {showMigrationNotice && (
-                    <EditorMigrationNotice 
-                        onDismiss={() => setShowMigrationNotice(false)}
-                    />
-                )}
-
+                
                 {/* Template Info Banner */}
                 {fromTemplate && (
                     <div style={{

@@ -10,13 +10,13 @@ class RichTextDisplay extends StatelessWidget {
   final TextOverflow? overflow;
 
   const RichTextDisplay({
-    Key? key,
+    super.key,
     required this.htmlContent,
     this.baseStyle,
     this.textAlign = TextAlign.start,
     this.maxLines,
     this.overflow,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -138,10 +138,10 @@ class ChemicalFormulaText extends StatelessWidget {
   final TextStyle? style;
 
   const ChemicalFormulaText({
-    Key? key,
+    super.key,
     required this.formula,
     this.style,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

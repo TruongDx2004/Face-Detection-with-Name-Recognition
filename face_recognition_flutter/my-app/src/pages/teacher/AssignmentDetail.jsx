@@ -1085,7 +1085,7 @@ const AssignmentDetail = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const handleDeleteAssignment = async () => {

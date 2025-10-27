@@ -345,7 +345,7 @@ const TeacherExams = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const handleDeleteExam = async (examId) => {

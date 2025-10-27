@@ -538,7 +538,7 @@ const ExamTemplateBank = () => {
         return (
             <AppLayout
                 user={currentUser}
-                onLogout={() => { authService.logout(); navigate('/login'); }}
+                onLogout={() => { authService.logout(); navigate('/'); }}
                 currentTime={new Date()}
                 title="Ngân hàng bài kiểm tra"
             >
@@ -553,7 +553,7 @@ const ExamTemplateBank = () => {
     return (
         <AppLayout
             user={currentUser}
-            onLogout={() => { authService.logout(); navigate('/login'); }}
+            onLogout={() => { authService.logout(); navigate('/'); }}
             currentTime={new Date()}
             title="Ngân hàng bài kiểm tra"
         >

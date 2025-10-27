@@ -1508,7 +1508,7 @@ const ClassDetail = () => {
                     </div>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.completed}</div>
-                      <div style={styles.statLabel}>Tổng phiên</div>
+                      <div style={styles.statLabel}>Đang đóng</div>
                     </div>
                     <div style={styles.statItem}>
                       <div style={styles.statNumber}>{stats.averageAttendance}</div>

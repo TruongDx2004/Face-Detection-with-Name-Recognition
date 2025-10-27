@@ -696,15 +696,23 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
 
   /// Build modern session card với thiết kế hiện đại
   Widget _buildModernSessionCard(AttendanceSession session) {
-    final bool canAttend = session.isActive && (session.attendanceStatus == null || session.attendanceStatus == 'not_marked');
-    final bool alreadyMarked = session.attendanceStatus != null && session.attendanceStatus != 'not_marked';
+    final bool canAttend = session.isActive &&
+        (session.attendanceStatus == null ||
+            session.attendanceStatus == 'not_marked');
+    final bool alreadyMarked = session.attendanceStatus != null &&
+        session.attendanceStatus != 'not_marked';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         children: [
@@ -712,27 +720,46 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: canAttend ? [Colors.green[400]!, Colors.green[600]!] : alreadyMarked ? [Colors.blue[400]!, Colors.blue[600]!] : [Colors.grey[400]!, Colors.grey[600]!],
+                colors: canAttend
+                    ? [Colors.green[400]!, Colors.green[600]!]
+                    : alreadyMarked
+                        ? [Colors.blue[400]!, Colors.blue[600]!]
+                        : [Colors.grey[400]!, Colors.grey[600]!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16.0), topRight: Radius.circular(16.0)),
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16.0),
+                  topRight: Radius.circular(16.0)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12.0)),
-                  child: Icon(alreadyMarked ? Icons.check_circle : Icons.school_rounded, size: 26, color: Colors.white),
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.0)),
+                  child: Icon(
+                      alreadyMarked ? Icons.check_circle : Icons.school_rounded,
+                      size: 26,
+                      color: Colors.white),
                 ),
                 const SizedBox(width: 16.0),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(session.subjectName ?? session.sessionName, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(session.subjectName ?? session.sessionName,
+                          style: const TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
                       const SizedBox(height: 4.0),
-                      Text(session.className ?? 'Lớp', style: TextStyle(fontSize: 14.0, color: Colors.white.withOpacity(0.9))),
+                      Text(session.className ?? 'Lớp',
+                          style: TextStyle(
+                              fontSize: 14.0,
+                              color: Colors.white.withOpacity(0.9))),
                     ],
                   ),
                 ),
@@ -746,15 +773,28 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
               children: [
                 Row(
                   children: [
-                    Expanded(child: _buildInfoItem(icon: Icons.person_rounded, label: 'Giáo viên', value: session.teacherName ?? 'Chưa xác định')),
+                    Expanded(
+                        child: _buildInfoItem(
+                            icon: Icons.person_rounded,
+                            label: 'Giáo viên',
+                            value: session.teacherName ?? 'Chưa xác định')),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildInfoItem(icon: Icons.calendar_today_rounded, label: 'Ngày', value: _formatDate(session.sessionDate))),
+                    Expanded(
+                        child: _buildInfoItem(
+                            icon: Icons.calendar_today_rounded,
+                            label: 'Ngày',
+                            value: _formatDate(session.sessionDate))),
                   ],
                 ),
                 const SizedBox(height: 16.0),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoItem(icon: Icons.access_time_rounded, label: 'Thời gian', value: session.startTime, valueColor: Colors.blue[600])),
+                    Expanded(
+                        child: _buildInfoItem(
+                            icon: Icons.access_time_rounded,
+                            label: 'Thời gian',
+                            value: session.startTime,
+                            valueColor: Colors.blue[600])),
                     const SizedBox(width: 16),
                     Expanded(child: _buildAttendanceButton(session)),
                   ],
@@ -914,7 +954,8 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
     }
 
     groupedBySubject.forEach((subject, attendanceList) {
-      attendanceList.sort((a, b) => b.attendanceTime.compareTo(a.attendanceTime));
+      attendanceList
+          .sort((a, b) => b.attendanceTime.compareTo(a.attendanceTime));
     });
 
     return ListView.builder(
@@ -929,17 +970,25 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
   }
 
   /// Build subject attendance group
-  Widget _buildSubjectAttendanceGroup(String subjectName, List<Attendance> attendances) {
-    final presentCount = attendances.where((a) => a.status == AttendanceStatus.present).length;
+  Widget _buildSubjectAttendanceGroup(
+      String subjectName, List<Attendance> attendances) {
+    final presentCount =
+        attendances.where((a) => a.status == AttendanceStatus.present).length;
     final totalCount = attendances.length;
-    final attendanceRate = totalCount > 0 ? (presentCount / totalCount * 100).round() : 0;
+    final attendanceRate =
+        totalCount > 0 ? (presentCount / totalCount * 100).round() : 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -947,31 +996,54 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
           Container(
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.indigo[400]!, Colors.indigo[600]!], begin: Alignment.topLeft, end: Alignment.bottomRight),
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16.0), topRight: Radius.circular(16.0)),
+              gradient: LinearGradient(
+                  colors: [Colors.indigo[400]!, Colors.indigo[600]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16.0),
+                  topRight: Radius.circular(16.0)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12.0)),
-                  child: const Icon(Icons.book_rounded, size: 26, color: Colors.white),
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.0)),
+                  child: const Icon(Icons.book_rounded,
+                      size: 26, color: Colors.white),
                 ),
                 const SizedBox(width: 16.0),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(subjectName, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(subjectName,
+                          style: const TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
                       const SizedBox(height: 4.0),
-                      Text('$totalCount buổi học', style: TextStyle(fontSize: 14.0, color: Colors.white.withOpacity(0.9))),
+                      Text('$totalCount buổi học',
+                          style: TextStyle(
+                              fontSize: 14.0,
+                              color: Colors.white.withOpacity(0.9))),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                  child: Text('$attendanceRate%', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text('$attendanceRate%',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -999,16 +1071,25 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(color: attendance.status.color.withOpacity(0.3), width: 1),
+        border: Border.all(
+            color: attendance.status.color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: attendance.status.color.withOpacity(0.1), borderRadius: BorderRadius.circular(10.0)),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                color: attendance.status.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10.0)),
             child: Icon(
-              attendance.status == AttendanceStatus.present ? Icons.check_circle_rounded : attendance.status == AttendanceStatus.late ? Icons.watch_later_rounded : Icons.cancel_rounded,
-              size: 20, color: attendance.status.color,
+              attendance.status == AttendanceStatus.present
+                  ? Icons.check_circle_rounded
+                  : attendance.status == AttendanceStatus.late
+                      ? Icons.watch_later_rounded
+                      : Icons.cancel_rounded,
+              size: 20,
+              color: attendance.status.color,
             ),
           ),
           const SizedBox(width: 12.0),
@@ -1018,24 +1099,44 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(_formatDate(attendance.attendanceTime), style: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600, color: Colors.black87))),
+                    Expanded(
+                        child: Text(_formatDate(attendance.attendanceTime),
+                            style: const TextStyle(
+                                fontSize: 14.0,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87))),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: attendance.status.color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text(attendance.status.displayName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: attendance.status.color)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                          color: attendance.status.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Text(attendance.status.displayName,
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: attendance.status.color)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4.0),
-                Text('${attendance.attendanceTime.hour}:${attendance.attendanceTime.minute.toString().padLeft(2, '0')}', style: TextStyle(fontSize: 13.0, color: Colors.grey[600])),
+                Text(
+                    '${attendance.attendanceTime.hour}:${attendance.attendanceTime.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(fontSize: 13.0, color: Colors.grey[600])),
               ],
             ),
           ),
           if (attendance.confidenceScore != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(8)),
-              child: Text('${(attendance.confidenceScore! * 100).toInt()}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.blue[700])),
+              decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8)),
+              child: Text('${(attendance.confidenceScore! * 100).toInt()}%',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue[700])),
             ),
         ],
       ),
@@ -1044,12 +1145,20 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
 
   Widget _buildStatusChip(AttendanceSession session) {
     String text;
-    if (session.attendanceStatus != null && session.attendanceStatus != 'not_marked') {
+    if (session.attendanceStatus != null &&
+        session.attendanceStatus != 'not_marked') {
       switch (session.attendanceStatus) {
-        case 'present': text = 'Đã điểm danh'; break;
-        case 'late': text = 'Muộn'; break;
-        case 'absent': text = 'Vắng'; break;
-        default: text = 'Chưa điểm danh';
+        case AttendanceStatus.present:
+          text = 'Đã điểm danh';
+          break;
+        case AttendanceStatus.late:
+          text = 'Muộn';
+          break;
+        case AttendanceStatus.absent:
+          text = 'Vắng';
+          break;
+        default:
+          text = 'Chưa điểm danh';
       }
     } else if (session.isActive) {
       text = 'Đang mở';
@@ -1059,12 +1168,20 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-      child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+      decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12)),
+      child: Text(text,
+          style: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
     );
   }
 
-  Widget _buildInfoItem({required IconData icon, required String label, required String value, Color? valueColor}) {
+  Widget _buildInfoItem(
+      {required IconData icon,
+      required String label,
+      required String value,
+      Color? valueColor}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1072,31 +1189,53 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
           children: [
             Icon(icon, size: 14, color: Colors.grey[600]),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500)),
           ],
         ),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor ?? Colors.black87)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? Colors.black87)),
       ],
     );
   }
 
   Widget _buildAttendanceButton(AttendanceSession session) {
-    final bool canAttend = session.isActive && (session.attendanceStatus == null || session.attendanceStatus == 'not_marked');
-    final bool alreadyMarked = session.attendanceStatus != null && session.attendanceStatus != 'not_marked';
+    final bool canAttend = session.isActive &&
+        (session.attendanceStatus == null ||
+            session.attendanceStatus == 'not_marked');
+    final bool alreadyMarked = session.attendanceStatus != null &&
+        session.attendanceStatus != 'not_marked';
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: canAttend ? Colors.green[600] : alreadyMarked ? Colors.blue[600] : Colors.grey[400],
+          backgroundColor: canAttend
+              ? Colors.green[600]
+              : alreadyMarked
+                  ? Colors.blue[600]
+                  : Colors.grey[400],
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           padding: const EdgeInsets.symmetric(vertical: 12.0),
         ),
         onPressed: canAttend ? () => _navigateToAttendance(session) : null,
-        child: Text(canAttend ? 'Điểm danh' : alreadyMarked ? 'Đã điểm danh' : 'Không khả dụng', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        child: Text(
+            canAttend
+                ? 'Điểm danh'
+                : alreadyMarked
+                    ? 'Đã điểm danh'
+                    : 'Không khả dụng',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
       ),
     );
   }

@@ -502,7 +502,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
     >
       <div style={styles.sessionHeader}>
         <div style={styles.sessionTitle}>
-          <h4>{session.title || `Buổi ${session.session_name || 'N/A'}`}</h4>
+          <h4>{session.title || `${session.session_name || 'N/A'}`}</h4>
           <span style={{...styles.sessionStatus, color: status.color}}>
             {status.text}
           </span>
@@ -870,7 +870,13 @@ const TeacherAttendance = () => {
       const response = await ApiService.getCourseSectionAttendanceSessions(courseSectionId);
       console.log(response);
       if (response.success) {
-        setAttendanceSessions(response.data || []);
+        // Sắp xếp phiên điểm danh theo ngày mới nhất trước
+        const sortedSessions = (response.data || []).sort((a, b) => {
+          const dateA = new Date(a.session_date || a.start_time);
+          const dateB = new Date(b.session_date || b.start_time);
+          return dateB - dateA; // Sắp xếp từ mới nhất đến cũ nhất
+        });
+        setAttendanceSessions(sortedSessions);
       } else {
         showNotification('Không thể tải danh sách phiên điểm danh', 'error');
       }
@@ -1179,7 +1185,7 @@ const TeacherAttendance = () => {
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>
               <i className="fas fa-list-check"></i>
-              Chi tiết điểm danh - {selectedSession.title || `Buổi ${selectedSession.session_name}`}
+              Chi tiết điểm danh - {selectedSession.title || `${selectedSession.session_name}`}
             </h2>
           </div>
           

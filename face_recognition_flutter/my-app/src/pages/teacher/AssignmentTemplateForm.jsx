@@ -218,7 +218,7 @@ const AssignmentTemplateForm = () => {
             setCurrentUser(user.data);
         } catch (error) {
             console.error('Error loading user:', error);
-            navigate('/login');
+            navigate('/');
         }
     };
 
@@ -382,7 +382,7 @@ const AssignmentTemplateForm = () => {
     return (
         <AppLayout
             user={currentUser}
-            onLogout={() => { authService.logout(); navigate('/login'); }}
+            onLogout={() => { authService.logout(); navigate('/'); }}
             currentTime={new Date()}
             title={isEdit ? 'Chỉnh sửa template' : 'Tạo template mới'}
         >

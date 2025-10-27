@@ -128,6 +128,9 @@ final_results = {}
 for result in results:
     label_id = result["label_id"]
     confidence = result["confidence"]
+    if confidence < 0:
+        confidence = 10  
+    result["confidence"] = confidence
     if label_id not in final_results or confidence > final_results[label_id]["confidence"]:
         final_results[label_id] = result
 

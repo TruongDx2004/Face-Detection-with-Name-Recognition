@@ -617,7 +617,13 @@ const AttendanceSessionManagement = () => {
       const response = await apiService.getSessions(filters);
       console.log("Fetched sessions:", response);
       if (response.success) {
-        setSessions(response.data.sessions || []);
+        // Sắp xếp phiên điểm danh theo ngày mới nhất trước
+        const sortedSessions = (response.data.sessions || []).sort((a, b) => {
+          const dateA = new Date(a.session_date || a.start_time);
+          const dateB = new Date(b.session_date || b.start_time);
+          return dateB - dateA; // Sắp xếp từ mới nhất đến cũ nhất
+        });
+        setSessions(sortedSessions);
         showNotification('Tải danh sách phiên điểm danh thành công', 'success');
       }
     } catch (error) {

@@ -211,16 +211,18 @@ class AttendanceController {
 
             // Chỉ kiểm tra start_time (cho phép điểm danh sau giờ bắt đầu)
             // Có thể thêm giới hạn thời gian tối đa (ví dụ: 2 tiếng sau start_time)
-            const maxAttendanceTime = new Date(startTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours after start
-            console.log({ now, startTime, maxAttendanceTime });
-            if (now < startTime) {
-                await fs.unlink(imagePath);
-                return res.status(400).json({ error: 'Phiên điểm danh chưa bắt đầu' });
-            }
-            if (now > maxAttendanceTime) {
-                await fs.unlink(imagePath);
-                return res.status(400).json({ error: 'Phiên điểm danh đã kết thúc' });
-            }
+            // const maxAttendanceTime = new Date(startTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours after start
+            // console.log({ now, startTime, maxAttendanceTime });
+            // if (now < startTime) {
+            //     await fs.unlink(imagePath);
+            //     console.log('Phiên điểm danh chưa bắt đầu');
+            //     return res.status(400).json({ error: 'Phiên điểm danh chưa bắt đầu' });
+            // }
+            // if (now > maxAttendanceTime) {
+            //     await fs.unlink(imagePath);
+            //     console.log('Phiên điểm danh đã kết thúc');
+            //     return res.status(400).json({ error: 'Phiên điểm danh đã kết thúc' });
+            // }
 
             // Nhận diện khuôn mặt
             const recognitionResult = await faceService.recognizeFace(imagePath);

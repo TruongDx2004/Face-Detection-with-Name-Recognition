@@ -27,6 +27,7 @@ const Sidebar = ({ isCollapsed, onToggle, activePage }) => {
     { id: 'courses', icon: 'fas fa-graduation-cap', text: 'Lớp học phần', path: '/course-sections' },
     { id: 'schedules', icon: 'fas fa-calendar-alt', text: 'Lịch học', path: '/schedules'},
     { id: 'sessions', icon: 'fas fa-calendar-check', text: 'Phiên điểm danh', path: '/sessions' },
+    { id: 'notifications', icon: 'fas fa-bullhorn', text: 'Thông báo & Sự kiện', path: '/notifications' },
     { id: 'face-recognition', icon: 'fas fa-face-smile', text: 'Nhận diện khuôn mặt', path: '/face-recognition' },
     
   ];

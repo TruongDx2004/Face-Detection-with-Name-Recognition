@@ -537,7 +537,7 @@ const ExamTemplateForm = () => {
     return (
         <AppLayout
             user={currentUser}
-            onLogout={() => { authService.logout(); navigate('/login'); }}
+            onLogout={() => { authService.logout(); navigate('/'); }}
             currentTime={new Date()}
             title={isEdit ? 'Chỉnh sửa template' : 'Tạo template mới'}
         >

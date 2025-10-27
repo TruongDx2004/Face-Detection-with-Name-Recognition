@@ -438,7 +438,7 @@ const CourseSectionDetail = () => {
             user={currentUser}
             onLogout={() => {
                 authService.logout();
-                navigate('/login');
+                navigate('/');
             }}
             currentTime={currentTime}
             title="Chi tiết học phần"

@@ -619,20 +619,61 @@ const TeacherSchedules = () => {
 
     const handleStartSession = async (schedule) => {
         try {
-            const response = await ApiService.createAttendanceSession({
-                course_section_id: schedule.course_section_id,
-                session_date: new Date().toISOString().split('T')[0],
-                session_name: `${schedule.subject_name} - ${new Date().toLocaleDateString('vi-VN')}`
-            });
-
-            if (response.success) {
-                showNotification('Tạo phiên điểm danh thành công!', 'success');
-                navigate('/teacher/attendance');
+            console.log('Bắt đầu xử lý phiên điểm danh cho lớp:', schedule.course_section_id);
+            
+            const todayString = new Date().toISOString().split('T')[0];
+            
+            // Tải tất cả phiên điểm danh của giáo viên để tìm phiên hôm nay
+            const sessionsResponse = await ApiService.getTodaySessionsByCourseSection(schedule.course_section_id);
+            console.log('Phản hồi phiên điểm danh:', sessionsResponse);
+            if (!sessionsResponse.success) {
+                showNotification('Không thể tải danh sách phiên điểm danh', 'error');
+                return;
+            }
+            
+            const allSessions = sessionsResponse.data.sessions || [];
+            console.log('Tổng số phiên điểm danh tải về:', allSessions);
+            
+            console.log('Tìm phiên điểm danh cho ngày:', todayString);
+            // Tìm phiên điểm danh có sẵn của ngày hôm nay cho lớp này
+            const existingSession = allSessions.find(s =>
+                s.course_section_id === schedule.course_section_id 
+                && s.session_date === todayString
+            );
+            
+            console.log('Phiên điểm danh tìm được:', existingSession);
+            
+            if (existingSession) {
+                // Nếu đã có phiên, kích hoạt và chuyển đến trang attendance
+                try {
+                    // Kích hoạt phiên nếu chưa active
+                    if (!existingSession.is_active) {
+                        const activateResponse = await ApiService.activateSession(existingSession.id);
+                        if (activateResponse.success) {
+                            showNotification('Kích hoạt phiên điểm danh thành công!', 'success');
+                            navigate('/teacher/attendance');
+                        } else {
+                            showNotification('Không thể kích hoạt phiên: ' + activateResponse.message, 'error');
+                            return;
+                        }
+                    } else {
+                        showNotification('Phiên điểm danh đã sẵn sàng!', 'success');
+                        navigate('/teacher/attendance');
+                    }
+                    
+                } catch (error) {
+                    showNotification('Lỗi khi kích hoạt phiên: ' + error.message, 'error');
+                }
             } else {
-                showNotification(`Lỗi: ${response.message}`, 'error');
+                // Nếu chưa có phiên, thông báo không tìm thấy phiên tự động tạo
+                showNotification(
+                    'Không tìm thấy phiên điểm danh cho ngày hôm nay. Vui lòng kiểm tra lại lịch học hoặc liên hệ admin.', 
+                    'warning'
+                );
             }
         } catch (err) {
-            showNotification(`Lỗi tạo phiên điểm danh: ${err.message}`, 'error');
+            console.error('Lỗi trong handleStartSession:', err);
+            showNotification(`Lỗi xử lý phiên điểm danh: ${err.message}`, 'error');
         }
     };
 

@@ -155,7 +155,7 @@ class MLKitFaceService {
       }
       
       // Basic validation
-      if (image.planes == null || image.planes!.isEmpty) {
+      if (image.planes.isEmpty) {
         _logger.e('❌ CRITICAL: Image planes is NULL or EMPTY!');
         return null;
       }
@@ -164,7 +164,7 @@ class MLKitFaceService {
       final height = image.height ?? 0;
       
       if (width <= 0 || height <= 0) {
-        _logger.e('❌ CRITICAL: Invalid image dimensions: ${width}x${height}');
+        _logger.e('❌ CRITICAL: Invalid image dimensions: ${width}x$height');
         return null;
       }
 
@@ -225,70 +225,11 @@ class MLKitFaceService {
         faces = await _faceDetector.processImage(inputImage);
         faceStopwatch.stop();
         
-        if (faces == null) {
-          _consecutiveNullResults++;
-          _logger.e('❌ CRITICAL: ML Kit returned NULL result! (${_consecutiveNullResults} consecutive)');
-          
-          // Strategy 1: Try to reinitialize ML Kit (first time)
-          if (_consecutiveNullResults <= 3 && !_hasTriedReinitialization) {
-            _hasTriedReinitialization = true;
-            final reinitSuccess = await _reinitializeMLKit();
-            if (reinitSuccess) {
-              try {
-                faces = await _faceDetector.processImage(inputImage);
-                if (faces != null) {
-                  _consecutiveNullResults = 0; // Reset on success
-                }
-              } catch (e) {
-                _logger.e('❌ Retry after reinit failed: $e');
-                faces = null;
-              }
-            }
-          }
-          
-          // Strategy 2: Try different image conversion (after 5 nulls)
-          if (faces == null && _consecutiveNullResults >= 5) {
-            try {
-              // Force use method 2 conversion
-              final alternativeImage = await _convertCameraImageMethod2(image);
-              if (alternativeImage != null) {
-                faces = await _faceDetector.processImage(alternativeImage);
-                if (faces != null) {
-                  _consecutiveNullResults = 0; // Reset on success
-                }
-              }
-            } catch (e) {
-              _logger.e('❌ Alternative conversion failed: $e');
-            }
-          }
-          
-          // Strategy 3: Ultra-permissive settings (after 10 nulls)
-          if (faces == null && _consecutiveNullResults >= 10 && !_hasTriedAlternativeSettings) {
-            final success = await reinitializeWithDifferentSettings();
-            if (success) {
-              _hasTriedAlternativeSettings = true;
-              try {
-                faces = await _faceDetector.processImage(inputImage);
-                if (faces != null) {
-                  _consecutiveNullResults = 0; // Reset on success
-                }
-              } catch (e) {
-                _logger.e('❌ Ultra-permissive retry failed: $e');
-              }
-            }
-          }
-          
-          if (faces == null) {
-            _faceDetectionFailures++;
-            return null;
-          }
-        } else {
-          // Reset null counter on successful processing
-          if (_consecutiveNullResults > 0) {
-            _consecutiveNullResults = 0;
-          }
+        // Reset null counter on successful processing
+        if (_consecutiveNullResults > 0) {
+          _consecutiveNullResults = 0;
         }
-      } catch (e) {
+            } catch (e) {
         faceStopwatch.stop();
         _logger.e('❌ ML Kit processImage threw exception: $e');
         _logger.e('Stack trace: ${StackTrace.current}');
@@ -354,7 +295,7 @@ class MLKitFaceService {
       
       // Update processing time tracking
       _processingTimeMs = stopwatch.elapsedMilliseconds;
-      if (result != null && result.hasFace) {
+      if (result.hasFace) {
         _lastSuccessfulProcessTime = DateTime.now();
       }
       
@@ -758,7 +699,7 @@ class MLKitFaceService {
       'frames_dropped': _frameDroppedCount,
       'detection_failures': _faceDetectionFailures,
       'success_rate': _frameProcessedCount > 0 
-          ? ((_frameProcessedCount - _faceDetectionFailures) / _frameProcessedCount * 100).toStringAsFixed(1) + '%'
+          ? '${((_frameProcessedCount - _faceDetectionFailures) / _frameProcessedCount * 100).toStringAsFixed(1)}%'
           : '0%',
       'device_config': {
         'use_alternative_format': _useAlternativeImageFormat,

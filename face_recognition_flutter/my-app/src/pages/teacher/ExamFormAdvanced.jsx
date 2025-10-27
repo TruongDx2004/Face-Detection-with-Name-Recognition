@@ -404,7 +404,7 @@ const ExamFormAdvanced = () => {
 
     const handleLogout = () => {
         authService.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     return (
