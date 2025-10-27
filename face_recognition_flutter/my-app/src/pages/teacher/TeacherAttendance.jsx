@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout, Header } from '../../components/layout/AppLayout';
 import Notification from '../../components/Notification';
@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import useNotification from '../../hooks/useNotification';
 import ApiService from '../../services/api-service';
 import authService from '../../services/auth-service';
+import { io } from 'socket.io-client';
 
 // Styles
 const styles = {
@@ -443,7 +444,7 @@ const CourseSectionCard = ({ courseSection, onSelect, isSelected }) => {
           <i className="fas fa-users"></i>
         </div>
       </div>
-      
+
       <div style={styles.classInfo}>
         <div style={styles.infoItem}>
           <i className="fas fa-book"></i>
@@ -470,7 +471,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
     const now = new Date();
     const startTime = new Date(session.start_time || session.session_date);
     const endTime = new Date(session.end_time || session.session_date);
-    
+
     if (session.status === 'completed' || session.is_completed) return { text: 'Đã hoàn thành', color: '#10b981' };
     if (session.status === 'active' || session.is_active) return { text: 'Đang diễn ra', color: '#3b82f6' };
     if (now < startTime) return { text: 'Chưa bắt đầu', color: '#6b7280' };
@@ -503,7 +504,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
       <div style={styles.sessionHeader}>
         <div style={styles.sessionTitle}>
           <h4>{session.title || `${session.session_name || 'N/A'}`}</h4>
-          <span style={{...styles.sessionStatus, color: status.color}}>
+          <span style={{ ...styles.sessionStatus, color: status.color }}>
             {status.text}
           </span>
         </div>
@@ -522,7 +523,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
           )}
           {(session.status === 'active' || session.is_active === 1) && (
             <button
-              style={{...styles.actionButton, backgroundColor: '#ef4444'}}
+              style={{ ...styles.actionButton, backgroundColor: '#ef4444' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onEnd(session.id);
@@ -533,7 +534,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
             </button>
           )}
           <button
-            style={{...styles.actionButton, backgroundColor: '#dc3545'}}
+            style={{ ...styles.actionButton, backgroundColor: '#dc3545' }}
             onClick={(e) => {
               e.stopPropagation();
               onDelete(session.id);
@@ -544,7 +545,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
           </button>
         </div>
       </div>
-      
+
       <div style={styles.sessionInfo}>
         <div style={styles.sessionTime}>
           <i className="fas fa-calendar"></i>
@@ -555,7 +556,7 @@ const AttendanceSessionCard = ({ session, onSelect, onStart, onEnd, onDelete, is
           <span>{dateTime.time}</span>
         </div>
       </div>
-      
+
       {session.description && (
         <p style={styles.sessionDescription}>{session.description}</p>
       )}
@@ -577,12 +578,12 @@ const AttendanceRecordsTable = ({ students, attendanceRecords }) => {
     if (!attendanceRecords.length || !students.length) {
       return { present: 0, absent: 0, total: students.length, percentage: 0 };
     }
-    
+
     const present = attendanceRecords.filter(record => record.status === 'present').length;
     const total = students.length;
     const absent = total - present;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-    
+
     return { present, absent, total, percentage };
   };
 
@@ -627,7 +628,7 @@ const AttendanceRecordsTable = ({ students, attendanceRecords }) => {
                 record => record.student_id === student.id || record.user_id === student.id
               );
               const isPresent = attendanceRecord?.status === 'present';
-              
+
               return (
                 <div key={student.id} style={styles.tableRow}>
                   <div style={styles.tableCell}>{index + 1}</div>
@@ -643,8 +644,8 @@ const AttendanceRecordsTable = ({ students, attendanceRecords }) => {
                     </span>
                   </div>
                   <div style={styles.tableCell}>
-                    {attendanceRecord?.created_at ? 
-                      formatDateTime(attendanceRecord.created_at).time : 
+                    {attendanceRecord?.created_at ?
+                      formatDateTime(attendanceRecord.created_at).time :
                       '-'
                     }
                   </div>
@@ -675,12 +676,12 @@ const CreateSessionModal = ({ show, onClose, onSubmit, classInfo }) => {
       alert('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    
+
     if (formData.end_time && formData.start_time >= formData.end_time) {
       alert('Thời gian kết thúc phải sau thời gian bắt đầu');
       return;
     }
-    
+
     onSubmit(formData);
   };
 
@@ -699,7 +700,7 @@ const CreateSessionModal = ({ show, onClose, onSubmit, classInfo }) => {
             <i className="fas fa-times"></i>
           </button>
         </div> */}
-        
+
         <form onSubmit={handleSubmit} style={styles.modalForm}>
           <div style={styles.formGroup}>
             <label style={styles.formLabel}>Lớp học:</label>
@@ -797,7 +798,7 @@ const CreateSessionModal = ({ show, onClose, onSubmit, classInfo }) => {
 // Main TeacherAttendance Component
 const TeacherAttendance = () => {
   const navigate = useNavigate();
-  
+
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -812,11 +813,13 @@ const TeacherAttendance = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [user, setUser] = useState(null);
-  
+
   const { notifications, showNotification, removeNotification } = useNotification();
 
+  const socketRef = useRef(null);
+
   // Update current time
-  useEffect(() => { 
+  useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -828,12 +831,38 @@ const TeacherAttendance = () => {
     loadCourseSections();
   }, []);
 
+  useEffect(() => {
+    if (!selectedSession) return;
+
+    const socket = io('http://localhost:8000'); 
+    socketRef.current = socket;
+
+    // Tham gia room tương ứng với session
+    socket.emit('join_session', { sessionId: selectedSession.id });
+    console.log(`🔌 Joined room session_${selectedSession.id}`);
+
+    // Lắng nghe sự kiện từ server
+    socket.on('attendance_marked', (data) => {
+      console.log('📥 Nhận điểm danh mới:', data);
+      
+      // Cập nhật lại danh sách hoặc hiển thị thông báo
+      loadAttendanceRecords(selectedSession.id);
+      showNotification(`${data.student.full_name} vừa điểm danh!`, 'info');
+    });
+
+    // Dọn dẹp khi component unmount
+    return () => {
+      socket.disconnect();
+      console.log('🔌 Socket disconnected');
+    };
+  }, [selectedSession]);
+
   // Load course sections for teacher
   const loadCourseSections = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Get current teacher's profile
       const profileResponse = await ApiService.getProfile();
       if (!profileResponse.success) {
@@ -842,7 +871,7 @@ const TeacherAttendance = () => {
       }
       setUser(profileResponse.data);
       const teacherId = profileResponse.data.id;
-      
+
       // Get course sections for the current teacher
       const response = await ApiService.getCourseSectionsByTeacher(teacherId);
       console.log(response);
@@ -943,7 +972,7 @@ const TeacherAttendance = () => {
         course_section_id: selectedCourseSection.id,
         teacher_id: user.id
       });
-      
+
       if (response.success) {
         showNotification('Tạo phiên điểm danh thành công', 'success');
         loadAttendanceSessions(selectedCourseSection.id);
@@ -979,7 +1008,7 @@ const TeacherAttendance = () => {
     try {
       setLoading(true);
       const response = await ApiService.endSession(sessionId);
-      
+
       if (response.success) {
         showNotification('Kết thúc phiên điểm danh thành công', 'success');
         loadAttendanceSessions(selectedCourseSection.id);
@@ -999,7 +1028,7 @@ const TeacherAttendance = () => {
     try {
       setLoading(true);
       const response = await ApiService.deleteSession(sessionId);
-      
+
       if (response.success) {
         showNotification('Xóa phiên điểm danh thành công', 'success');
         loadAttendanceSessions(selectedCourseSection.id);
@@ -1050,7 +1079,7 @@ const TeacherAttendance = () => {
         onLogout={handleLogout}
         currentTime={currentTime}
         title="Quản lý điểm danh"
-        
+
       >
         <ErrorMessage message={error} onRetry={loadCourseSections} />
       </AppLayout>
@@ -1063,7 +1092,7 @@ const TeacherAttendance = () => {
       onLogout={handleLogout}
       currentTime={currentTime}
       title="Quản lý điểm danh"
-      
+
     >
       {/* Notifications */}
       <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000 }}>
@@ -1188,7 +1217,7 @@ const TeacherAttendance = () => {
               Chi tiết điểm danh - {selectedSession.title || `${selectedSession.session_name}`}
             </h2>
           </div>
-          
+
           <AttendanceRecordsTable
             students={students}
             attendanceRecords={attendanceRecords}

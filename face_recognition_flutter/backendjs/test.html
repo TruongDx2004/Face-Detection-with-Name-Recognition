@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance Marked Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>📡 Attendance Realtime Test</h1>
+
+  <div>
+    <label>Session ID: </label>
+    <input id="sessionId" type="text" value="1" />
+    <button id="joinBtn">Join Session</button>
+  </div>
+
+  <div id="log" style="margin-top: 20px; font-family: monospace;"></div>
+
+  <script>
+    // 🔌 Kết nối tới backend Socket.IO
+    const socket = io("http://localhost:8000"); // 🔧 đổi port nếu khác
+
+    const log = (msg) => {
+      const div = document.createElement("div");
+      div.textContent = msg;
+      document.getElementById("log").appendChild(div);
+    };
+
+    socket.on("connect", () => {
+      log(`✅ Connected: ${socket.id}`);
+    });
+
+    socket.on("disconnect", () => {
+      log("❌ Disconnected from server");
+    });
+
+    // 🔔 Nhận sự kiện attendance_marked
+    socket.on("attendance_marked", (data) => {
+      log(`📢 Attendance marked in session_${data.session_id}:`);
+      log(`👤 Student: ${data.student?.name || JSON.stringify(data.student)}`);
+      log(`🎯 Confidence: ${data.confidence}`);
+      log(`🕒 Timestamp: ${data.timestamp}`);
+      log("----------------------------");
+    });
+
+    // 📦 Khi click "Join"
+    document.getElementById("joinBtn").addEventListener("click", () => {
+      const sessionId = document.getElementById("sessionId").value.trim();
+      if (!sessionId) return alert("Enter session ID!");
+
+      socket.emit("join_session", { sessionId }); // 🔥 join vào room
+      log(`📚 Joined room session_${sessionId}`);
+    });
+  </script>
+</body>
+</html>

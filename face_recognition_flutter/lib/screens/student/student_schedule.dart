@@ -1148,11 +1148,11 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
     if (session.attendanceStatus != null &&
         session.attendanceStatus != 'not_marked') {
       switch (session.attendanceStatus) {
-        case AttendanceStatus.present:
-          text = 'Đã điểm danh';
-          break;
         case AttendanceStatus.late:
           text = 'Muộn';
+          break;
+        case AttendanceStatus.present:
+          text = 'Đã điểm danh';
           break;
         case AttendanceStatus.absent:
           text = 'Vắng';
@@ -1209,7 +1209,7 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen>
   Widget _buildAttendanceButton(AttendanceSession session) {
     final bool canAttend = session.isActive &&
         (session.attendanceStatus == null ||
-            session.attendanceStatus == 'not_marked');
+            session.attendanceStatus == AttendanceStatus.not_marked);
     final bool alreadyMarked = session.attendanceStatus != null &&
         session.attendanceStatus != 'not_marked';
 

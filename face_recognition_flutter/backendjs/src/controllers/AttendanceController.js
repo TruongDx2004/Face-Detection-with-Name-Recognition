@@ -3,6 +3,7 @@ const faceService = require('../services/faceService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const { getIO } = require('../services/socket');
 
 // Cấu hình multer cho upload ảnh attendance
 const storage = multer.diskStorage({
@@ -279,6 +280,7 @@ class AttendanceController {
 
             if (existingAttendance.length > 0) {
                 await fs.unlink(imagePath);
+                console.log('User has already marked attendance for this session');
                 return res.status(409).json({ error: 'Bạn đã điểm danh cho buổi học' });
             }
 
@@ -312,6 +314,13 @@ class AttendanceController {
                 'SELECT id, username, full_name FROM users WHERE id = ?',
                 [userId]
             );
+            const io = getIO();
+            io.to(`session_${session_id}`).emit('attendance_marked', {
+                session_id,
+                student: students[0],
+                confidence,
+                timestamp: new Date(),
+            });
 
             res.json({
                 success: true,

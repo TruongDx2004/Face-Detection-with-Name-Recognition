@@ -9,15 +9,15 @@ class LocationService {
 
   final Logger _logger = Logger();
   // Vị trí mặc định của trường học (có thể cấu hình)
-  // static double _schoolLatitude = 37.421998; // Vĩ độ // trục bắc nam
-  // static double _schoolLongitude = -122.084; // Kinh độ // trục đông tây
-  // static double _allowedRadius = 100.0; // Bán kính cho phép (mét)
+  static double _schoolLatitude = 37.421998; // Vĩ độ // trục bắc nam
+  static double _schoolLongitude = -122.084; // Kinh độ // trục đông tây
+  static double _allowedRadius = 100.0; // Bán kính cho phép (mét)
 
 
   //Vị trí trường DH Công Nghệ TP.HCM
-  static double _schoolLatitude = 10.8549706; // HUTECH Khu E - Khu Công Nghệ Cao
-  static double _schoolLongitude = 106.7851258; // HUTECH Khu E - Thủ Đức
-  static double _allowedRadius = 2000.0; // bán kính điểm danh (m)
+  // static double _schoolLatitude = 10.8549706; // HUTECH Khu E - Khu Công Nghệ Cao
+  // static double _schoolLongitude = 106.7851258; // HUTECH Khu E - Thủ Đức
+  // static double _allowedRadius = 2000.0; // bán kính điểm danh (m)
 
 
   /// Kiểm tra quyền truy cập vị trí

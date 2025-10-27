@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 enum AttendanceStatus {
   present,
   late,
-  absent;
+  absent,
+  not_marked;
 
   static AttendanceStatus fromString(String? status) {
     if (status == null) return AttendanceStatus.present;
@@ -16,7 +17,7 @@ enum AttendanceStatus {
       case 'absent':
         return AttendanceStatus.absent;
       default:
-        return AttendanceStatus.present;
+        return AttendanceStatus.not_marked;
     }
   }
 
@@ -31,6 +32,8 @@ enum AttendanceStatus {
         return 'Muộn';
       case AttendanceStatus.absent:
         return 'Vắng mặt';
+      case AttendanceStatus.not_marked:
+        return 'Chưa điểm danh';
     }
   }
 
@@ -42,6 +45,8 @@ enum AttendanceStatus {
         return Colors.orange;
       case AttendanceStatus.absent:
         return Colors.red;
+      case AttendanceStatus.not_marked:
+        return Colors.grey;
     }
   }
 }
