@@ -47,7 +47,11 @@ class App {
     initializeModels() {
         try {
             // Initialize notification models
-            initializeNotificationModels();
+            const models = initializeNotificationModels();
+            
+            // Initialize notification controller with models
+            initializeController(models);
+            
             console.log('✅ All models initialized successfully');
         } catch (error) {
             console.error('❌ Model initialization failed:', error);

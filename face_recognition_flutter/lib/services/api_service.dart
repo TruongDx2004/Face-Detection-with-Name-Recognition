@@ -47,28 +47,22 @@ class ApiService {
       final dynamic responseData = jsonDecode(response.body);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final String message;
-        final dynamic dataRaw;
+        final String message = responseData is Map<String, dynamic>
+            ? responseData['message'] ?? 'Success'
+            : 'Success';
 
-        if (responseData is Map<String, dynamic>) {
-          message = responseData['message'] ?? 'Success';
-          dataRaw = responseData['data'] ?? responseData;
-        } else {
-          message = 'Success';
-          dataRaw = responseData;
-        }
-
-        _logger.d('Response Data: $dataRaw');
+        _logger.d('Raw Response Data: $responseData');
+        _logger.d('Raw Response Data Type: ${responseData.runtimeType}');
 
         // Handle List response
-        if (dataRaw is List) {
-          final List<T> items = dataRaw
+        if (responseData is List) {
+          final List<T> items = responseData
               .map((item) => fromJson(Map<String, dynamic>.from(item)))
               .toList();
           return ApiResponse.success(items, message: message);
         } else {
           return ApiResponse.error(
-              'Expected list response but got: ${dataRaw.runtimeType}');
+              'Expected list response but got: ${responseData.runtimeType}');
         }
       } else {
         final errorMessage = responseData is Map<String, dynamic> &&
@@ -1720,6 +1714,242 @@ class ApiService {
       }
     } catch (e) {
       _logger.e('Get student course section grade detail error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Handle notification-specific list response format
+  Future<ApiResponse<List<NotificationEvent>>> _handleNotificationListResponse(
+    http.Response response,
+  ) async {
+    _logger.d('Notification Response Status: ${response.statusCode}');
+    _logger.d('Notification Response Body: ${response.body}');
+
+    try {
+      final dynamic responseData = jsonDecode(response.body);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final String message = responseData is Map<String, dynamic>
+            ? responseData['message'] ?? 'Success'
+            : 'Success';
+
+        _logger.d('Using NotificationEvent.fromApiResponse to parse data');
+        final List<NotificationEvent> notifications = NotificationEvent.fromApiResponse(responseData);
+        _logger.d('Parsed ${notifications.length} notifications successfully');
+
+        return ApiResponse.success(notifications, message: message);
+      } else {
+        final errorMessage = responseData is Map<String, dynamic> &&
+                responseData['detail'] is List
+            ? (responseData['detail'] as List)
+                .map((e) => e['msg'] ?? e.toString())
+                .join(', ')
+            : responseData is Map<String, dynamic>
+                ? (responseData['detail'] ??
+                    responseData['error'] ??
+                    responseData['message'] ??
+                    'Unknown error occurred')
+                : 'Unknown error occurred';
+        return ApiResponse.error(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      _logger.e('Error parsing notification response: $e');
+      return ApiResponse.error('Failed to parse notification response: $e',
+          statusCode: response.statusCode);
+    }
+  }
+
+  // ============ NOTIFICATION AND EVENT METHODS ============
+
+  /// Get all notifications for current user
+  Future<ApiResponse<List<NotificationEvent>>> getNotifications({
+    String? type,
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (type != null) queryParams['type'] = type;
+      if (status != null) queryParams['status'] = status;
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (offset != null) queryParams['offset'] = offset.toString();
+
+      final uri = Uri.parse('$baseUrl/api/notifications').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers);
+
+      return await _handleNotificationListResponse(response);
+    } catch (e) {
+      _logger.e('Get notifications error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Get notification by ID
+  Future<ApiResponse<NotificationEvent>> getNotificationById(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/$id'),
+        headers: _headers,
+      );
+
+      return await _handleResponse<NotificationEvent>(
+        response,
+        (json) => NotificationEvent.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Get notification by ID error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Get all events
+  Future<ApiResponse<List<NotificationEvent>>> getEvents({
+    String? status,
+    bool? upcoming,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'type': 'event',
+      };
+      if (status != null) queryParams['status'] = status;
+      if (upcoming != null) queryParams['upcoming'] = upcoming.toString();
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (offset != null) queryParams['offset'] = offset.toString();
+
+      final uri = Uri.parse('$baseUrl/api/notifications').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers);
+
+      return await _handleNotificationListResponse(response);
+    } catch (e) {
+      _logger.e('Get events error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Get event by ID with registrations
+  Future<ApiResponse<NotificationEvent>> getEventById(int id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/$id'),
+        headers: _headers,
+      );
+
+      return await _handleResponse<NotificationEvent>(
+        response,
+        (json) => NotificationEvent.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Get event by ID error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Register for an event
+  Future<ApiResponse<EventRegistration>> registerForEvent(
+    int eventId,
+    EventRegistrationRequest request,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/notifications/$eventId/register'),
+        headers: _headers,
+        body: json.encode(request.toJson()),
+      );
+
+      return await _handleResponse<EventRegistration>(
+        response,
+        (json) => EventRegistration.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Register for event error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Cancel event registration
+  Future<ApiResponse<bool>> cancelEventRegistration(int eventId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/notifications/$eventId/register'),
+        headers: _headers,
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.success(true, message: 'Đã hủy đăng ký thành công');
+      } else {
+        final responseData = json.decode(response.body);
+        final errorMessage = responseData['message'] ?? 'Không thể hủy đăng ký';
+        return ApiResponse.error(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      _logger.e('Cancel event registration error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Get user's event registrations
+  Future<ApiResponse<List<EventRegistration>>> getMyEventRegistrations({
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (status != null) queryParams['status'] = status;
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (offset != null) queryParams['offset'] = offset.toString();
+
+      final uri = Uri.parse('$baseUrl/api/notifications/my-registrations').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers);
+
+      return await _handleListResponse<EventRegistration>(
+        response,
+        (json) => EventRegistration.fromJson(json),
+      );
+    } catch (e) {
+      _logger.e('Get my event registrations error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Mark notification as read
+  Future<ApiResponse<bool>> markNotificationAsRead(int notificationId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/notifications/$notificationId/mark-read'),
+        headers: _headers,
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.success(true, message: 'Đã đánh dấu đã đọc');
+      } else {
+        final responseData = json.decode(response.body);
+        final errorMessage = responseData['message'] ?? 'Không thể đánh dấu đã đọc';
+        return ApiResponse.error(errorMessage, statusCode: response.statusCode);
+      }
+    } catch (e) {
+      _logger.e('Mark notification as read error: $e');
+      return ApiResponse.error('Network error: $e');
+    }
+  }
+
+  /// Get notification statistics
+  Future<ApiResponse<Map<String, dynamic>>> getNotificationStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/stats'),
+        headers: _headers,
+      );
+
+      return await _handleResponse<Map<String, dynamic>>(
+        response,
+        (json) => json,
+      );
+    } catch (e) {
+      _logger.e('Get notification stats error: $e');
       return ApiResponse.error('Network error: $e');
     }
   }

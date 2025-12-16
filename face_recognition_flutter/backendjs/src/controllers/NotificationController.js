@@ -41,11 +41,13 @@ class NotificationController {
             if (error) {
                 return responseHelper.validationError(res, error.details);
             }
-
+            console.log('Validated query params:', value);
+            
+            // For students, get only published notifications/events that target them
             const studentId = req.user.role === 'student' ? req.user.id : null;
-            const result = await this.notificationService.getNotificationsForStudent(studentId, value);
-
-            return responseHelper.success(res, result, 'Notifications retrieved successfully');
+            const result = await this.notificationService.getPublishedNotifications(studentId, value);
+            console.log('Notifications fetched successfully:', result);
+            return responseHelper.success(res, result, 'Notifications retrieved sucssscessfully');
         } catch (error) {
             console.error('Get notifications error:', error);
             return responseHelper.error(res, 'Có lỗi xảy ra khi lấy danh sách thông báo', 500);

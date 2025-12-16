@@ -8,6 +8,9 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Mặc dù không trực tiếp dùng ở đây, nhưng AuthService dùng nó
 import 'screens/login_screen.dart';
 import 'screens/student/student_dashboard.dart';
+import 'screens/student/notification_list_screen.dart';
+import 'screens/student/notification_detail_screen.dart';
+import 'screens/student/event_detail_screen.dart';
 //import 'screens/admin/admin_dashboard.dart';
 import 'services/auth_service.dart';
 import 'models/models.dart'; // Đảm bảo đã import các models như UserRole, User
@@ -118,6 +121,9 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/student_dashboard': (context) => StudentDashboard(userId: ModalRoute.of(context)!.settings.arguments as int, userName: 'Student'),
+        '/notifications': (context) => const NotificationListScreen(),
+        '/notification_detail': (context) => NotificationDetailScreen(notificationId: ModalRoute.of(context)!.settings.arguments as int),
+        '/event_detail': (context) => EventDetailScreen(eventId: ModalRoute.of(context)!.settings.arguments as int),
         //'/teacher_dashboard': (context) => TeacherDashboardScreen(teacherId: ModalRoute.of(context)!.settings.arguments as int),
         //'/admin_dashboard': (context) => const AdminDashboardScreen(),
       },

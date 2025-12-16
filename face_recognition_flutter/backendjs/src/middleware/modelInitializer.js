@@ -93,6 +93,9 @@ const initializeNotificationModels = () => {
     notificationController.notificationService = new RawSqlNotificationService();
     
     console.log('✅ Notification models initialized with SQL service');
+    
+    // Return models for any controllers that might need them
+    return models;
 };
 
 /**

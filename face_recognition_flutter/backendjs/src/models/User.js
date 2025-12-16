@@ -114,8 +114,7 @@ class User {
                 params.push(role);
             }
 
-            query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-            params.push(limit, offset);
+            query += ' ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}';
 
             const [rows] = await db.execute(query, params);
             const [countResult] = await db.execute(countQuery, role ? [role] : []);

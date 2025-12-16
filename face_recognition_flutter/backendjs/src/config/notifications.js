@@ -155,8 +155,8 @@ module.exports = {
             // Badge count (iOS)
             badge: 1,
             
-            // Priority (high/normal)
-            priority: 'high',
+            // Priority (1/0)
+            priority: 1,
             
             // Time to live (seconds)
             timeToLive: 24 * 60 * 60, // 24 hours

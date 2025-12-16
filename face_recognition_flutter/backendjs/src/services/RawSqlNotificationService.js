@@ -14,7 +14,169 @@ class RawSqlNotificationService {
     }
 
     /**
-     * Get notifications and events list for students
+     * Get published notifications and events for students (public access)
+     */
+    async getPublishedNotifications(studentId = null, options = {}) {
+        console.log('Getting published notifications - Options received:', options);
+        console.log('Student ID:', studentId);
+
+        const {
+            page = 1,
+            limit = config.PAGINATION.DEFAULT_PAGE_SIZE,
+            type = null,
+            category = null,
+            priority = null
+        } = options;
+
+        const offset = (page - 1) * limit;
+
+        let whereConditions = [
+            'ne.status = "published"',
+            '(ne.publish_date <= NOW() OR ne.publish_date IS NULL)',
+            '(JSON_EXTRACT(ne.target_audience, "$.all_students") = true OR ne.target_audience IS NULL OR ne.target_audience = "{}")'
+        ];
+
+        let params = [];
+
+        if (type) {
+            whereConditions.push('ne.type = ?');
+            params.push(type);
+        }
+
+        if (category) {
+            whereConditions.push('ne.category = ?');
+            params.push(category);
+        }
+
+        if (priority !== null) {
+            whereConditions.push('ne.is_priority = ?');
+            params.push(priority === 'true' || priority === true ? 1 : 0);
+        }
+
+        const whereClause = whereConditions.join(' AND ');
+
+        try {
+            const countQuery = `
+            SELECT COUNT(*) as total
+            FROM notifications_events ne
+            WHERE ${whereClause}
+        `;
+
+            const dataQuery = `
+            SELECT
+                ne.id,
+                ne.title,
+                ne.content,
+                ne.type,
+                ne.category,
+                ne.status,
+                ne.is_priority,
+                ne.publish_date,
+                ne.event_start_datetime,
+                ne.event_end_datetime,
+                ne.registration_deadline,
+                ne.location,
+                ne.organizer,
+                ne.allow_registration,
+                ne.max_participants,
+                ne.registration_fee,
+                ne.target_audience,
+                ne.view_count,
+                ne.tags,
+                ne.created_at,
+                ne.updated_at,
+                u.id AS creator_id,
+                u.full_name AS creator_name,
+                u.role AS creator_role
+            FROM notifications_events ne
+            LEFT JOIN users u ON ne.created_by = u.id
+            WHERE ${whereClause}
+            ORDER BY ne.is_priority DESC, ne.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+        `;
+
+            // Count
+            const [countRows] = await this.db.query(countQuery, params);
+            const total = countRows[0]?.total || 0;
+
+            const parseJsonSafe = (value, defaultValue = null) => {
+                if (value === null || value === undefined) return defaultValue;
+
+                if (typeof value === 'string') {
+                    try {
+                        return JSON.parse(value);
+                    } catch {
+                        return defaultValue;
+                    }
+                }
+
+                if (typeof value === 'object') {
+                    return value;
+                }
+
+                return defaultValue;
+            };
+
+
+            // Data
+            const [rows] = await this.db.query(dataQuery, params);
+
+            console.log(`Found ${total} total notifications, returning ${rows.length} items`);
+
+            const transformedRows = rows.map(row => {
+                const tags = parseJsonSafe(row.tags, []);
+                console.log('Transforming notification row:', row);
+                return {
+                    id: row.id,
+                    title: row.title,
+                    content: row.content,
+                    type: row.type,
+                    category: row.category,
+                    priority: row.is_priority ? 'high' : 'medium',
+                    status: row.status,
+                    scheduled_date: row.publish_date,
+                    event_date: row.event_start_datetime,
+                    event_end_date: row.event_end_datetime,
+                    event_location: row.location,
+                    organizer: row.organizer,
+                    registration_fee: Number(row.registration_fee) || 0,
+                    max_participants: row.max_participants,
+                    current_participants: row.view_count || 0,
+                    registration_deadline: row.registration_deadline,
+                    requires_approval: false,
+                    allow_registration: Boolean(row.allow_registration),
+                    metadata: {},
+                    image_url: null,
+                    attachment_url: null,
+                    tags: tags,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                    created_by: row.creator_id ? {
+                        id: row.creator_id,
+                        full_name: row.creator_name,
+                        role: row.creator_role
+                    } : null
+                };
+            });
+
+            return {
+                notifications: transformedRows,
+                pagination: {
+                    current_page: Number(page),
+                    total_pages: Math.ceil(total / limit),
+                    total_items: total,
+                    items_per_page: Number(limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error in getPublishedNotifications:', error);
+            throw error;
+        }
+    }
+
+
+    /**
+     * Get notifications and events list for students (legacy method for admin)
      */
     async getNotificationsForStudent(studentId, options = {}) {
         const {
@@ -26,7 +188,7 @@ class RawSqlNotificationService {
         } = options;
 
         const offset = (page - 1) * limit;
-        
+
         // Build WHERE conditions
         let whereConditions = ['ne.status = "published"', 'ne.publish_date <= NOW()'];
         let params = [];
@@ -57,7 +219,7 @@ class RawSqlNotificationService {
             FROM notifications_events ne 
             WHERE ${whereClause}
         `;
-        
+
         const [countResult] = await this.db.execute(countQuery, params);
         const total = countResult[0].total;
 
@@ -82,10 +244,8 @@ class RawSqlNotificationService {
         mainQuery += `
             WHERE ${whereClause}
             ORDER BY ne.is_priority DESC, ne.publish_date DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${limit} OFFSET ${offset}
         `;
-
-        params.push(limit, offset);
 
         const [rows] = await this.db.execute(mainQuery, params);
 
@@ -165,9 +325,9 @@ class RawSqlNotificationService {
                 current_registrations: currentRegistrations,
                 max_participants: notification.max_participants,
                 is_full: notification.max_participants ? currentRegistrations >= notification.max_participants : false,
-                is_registration_open: notification.allow_registration && 
-                                    notification.registration_deadline && 
-                                    new Date() < new Date(notification.registration_deadline),
+                is_registration_open: notification.allow_registration &&
+                    notification.registration_deadline &&
+                    new Date() < new Date(notification.registration_deadline),
                 user_registration: userRegistration
             };
         }
@@ -288,7 +448,7 @@ class RawSqlNotificationService {
         } = options;
 
         const offset = (page - 1) * limit;
-        
+
         let whereConditions = ['er.student_id = ?'];
         let params = [studentId];
 
@@ -322,7 +482,7 @@ class RawSqlNotificationService {
             LEFT JOIN notifications_events ne ON er.event_id = ne.id
             WHERE ${whereClause}
             ORDER BY er.registration_date DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${limit} OFFSET ${offset}
         `;
 
         params.push(limit, offset);
@@ -382,24 +542,24 @@ class RawSqlNotificationService {
                 image_path, attachment_path, target_audience, status, is_priority, tags
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            title, 
-            content, 
-            type, 
-            category, 
+            title,
+            content,
+            type,
+            category,
             adminId,
-            event_start_datetime || null, 
-            event_end_datetime || null, 
+            event_start_datetime || null,
+            event_end_datetime || null,
             registration_deadline || null,
-            location || null, 
-            organizer || null, 
-            allow_registration || false, 
-            max_participants || null, 
+            location || null,
+            organizer || null,
+            allow_registration || false,
+            max_participants || null,
             registration_fee || 0,
-            image_path || null, 
-            attachment_path || null, 
-            target_audience ? JSON.stringify(target_audience) : null, 
-            status, 
-            is_priority || false, 
+            image_path || null,
+            attachment_path || null,
+            target_audience ? JSON.stringify(target_audience) : null,
+            status,
+            is_priority || false,
             tags ? JSON.stringify(tags) : null
         ]);
 
@@ -491,7 +651,7 @@ class RawSqlNotificationService {
         } = options;
 
         const offset = (page - 1) * limit;
-        
+
         let whereConditions = ['er.event_id = ?'];
         let params = [eventId];
 
@@ -522,7 +682,7 @@ class RawSqlNotificationService {
             LEFT JOIN users u ON er.student_id = u.id
             WHERE ${whereClause}
             ORDER BY er.registration_date DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${limit} OFFSET ${offset}
         `;
 
         params.push(limit, offset);

@@ -8,6 +8,7 @@ import 'face_capture_screen.dart';
 import 'student_schedule.dart';
 import 'student_assignment_screen.dart';
 import 'student_grades_screen.dart';
+import 'notification_list_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   final int userId;
@@ -184,6 +185,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                 ),
               ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => _navigateToNotifications(),
+            icon: const Icon(
+              Icons.notifications,
+              color: Colors.white,
+              size: 24,
             ),
           ),
           IconButton(
@@ -413,6 +422,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
               subtitle: 'Xem kết quả học tập',
               color: const Color(0xFFE91E63),
               onTap: () => _navigateToGrades(),
+            ),
+            _buildFeatureCard(
+              icon: Icons.notifications,
+              title: 'Thông báo',
+              subtitle: 'Thông báo & Sự kiện',
+              color: const Color(0xFF9C27B0),
+              onTap: () => _navigateToNotifications(),
             ),
           ],
         ),
@@ -836,6 +852,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => StudentScheduleScreen(userId: widget.userId),
+      ),
+    );
+  }
+
+  void _navigateToNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationListScreen(),
       ),
     );
   }

@@ -18,20 +18,86 @@ class NotificationService {
     }
 
     /**
-     * Get notifications and events list for students
+     * Get published notifications and events for students (public access)
      */
-    async getNotificationsForStudent(studentId, options = {}) {
+    async getPublishedNotifications(studentId = null, options = {}) {
         const {
             page = 1,
             limit = config.PAGINATION.DEFAULT_PAGE_SIZE,
             type = null, // 'notification' or 'event'
             category = null,
-            priority = null
+            priority = null,
+            status = 'published'
         } = options;
 
         const offset = (page - 1) * limit;
         const where = {
-            status: 'published',
+            status: 'published', // Only published notifications
+            [Op.or]: [
+                { publish_date: { [Op.lte]: new Date() } },
+                { publish_date: null }
+            ]
+        };
+
+        // Apply filters
+        if (type) where.type = type;
+        if (category) where.category = category;
+        if (priority !== null) where.is_priority = priority === 'true' || priority === true;
+
+        try {
+            const { count, rows } = await this.NotificationEvent.findAndCountAll({
+                where,
+                include: [
+                    {
+                        model: this.User,
+                        as: 'creator',
+                        attributes: ['id', 'full_name', 'role'],
+                        required: false
+                    }
+                ],
+                order: [
+                    ['is_priority', 'DESC'],
+                    ['created_at', 'DESC']
+                ],
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            });
+
+
+            return {
+                notifications: rows,
+                pagination: {
+                    current_page: parseInt(page),
+                    total_pages: Math.ceil(count / limit),
+                    total_items: count,
+                    items_per_page: parseInt(limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error in getPublishedNotifications:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get notifications and events list for students (legacy method for admin)
+     */
+    async getNotificationsForStudent(studentId, options = {}) {
+        console.log('Options received:', options);
+        console.log('Student ID:', studentId);
+        const {
+            page = 1,
+            limit = config.PAGINATION.DEFAULT_PAGE_SIZE,
+            type = null, // 'notification' or 'event'
+            category = null,
+            priority = null,
+            status = 'published'
+        } = options;
+        const { literal } = require('sequelize');
+
+        const offset = (page - 1) * limit;
+        const where = {
+            status: status,
             publish_date: { [Op.lte]: new Date() }
         };
 
@@ -42,8 +108,7 @@ class NotificationService {
 
         // Target audience filtering
         where[Op.or] = [
-            { target_audience: { [Op.jsonContains]: { all_students: true } } },
-            // Additional targeting logic can be added here
+            literal(`JSON_EXTRACT(target_audience, '$.all_students') = true`)
         ];
 
         const { count, rows } = await this.NotificationEvent.findAndCountAll({

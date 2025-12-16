@@ -11,6 +11,9 @@ export 'attendance_models.dart';
 // Assignment related models
 export 'assignment_models.dart';
 
+// Notification and Event related models
+export 'notification_models.dart';
+
 // Request/Response models
 export '../requests/login_request.dart';
 export '../responses/login_response.dart';
