@@ -92,8 +92,9 @@ class NotificationEvent {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-      createdBy:
-          json['created_by'] != null ? User.fromJson(json['created_by']) : null,
+      createdBy: json['created_by'] is Map<String, dynamic>
+          ? User.fromJson(json['created_by'])
+          : null,
       registrations: json['registrations'] is List
           ? (json['registrations'] as List)
               .map((e) => EventRegistration.fromJson(e))
@@ -393,10 +394,10 @@ class EventRegistrationRequest {
   final String? notes;
 
   EventRegistrationRequest({this.notes});
-
+  
   Map<String, dynamic> toJson() {
     return {
-      'notes': notes,
+      'notes': notes ?? '',
     };
   }
 }
