@@ -6,6 +6,7 @@ import useNotification from '../../hooks/useNotification';
 import Notification from '../../components/Notification';
 import Sidebar from '../../components/layout/Sidebar';
 import NavBar from '../../components/layout/NavBar';
+import ChatWidget from '../../components/ChatWidget';
 
 // --- STYLES OBJECT (updated for layout) ---
 const styles = {
@@ -984,6 +985,9 @@ const TeacherDashboard = () => {
           )}
         </div>
       </div>
+      
+      {/* ChatWidget for Teacher */}
+      <ChatWidget user={currentUser} />
     </div>
   );
 };

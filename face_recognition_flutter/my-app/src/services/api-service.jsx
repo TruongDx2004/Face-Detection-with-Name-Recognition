@@ -594,7 +594,7 @@ class ApiService {
             const actualFilename = filename.includes('/') ? filename.split('/').pop() : filename;
             const url = `${this.baseUrl}/${actualFilename}`;
             const headers = this.getHeaders();
-            
+
             console.log('Download URL:', url);
             console.log('Original filename:', filename);
             console.log('Actual filename:', actualFilename);
@@ -753,6 +753,43 @@ class ApiService {
 
     async getNotificationStats(notificationId) {
         return await this.makeRequest('GET', `/notifications/admin/notifications/${notificationId}/stats`);
+    }
+
+    // ============ CHATBOT ENDPOINTS ============
+
+    // Gửi tin nhắn tới chatbot
+    async sendMessage(message) {
+        return await this.makeRequest(
+            'POST',
+            '/api/chat',
+            { message: message.trim() }
+        );
+    }
+
+    // Lấy lịch sử chat
+    async getChatHistory(params = {}) {
+        return await this.makeRequest(
+            'GET',
+            '/api/chat/history',
+            null,
+            params
+        );
+    }
+
+    // Xóa lịch sử chat
+    async clearChatHistory() {
+        return await this.makeRequest(
+            'DELETE',
+            '/api/chat/history'
+        );
+    }
+
+    // Gợi ý câu hỏi nhanh cho giáo viên
+    async getChatSuggestions() {
+        return await this.makeRequest(
+            'GET',
+            '/api/chat/suggestions'
+        );
     }
 
     // ============ UTILITY METHODS ============

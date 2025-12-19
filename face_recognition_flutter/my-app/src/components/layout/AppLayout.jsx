@@ -3,6 +3,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import NavBar from './NavBar';
 import Header from './Header';
+import ChatWidget from '../ChatWidget';
 
 const styles = {
   appContainer: {
@@ -26,6 +27,9 @@ const styles = {
 };
 
 const AppLayout = ({ children, user, onLogout, currentTime, sidebarItems = [], title }) => {
+  // Show ChatWidget only for teachers and admins
+  const showChatWidget = user && (user.role === 'teacher' || user.role === 'admin');
+  
   return (
     <div style={styles.appContainer}>
       <Sidebar items={sidebarItems} />
@@ -40,6 +44,9 @@ const AppLayout = ({ children, user, onLogout, currentTime, sidebarItems = [], t
           {children}
         </div>
       </div>
+      
+      {/* ChatWidget for teachers only */}
+      {showChatWidget && <ChatWidget user={user} />}
     </div>
   );
 };

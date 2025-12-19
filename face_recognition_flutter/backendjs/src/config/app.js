@@ -26,6 +26,7 @@ const examRoutes = require('../routes/examRoutes');
 const gradebookRoutes = require('../routes/gradebookRoutes');
 const studentGradeRoutes = require('../routes/studentGradeRoutes');
 const { router: notificationRoutes, initializeController } = require('../routes/notificationRoutes');
+const chatRoutes = require('../routes/chatRoutes');
 
 // Import old routes (to be migrated)
 // const oldAttendanceRoutes = require('../routes/attendance'); // REMOVED - migrated to attendanceRoutes
@@ -177,6 +178,7 @@ class App {
         this.app.use('/api/gradebook', gradebookRoutes);
         this.app.use('/api', studentGradeRoutes);
         this.app.use('/api/notifications', notificationRoutes);
+        this.app.use('/api/chat', chatRoutes);
 
         // Legacy routes (to be migrated)
         // this.app.use('/api/attendance-old', oldAttendanceRoutes); // REMOVED - migrated to attendanceRoutes
