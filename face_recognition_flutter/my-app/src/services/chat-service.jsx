@@ -113,6 +113,48 @@ class ChatService {
                     'Bài tập tuần 5 lớp CNTT K20',
                     'Tình hình nộp bài của lớp 12A1'
                 ]
+            },
+            {
+                intent: 'QUERY_SCHEDULE',
+                description: 'Xem lịch dạy cá nhân',
+                examples: [
+                    'Lịch dạy hôm nay',
+                    'Lịch dạy ngày mai',
+                    'Lịch dạy thứ hai tuần này'
+                ]
+            },
+            {
+                intent: 'QUERY_TEACHING_LOAD',
+                description: 'Kiểm tra tải công việc',
+                examples: [
+                    'Tải công việc tuần này',
+                    'Tải công việc tháng này',
+                    'Số giờ dạy tuần tới'
+                ]
+            },
+            {
+                intent: 'QUERY_CLASS_SCHEDULE',
+                description: 'Xem lịch dạy theo lớp',
+                examples: [
+                    'Lịch dạy lớp CNTT K20 hôm nay',
+                    'Lịch dạy lớp 12A1 ngày mai'
+                ]
+            },
+            {
+                intent: 'QUERY_SUBJECT_SCHEDULE',
+                description: 'Xem lịch dạy theo môn học',
+                examples: [
+                    'Môn Java có lịch dạy nào tuần này',
+                    'Lịch dạy môn Toán hôm nay'
+                ]
+            },
+            {
+                intent: 'QUERY_ROOM_SCHEDULE',
+                description: 'Xem lịch sử dụng phòng',
+                examples: [
+                    'Phòng 301 có lịch gì hôm nay',
+                    'Lịch sử dụng phòng A102 ngày mai'
+                ]
             }
         ];
     }
@@ -147,10 +189,14 @@ class ChatService {
     getSuggestedQuestions() {
         return [
             'Danh sách sinh viên lớp CNTT K20',
-            'Điểm danh hôm nay',
+            'Lịch dạy hôm nay',
+            'Điểm danh lớp CNTT K20 hôm nay',
+            'Tải công việc tuần này',
+            'Môn Java có lịch dạy nào tuần này?',
             'Ai chưa nộp bài tập tuần này?',
-            'Điểm trung bình của lớp',
-            'Tình hình học tập tổng quan'
+            'Điểm của Nguyễn Văn A',
+            'Phòng 301 có lịch gì hôm nay?',
+            'Lịch dạy lớp 12A1 ngày mai'
         ];
     }
 }
