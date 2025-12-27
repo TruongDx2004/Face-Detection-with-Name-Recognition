@@ -1,0 +1,110 @@
+[
+  {
+    "id": "FAQ_001",
+    "question": "Nhà hàng mở cửa mấy giờ?",
+    "variants": [
+      "Giờ mở cửa là mấy giờ?",
+      "Mấy giờ nhà hàng mở?",
+      "Thời gian hoạt động",
+      "Giờ làm việc của nhà hàng"
+    ],
+    "answer": "Nhà hàng mở cửa từ 7:30 đến 17:00 mỗi ngày, Từ thứ 2 tới thứ 6",
+    "category": "general"
+  },
+  {
+    "id": "FAQ_002",
+    "question": "Nhà hàng có WiFi không?",
+    "variants": [
+      "Có wifi không?",
+      "Wifi mật khẩu là gì?",
+      "Cho xin wifi"
+    ],
+    "answer": "Nhà hàng có WiFi miễn phí. Tên là HUTECH E1 mật khẩu là từ 1 đến 8 ạ",
+    "category": "facility"
+  },
+  {
+    "id": "FAQ_003",
+    "question": "Nhà hàng có chỗ đậu xe không?",
+    "variants": [
+      "Có bãi giữ xe không?",
+      "Gửi xe ở đâu?",
+      "Có chỗ để xe máy không?"
+    ],
+    "answer": "Nhà hàng có khu vực giữ xe miễn phí cho khách ngay trước cửa.",
+    "category": "facility"
+  },
+  {
+    "id": "FAQ_004",
+    "question": "Có thể gọi nhân viên không?",
+    "variants": [
+      "Gọi phục vụ",
+      "Cho tôi gọi nhân viên",
+      "Có ai hỗ trợ không?"
+    ],
+    "answer": "Dạ được ạ. Tôi sẽ gọi nhân viên phục vụ đến hỗ trợ quý khách ngay.",
+    "category": "service",
+    "action": "call_staff"
+  },
+  {
+    "id": "FAQ_005",
+    "question": "Nhà hàng có nhận thanh toán online không?",
+    "variants": [
+      "Có thanh toán VNPay không?",
+      "Có thanh toán MoMo không?",
+      "Thanh toán bằng điện thoại được không?"
+    ],
+    "answer": "Nhà hàng hỗ trợ thanh toán tiền mặt và các ví điện tử như VNPay, MoMo.",
+    "category": "payment"
+  },
+  {
+    "id": "FAQ_006",
+    "question": "Bao lâu thì món lên?",
+    "variants": [
+      "Món bao lâu có?",
+      "Chờ món bao lâu?",
+      "Thời gian phục vụ"
+    ],
+    "answer": "Thời gian phục vụ trung bình từ 3–10phút. Các món phức tạp có thể lâu hơn một chút ạ.",
+    "category": "service"
+  },
+  {
+    "id": "FAQ_007",
+    "question": "Có món chay không?",
+    "variants": [
+      "Nhà hàng có đồ chay không?",
+      "Có món dành cho người ăn chay không?"
+    ],
+    "answer": "Dạ có ạ. Quý khách có thể xem các món chay trong menu hoặc để tôi gợi ý cho quý khách.",
+    "category": "menu"
+  },
+  {
+    "id": "FAQ_008",
+    "question": "Có xuất hóa đơn không?",
+    "variants": [
+      "Có hóa đơn không?",
+      "Xuất hóa đơn VAT được không?"
+    ],
+    "answer": "Nhà hàng có hỗ trợ xuất hóa đơn. Quý khách vui lòng báo nhân viên khi thanh toán.",
+    "category": "payment"
+  },
+  {
+    "id": "FAQ_009",
+    "question": "Có thể đổi món không?",
+    "variants": [
+      "Đổi món được không?",
+      "Hủy món đã đặt"
+    ],
+    "answer": "Quý khách có thể đổi hoặc hủy món trước khi bếp bắt đầu chế biến. Vui lòng báo sớm để được hỗ trợ ạ.",
+    "category": "policy"
+  },
+  {
+    "id": "FAQ_010",
+    "question": "Nhà hàng có nhận đặt bàn trước không?",
+    "variants": [
+      "Đặt bàn trước được không?",
+      "Có cần đặt bàn không?"
+    ],
+    "answer": "Nhà hàng có nhận đặt bàn trước. Quý khách vui lòng liên hệ nhân viên để được hỗ trợ.",
+    "category": "service"
+  }
+]

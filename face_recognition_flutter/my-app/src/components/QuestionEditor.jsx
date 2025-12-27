@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdvancedRichTextEditor from './AdvancedRichTextEditor';
 
 const QuestionEditor = ({ 
@@ -9,6 +9,36 @@ const QuestionEditor = ({
     canDelete = true 
 }) => {
     const [activeTab, setActiveTab] = useState('content');
+    
+    // Initialize correct answer index immediately
+    const getCorrectAnswerIndex = () => {
+        if (question.question_type === 'multiple_choice' && question.options && question.correct_answer) {
+            return question.options.findIndex(option => option === question.correct_answer);
+        }
+        return -1;
+    };
+    
+    const [correctAnswerIndex, setCorrectAnswerIndex] = useState(getCorrectAnswerIndex);
+
+    // Debug logging
+    useEffect(() => {
+        console.log(`🔍 QuestionEditor ${questionIndex}:`, {
+            question_type: question.question_type,
+            correct_answer: question.correct_answer,
+            options: question.options,
+            correctAnswerIndex: correctAnswerIndex,
+            calculated: getCorrectAnswerIndex()
+        });
+    }, [question]);
+
+    // Sync correct answer index when question changes
+    useEffect(() => {
+        const newIndex = getCorrectAnswerIndex();
+        if (newIndex !== correctAnswerIndex) {
+            console.log(`📝 Updating correctAnswerIndex from ${correctAnswerIndex} to ${newIndex}`);
+            setCorrectAnswerIndex(newIndex);
+        }
+    }, [question.correct_answer, question.options, question.question_type]);
 
     const updateQuestion = (field, value) => {
         onQuestionUpdate(questionIndex, field, value);
@@ -32,14 +62,25 @@ const QuestionEditor = ({
             updateQuestion('options', newOptions);
             
             // Reset correct answer if it was the deleted option
-            if (question.correct_answer === question.options[optionIndex]) {
+            if (correctAnswerIndex === optionIndex) {
+                setCorrectAnswerIndex(-1);
                 updateQuestion('correct_answer', '');
+            } else if (correctAnswerIndex > optionIndex) {
+                // Adjust index if correct answer is after deleted option
+                setCorrectAnswerIndex(correctAnswerIndex - 1);
             }
         }
     };
 
     const setCorrectAnswer = (answer) => {
         updateQuestion('correct_answer', answer);
+    };
+
+    const setCorrectAnswerByIndex = (index) => {
+        if (question.options && question.options[index]) {
+            setCorrectAnswerIndex(index);
+            updateQuestion('correct_answer', question.options[index]);
+        }
     };
 
     // Styles
@@ -279,14 +320,14 @@ const QuestionEditor = ({
                                             key={optionIndex} 
                                             style={{
                                                 ...styles.optionContainer,
-                                                ...(question.correct_answer === option ? styles.optionContainerCorrect : {})
+                                                ...(correctAnswerIndex === optionIndex ? styles.optionContainerCorrect : {})
                                             }}
                                         >
                                             <input
                                                 type="radio"
                                                 name={`correct-${question.id || questionIndex}`}
-                                                checked={question.correct_answer === option}
-                                                onChange={() => setCorrectAnswer(option)}
+                                                checked={correctAnswerIndex === optionIndex}
+                                                onChange={() => setCorrectAnswerByIndex(optionIndex)}
                                                 style={styles.radioButton}
                                             />
                                             

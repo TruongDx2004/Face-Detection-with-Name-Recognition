@@ -1,0 +1,37 @@
+{
+  "phi3": {
+    "model": "microsoft/Phi-3-mini-4k-instruct",
+    "maxTokens": 2048,
+    "temperature": 0.7,
+    "topP": 0.9
+  },
+  "parsers": {
+    "maxFileSize": "10MB",
+    "supportedFormats": [
+      "pdf",
+      "docx",
+      "txt",
+      "xlsx"
+    ],
+    "chunkSize": 1000
+  },
+  "generation": {
+    "maxQuestions": 20,
+    "questionTypes": [
+      "multiple_choice",
+      "short_answer",
+      "essay",
+      "true_false"
+    ],
+    "difficultyLevels": [
+      "easy",
+      "medium",
+      "hard"
+    ],
+    "language": "vietnamese"
+  },
+  "prompts": {
+    "system": "Bạn là một giáo viên chuyên nghiệp, hãy tạo câu hỏi chất lượng cao từ nội dung được cung cấp.",
+    "question_generation": "Từ nội dung sau, hãy tạo {count} câu hỏi {type} với độ khó {difficulty}. Format JSON với các trường: question, options (nếu là multiple choice), correct_answer, explanation.\n\nNội dung:\n{content}"
+  }
+}

@@ -815,6 +815,27 @@ class ApiService {
         this.token = null;
         localStorage.removeItem('auth_token');
     }
+
+    // AI Assignment Generation methods
+    async getAICapabilities() {
+        return await this.makeRequest('GET', '/api/ai/capabilities');
+    }
+
+    async previewAIQuestions(formData) {
+        return await this.makeMultipartRequest('POST', '/api/ai/preview-questions', formData);
+    }
+
+    async generateAIAssignment(formData) {
+        return await this.makeMultipartRequest('POST', '/api/ai/generate-assignment', formData);
+    }
+
+    async getAIGenerationStatus(generationId) {
+        return await this.makeRequest('GET', `/api/ai/generation-status/${generationId}`);
+    }
+
+    async getAIStats() {
+        return await this.makeRequest('GET', '/api/ai/stats');
+    }
 }
 
 export default new ApiService();

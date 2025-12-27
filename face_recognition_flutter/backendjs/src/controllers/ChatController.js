@@ -619,14 +619,8 @@ class ChatController {
 
             let response = `📅 Lịch dạy lớp ${className} ${dateText}: \n\n`;
             schedules.forEach((schedule, index) => {
-                const startTime = new Date(schedule.start_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                const endTime = new Date(schedule.end_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                const startTime = schedule.start_time;
+                const endTime = schedule.end_time;
 
                 response += `${index + 1}. ${schedule.course_name || schedule.subject_name}**\n`;
                 response += `   👨‍🏫 Giáo viên: ${schedule.teacher_name}\n`;
@@ -690,14 +684,8 @@ class ChatController {
 
             let response = `📚 Lịch dạy môn ${subject} ${dateText}: \n\n`;
             schedules.forEach((schedule, index) => {
-                const startTime = new Date(schedule.start_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                const endTime = new Date(schedule.end_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                const startTime = schedule.start_time;
+                const endTime = schedule.end_time;
 
                 response += `${index + 1}. ${schedule.class_name}**\n`;
                 response += `   👨‍🏫 Giáo viên: ${schedule.teacher_name}\n`;
@@ -754,14 +742,8 @@ class ChatController {
 
             let response = `🏫 Lịch sử dụng phòng ${room} ${dateText}: \n\n`;
             schedules.forEach((schedule, index) => {
-                const startTime = new Date(schedule.start_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                const endTime = new Date(schedule.end_time).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                const startTime = schedule.start_time;
+                const endTime = schedule.end_time;
 
                 response += `${index + 1}. ${schedule.course_name || schedule.subject_name}**\n`;
                 response += `   🏫 Lớp: ${schedule.class_name}\n`;

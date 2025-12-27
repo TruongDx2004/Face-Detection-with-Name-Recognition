@@ -30,11 +30,10 @@ class AssignmentTemplate {
             assignment_type = 'homework',
             default_max_score = 10.00,
             instructions,
-            attachment_path,
+            attachment_path = null,
             tags = [],
             is_public = false
         } = templateData;
-
         const [result] = await pool.execute(
             `INSERT INTO assignment_templates 
                 (teacher_id, title, description, assignment_type, default_max_score, instructions, attachment_path, tags, is_public) 

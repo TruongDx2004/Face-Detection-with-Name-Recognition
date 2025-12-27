@@ -50,15 +50,20 @@ class ApiService {
         final String message = responseData is Map<String, dynamic>
             ? responseData['message'] ?? 'Success'
             : 'Success';
-
-        _logger.d('Raw Response Data: $responseData');
-        _logger.d('Raw Response Data Type: ${responseData.runtimeType}');
-
+        _logger.d('Response Message: $message');
         // Handle List response
-        if (responseData is List) {
-          final List<T> items = responseData
+        if (responseData is Map<String, dynamic> &&
+            responseData['data'] is List) {
+          _logger.d(
+              'Parsing list response with ${responseData['data'].length} items');
+          final List<T> items = (responseData['data'] as List)
               .map((item) => fromJson(Map<String, dynamic>.from(item)))
               .toList();
+          //in danh sach item
+          for (var item in items) {
+            _logger.d('Item: $item');
+          }
+
           return ApiResponse.success(items, message: message);
         } else {
           return ApiResponse.error(
@@ -185,8 +190,7 @@ class ApiService {
     } catch (e) {
       _logger.e('Network request failed: $e');
       if (e.toString().contains('TimeoutException')) {
-        throw Exception(
-            'Lỗi kết nối mạng. Vui lòng thử lại sau!');
+        throw Exception('Lỗi kết nối mạng. Vui lòng thử lại sau!');
       }
       rethrow;
     }
@@ -1621,24 +1625,29 @@ class ApiService {
   }
 
   // ============ STUDENT GRADES METHODS ============
-  
-  Future<ApiResponse<List<StudentGrade>>> getStudentCurrentGrades(int userId) async {
+
+  Future<ApiResponse<List<StudentGrade>>> getStudentCurrentGrades(
+      int userId) async {
     try {
-      final response = await _makeRequest('GET', '/students/$userId/current-grades');
-      
+      final response =
+          await _makeRequest('GET', '/students/$userId/current-grades');
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         if (responseData['success'] == true) {
           final List<dynamic> gradesList = responseData['data'] ?? [];
           final List<StudentGrade> grades = gradesList
-              .map((item) => StudentGrade.fromJson(item as Map<String, dynamic>))
+              .map(
+                  (item) => StudentGrade.fromJson(item as Map<String, dynamic>))
               .toList();
           return ApiResponse.success(grades);
         } else {
-          return ApiResponse.error(responseData['message'] ?? 'Failed to get current grades');
+          return ApiResponse.error(
+              responseData['message'] ?? 'Failed to get current grades');
         }
       } else {
-        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get current grades');
+        return ApiResponse.error(
+            'HTTP ${response.statusCode}: Failed to get current grades');
       }
     } catch (e) {
       _logger.e('Get student current grades error: $e');
@@ -1646,23 +1655,28 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse<List<SemesterSummary>>> getStudentSemesterSummaries(int userId) async {
+  Future<ApiResponse<List<SemesterSummary>>> getStudentSemesterSummaries(
+      int userId) async {
     try {
-      final response = await _makeRequest('GET', '/students/$userId/semester-summaries');
-      
+      final response =
+          await _makeRequest('GET', '/students/$userId/semester-summaries');
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         if (responseData['success'] == true) {
           final List<dynamic> summariesList = responseData['data'] ?? [];
           final List<SemesterSummary> summaries = summariesList
-              .map((item) => SemesterSummary.fromJson(item as Map<String, dynamic>))
+              .map((item) =>
+                  SemesterSummary.fromJson(item as Map<String, dynamic>))
               .toList();
           return ApiResponse.success(summaries);
         } else {
-          return ApiResponse.error(responseData['message'] ?? 'Failed to get semester summaries');
+          return ApiResponse.error(
+              responseData['message'] ?? 'Failed to get semester summaries');
         }
       } else {
-        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get semester summaries');
+        return ApiResponse.error(
+            'HTTP ${response.statusCode}: Failed to get semester summaries');
       }
     } catch (e) {
       _logger.e('Get student semester summaries error: $e');
@@ -1672,19 +1686,23 @@ class ApiService {
 
   Future<ApiResponse<GpaOverall>> getStudentGpaOverall(int userId) async {
     try {
-      final response = await _makeRequest('GET', '/students/$userId/gpa-overall');
-      
+      final response =
+          await _makeRequest('GET', '/students/$userId/gpa-overall');
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         if (responseData['success'] == true) {
           final gpaData = responseData['data'] ?? {};
-          final GpaOverall gpaOverall = GpaOverall.fromJson(gpaData as Map<String, dynamic>);
+          final GpaOverall gpaOverall =
+              GpaOverall.fromJson(gpaData as Map<String, dynamic>);
           return ApiResponse.success(gpaOverall);
         } else {
-          return ApiResponse.error(responseData['message'] ?? 'Failed to get GPA overall');
+          return ApiResponse.error(
+              responseData['message'] ?? 'Failed to get GPA overall');
         }
       } else {
-        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get GPA overall');
+        return ApiResponse.error(
+            'HTTP ${response.statusCode}: Failed to get GPA overall');
       }
     } catch (e) {
       _logger.e('Get student GPA overall error: $e');
@@ -1692,25 +1710,29 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse<CourseSectionGradeDetail>> getStudentCourseSectionGradeDetail(
-    int userId, 
-    int courseSectionId
-  ) async {
+  Future<ApiResponse<CourseSectionGradeDetail>>
+      getStudentCourseSectionGradeDetail(
+          int userId, int courseSectionId) async {
     try {
-      final response = await _makeRequest('GET', '/students/$userId/course-sections/$courseSectionId/grade-detail');
-      
+      final response = await _makeRequest('GET',
+          '/students/$userId/course-sections/$courseSectionId/grade-detail');
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         if (responseData['success'] == true) {
           final gradeDetailData = responseData['data'] ?? {};
           _logger.d('Grade detail data: $gradeDetailData');
-          final CourseSectionGradeDetail gradeDetail = CourseSectionGradeDetail.fromJson(gradeDetailData as Map<String, dynamic>);
+          final CourseSectionGradeDetail gradeDetail =
+              CourseSectionGradeDetail.fromJson(
+                  gradeDetailData as Map<String, dynamic>);
           return ApiResponse.success(gradeDetail);
         } else {
-          return ApiResponse.error(responseData['message'] ?? 'Failed to get course section grade detail');
+          return ApiResponse.error(responseData['message'] ??
+              'Failed to get course section grade detail');
         }
       } else {
-        return ApiResponse.error('HTTP ${response.statusCode}: Failed to get course section grade detail');
+        return ApiResponse.error(
+            'HTTP ${response.statusCode}: Failed to get course section grade detail');
       }
     } catch (e) {
       _logger.e('Get student course section grade detail error: $e');
@@ -1734,7 +1756,8 @@ class ApiService {
             : 'Success';
 
         _logger.d('Using NotificationEvent.fromApiResponse to parse data');
-        final List<NotificationEvent> notifications = NotificationEvent.fromApiResponse(responseData);
+        final List<NotificationEvent> notifications =
+            NotificationEvent.fromApiResponse(responseData);
         _logger.d('Parsed ${notifications.length} notifications successfully');
 
         return ApiResponse.success(notifications, message: message);
@@ -1775,7 +1798,8 @@ class ApiService {
       if (limit != null) queryParams['limit'] = limit.toString();
       if (offset != null) queryParams['offset'] = offset.toString();
 
-      final uri = Uri.parse('$baseUrl/api/notifications').replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/api/notifications')
+          .replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: _headers);
 
       return await _handleNotificationListResponse(response);
@@ -1819,7 +1843,8 @@ class ApiService {
       if (limit != null) queryParams['limit'] = limit.toString();
       if (offset != null) queryParams['offset'] = offset.toString();
 
-      final uri = Uri.parse('$baseUrl/api/notifications').replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/api/notifications')
+          .replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: _headers);
 
       return await _handleNotificationListResponse(response);
@@ -1902,7 +1927,8 @@ class ApiService {
       if (limit != null) queryParams['limit'] = limit.toString();
       if (offset != null) queryParams['offset'] = offset.toString();
 
-      final uri = Uri.parse('$baseUrl/api/notifications/my-registrations').replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/api/notifications/my-registrations')
+          .replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: _headers);
 
       return await _handleListResponse<EventRegistration>(
@@ -1927,7 +1953,8 @@ class ApiService {
         return ApiResponse.success(true, message: 'Đã đánh dấu đã đọc');
       } else {
         final responseData = json.decode(response.body);
-        final errorMessage = responseData['message'] ?? 'Không thể đánh dấu đã đọc';
+        final errorMessage =
+            responseData['message'] ?? 'Không thể đánh dấu đã đọc';
         return ApiResponse.error(errorMessage, statusCode: response.statusCode);
       }
     } catch (e) {

@@ -89,8 +89,8 @@ class _StudentAssignmentScreenState extends State<StudentAssignmentScreen>
   /// Get exam count for a course section
   Future<int> _getExamCount(int courseSectionId) async {
     try {
-      final response = await ApiService().getStudentExams(courseSectionId);
-      
+      final response = await ApiService().getStudentExams(courseSectionId) as ApiResponse<List<Exam>>;
+      _logger.i('Exam count response: success=${response.statusCode}, data=${response.data}');
       if (response.success && response.data != null) {
         _logger.i('Found ${response.data!.length} exams');
         return response.data!.length;

@@ -191,6 +191,20 @@ const AssignmentTemplateForm = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [newTag, setNewTag] = useState('');
     const [dragOver, setDragOver] = useState(false);
+    
+    // AI Generation states
+    const [creationMode, setCreationMode] = useState('manual'); // 'manual' or 'ai'
+    const [aiStep, setAiStep] = useState(0);
+    const [aiFile, setAiFile] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiCapabilities, setAiCapabilities] = useState(null);
+    const [previewQuestions, setPreviewQuestions] = useState(null);
+    const [aiConfig, setAiConfig] = useState({
+        question_count: 10,
+        question_types: ['multiple_choice', 'short_answer'],
+        difficulty: 'medium',
+        language: 'vietnamese'
+    });
 
     const [formData, setFormData] = useState({
         title: '',
@@ -207,6 +221,7 @@ const AssignmentTemplateForm = () => {
 
     useEffect(() => {
         loadCurrentUser();
+        loadAiCapabilities();
         if (isEdit) {
             loadTemplate();
         }
@@ -219,6 +234,27 @@ const AssignmentTemplateForm = () => {
         } catch (error) {
             console.error('Error loading user:', error);
             navigate('/');
+        }
+    };
+
+    const loadAiCapabilities = async () => {
+        try {
+            const capabilities = await ApiService.getAICapabilities();
+            setAiCapabilities(capabilities.data);
+            console.log('✅ AI capabilities loaded:', capabilities);
+        } catch (error) {
+            console.warn('⚠️ AI capabilities not available:', error);
+            // Set mock capabilities for testing UI
+            setAiCapabilities({
+                supported_formats: ['PDF', 'DOCX', 'TXT', 'XLSX'],
+                question_types: [
+                    { type: 'multiple_choice', name: 'Trắc nghiệm', description: 'Câu hỏi với 4 lựa chọn A, B, C, D' },
+                    { type: 'short_answer', name: 'Tự luận ngắn', description: 'Câu hỏi yêu cầu trả lời 1-2 câu' },
+                    { type: 'true_false', name: 'Đúng/Sai', description: 'Câu hỏi đúng hoặc sai' },
+                    { type: 'essay', name: 'Tự luận dài', description: 'Câu hỏi yêu cầu phân tích chi tiết' }
+                ],
+                limits: { max_questions: 20, max_file_size: '10MB' }
+            });
         }
     };
 
@@ -323,6 +359,108 @@ const AssignmentTemplateForm = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+    // AI Generation functions
+    const handleAiFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setAiFile(file);
+            setAiStep(1);
+        }
+    };
+
+    const handleAiFileDrop = (event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            setAiFile(file);
+            setAiStep(1);
+        }
+    };
+
+    const handleAiConfigChange = (field, value) => {
+        setAiConfig(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAiQuestionTypeChange = (type) => {
+        setAiConfig(prev => ({
+            ...prev,
+            question_types: prev.question_types.includes(type)
+                ? prev.question_types.filter(t => t !== type)
+                : [...prev.question_types, type]
+        }));
+    };
+
+    const handlePreviewAiQuestions = async () => {
+        if (!aiFile) {
+            showNotification('Vui lòng upload tài liệu trước', 'error');
+            return;
+        }
+
+        setAiLoading(true);
+        try {
+            const previewData = new FormData();
+            previewData.append('document', aiFile);
+            previewData.append('question_count', '5');
+            previewData.append('question_types', aiConfig.question_types.join(','));
+            previewData.append('difficulty', aiConfig.difficulty);
+            previewData.append('language', aiConfig.language);
+
+            console.log('📤 Sending preview request with file:', aiFile.name, aiFile.size, 'bytes');
+            console.log('📤 FormData contents:', {
+                document: aiFile,
+                question_count: '5',
+                question_types: aiConfig.question_types.join(','),
+                difficulty: aiConfig.difficulty,
+                language: aiConfig.language
+            });
+
+            const previewResult = await ApiService.previewAIQuestions(previewData);
+
+            setPreviewQuestions(previewResult);
+            setAiStep(2);
+            showNotification('Tạo preview thành công!', 'success');
+        } catch (error) {
+            console.error('AI preview failed:', error);
+            showNotification(error.message || 'Không thể tạo preview', 'error');
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    const handleGenerateAiAssignment = async () => {
+        if (!aiFile) {
+            showNotification('Vui lòng upload tài liệu trước', 'error');
+            return;
+        }
+
+        setAiLoading(true);
+        try {
+            const generationData = new FormData();
+            generationData.append('document', aiFile);
+            
+            // Add form data
+            generationData.append('title', formData.title || '');
+            generationData.append('description', formData.description || '');
+            generationData.append('assignment_type', formData.assignment_type);
+            generationData.append('question_count', aiConfig.question_count);
+            generationData.append('question_types', aiConfig.question_types.join(','));
+            generationData.append('difficulty', aiConfig.difficulty);
+            generationData.append('language', aiConfig.language);
+            generationData.append('is_public', formData.is_public);
+            generationData.append('tags', JSON.stringify(formData.tags));
+
+            const generationResult = await ApiService.generateAIAssignment(generationData);
+
+            showNotification('Tạo bài tập AI thành công!', 'success');
+            navigate('/teacher/assignment-templates');
+        } catch (error) {
+            console.error('AI generation failed:', error);
+            showNotification(error.message || 'Không thể tạo bài tập AI', 'error');
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -407,9 +545,60 @@ const AssignmentTemplateForm = () => {
             />
 
             <div style={styles.container}>
-                <form onSubmit={handleSubmit}>
-                    {/* Thông tin cơ bản */}
-                    <div style={styles.section}>
+                {/* Mode Selection */}
+                <div style={styles.section}>
+                    <h3 style={styles.sectionTitle}>
+                        <i className="fas fa-tools"></i>
+                        Chọn phương thức tạo template
+                    </h3>
+                    
+                    <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                        <button
+                            type="button"
+                            onClick={() => setCreationMode('manual')}
+                            style={{
+                                ...styles.button,
+                                ...(creationMode === 'manual' ? styles.buttonPrimary : styles.buttonSecondary),
+                                flex: 1
+                            }}
+                        >
+                            <i className="fas fa-edit"></i>
+                            Tạo thủ công
+                        </button>
+                        {aiCapabilities && (
+                            <button
+                                type="button"
+                                onClick={() => setCreationMode('ai')}
+                                style={{
+                                    ...styles.button,
+                                    ...(creationMode === 'ai' ? styles.buttonPrimary : styles.buttonSecondary),
+                                    flex: 1
+                                }}
+                                disabled={isEdit}
+                            >
+                                <i className="fas fa-robot"></i>
+                                Tạo bằng AI {isEdit && '(Chỉ khả dụng khi tạo mới)'}
+                            </button>
+                        )}
+                    </div>
+                    
+                    {creationMode === 'ai' && (
+                        <div style={{ padding: '12px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #0ea5e9' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <i className="fas fa-info-circle" style={{ color: '#0ea5e9' }}></i>
+                                <strong style={{ color: '#0369a1' }}>Tạo bài tập bằng AI</strong>
+                            </div>
+                            <div style={{ fontSize: '14px', color: '#0369a1' }}>
+                                Upload tài liệu và để AI tự động tạo câu hỏi phù hợp. Hỗ trợ PDF, DOCX, TXT, XLSX.
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {creationMode === 'manual' ? (
+                    <form onSubmit={handleSubmit}>
+                        {/* Thông tin cơ bản */}
+                        <div style={styles.section}>
                         <h3 style={styles.sectionTitle}>
                             <i className="fas fa-info-circle"></i>
                             Thông tin cơ bản
@@ -630,6 +819,426 @@ const AssignmentTemplateForm = () => {
                         </button>
                     </div>
                 </form>
+                ) : (
+                    /* AI Generation Interface */
+                    <div>
+                        {/* AI Step Indicator */}
+                        <div style={styles.section}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
+                                <div style={{ 
+                                    padding: '8px 16px', 
+                                    borderRadius: '20px', 
+                                    backgroundColor: aiStep >= 0 ? '#10b981' : '#d1d5db',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}>
+                                    1. Upload
+                                </div>
+                                <div style={{ flex: 1, height: '2px', backgroundColor: aiStep >= 1 ? '#10b981' : '#d1d5db' }}></div>
+                                <div style={{ 
+                                    padding: '8px 16px', 
+                                    borderRadius: '20px', 
+                                    backgroundColor: aiStep >= 1 ? '#10b981' : '#d1d5db',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}>
+                                    2. Config
+                                </div>
+                                <div style={{ flex: 1, height: '2px', backgroundColor: aiStep >= 2 ? '#10b981' : '#d1d5db' }}></div>
+                                <div style={{ 
+                                    padding: '8px 16px', 
+                                    borderRadius: '20px', 
+                                    backgroundColor: aiStep >= 2 ? '#10b981' : '#d1d5db',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}>
+                                    3. Preview
+                                </div>
+                                <div style={{ flex: 1, height: '2px', backgroundColor: aiStep >= 3 ? '#10b981' : '#d1d5db' }}></div>
+                                <div style={{ 
+                                    padding: '8px 16px', 
+                                    borderRadius: '20px', 
+                                    backgroundColor: aiStep >= 3 ? '#10b981' : '#d1d5db',
+                                    color: 'white',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}>
+                                    4. Generate
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step 1: Document Upload */}
+                        {aiStep === 0 && (
+                            <div style={styles.section}>
+                                <h3 style={styles.sectionTitle}>
+                                    <i className="fas fa-upload"></i>
+                                    Upload Tài Liệu
+                                </h3>
+                                
+                                <div
+                                    style={{
+                                        ...styles.fileUpload,
+                                        ...(dragOver ? styles.fileUploadHover : {}),
+                                        minHeight: '200px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                    }}
+                                    onDragOver={(e) => (e.preventDefault(), setDragOver(true))}
+                                    onDragLeave={() => setDragOver(false)}
+                                    onDrop={handleAiFileDrop}
+                                    onClick={() => document.getElementById('ai-file-input').click()}
+                                >
+                                    <i className="fas fa-cloud-upload-alt" style={{ fontSize: '48px', color: '#64748b', marginBottom: '16px' }}></i>
+                                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+                                        {aiFile ? aiFile.name : 'Upload Tài Liệu để Tạo Bài Tập'}
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#64748b' }}>
+                                        Drag & drop hoặc click để chọn file
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
+                                        Hỗ trợ: PDF, DOCX, TXT, XLSX (Tối đa 10MB)
+                                    </div>
+                                    
+                                    <input
+                                        id="ai-file-input"
+                                        type="file"
+                                        onChange={handleAiFileSelect}
+                                        style={{ display: 'none' }}
+                                        accept=".pdf,.docx,.txt,.xlsx"
+                                    />
+                                </div>
+
+                                {aiFile && (
+                                    <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ 
+                                                width: '40px', 
+                                                height: '40px', 
+                                                borderRadius: '8px', 
+                                                backgroundColor: '#10b981', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center' 
+                                            }}>
+                                                <i className="fas fa-file" style={{ color: 'white' }}></i>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold' }}>{aiFile.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>
+                                                    {(aiFile.size / 1024 / 1024).toFixed(2)} MB
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setAiStep(1)}
+                                            style={{ ...styles.button, ...styles.buttonPrimary }}
+                                        >
+                                            <i className="fas fa-arrow-right"></i>
+                                            Tiếp tục
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Step 2: AI Configuration */}
+                        {aiStep === 1 && (
+                            <div style={styles.section}>
+                                <h3 style={styles.sectionTitle}>
+                                    <i className="fas fa-cogs"></i>
+                                    Cấu Hình AI Generation
+                                </h3>
+
+                                {/* Basic Info */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Thông tin cơ bản</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                        <div style={styles.formGroup}>
+                                            <label style={styles.label}>Tiêu đề (tùy chọn)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.title}
+                                                onChange={(e) => handleInputChange('title', e.target.value)}
+                                                style={styles.input}
+                                                placeholder="Để trống để AI tự tạo..."
+                                            />
+                                        </div>
+                                        <div style={styles.formGroup}>
+                                            <label style={styles.label}>Loại bài tập</label>
+                                            <select
+                                                value={formData.assignment_type}
+                                                onChange={(e) => handleInputChange('assignment_type', e.target.value)}
+                                                style={styles.select}
+                                            >
+                                                <option value="homework">Bài tập</option>
+                                                <option value="quiz">Quiz</option>
+                                                <option value="exam">Kiểm tra</option>
+                                                <option value="practice">Luyện tập</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* AI Configuration */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Cấu hình AI</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '16px' }}>
+                                        <div style={styles.formGroup}>
+                                            <label style={styles.label}>Số câu hỏi</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="20"
+                                                value={aiConfig.question_count}
+                                                onChange={(e) => handleAiConfigChange('question_count', parseInt(e.target.value))}
+                                                style={styles.input}
+                                            />
+                                        </div>
+                                        <div style={styles.formGroup}>
+                                            <label style={styles.label}>Độ khó</label>
+                                            <select
+                                                value={aiConfig.difficulty}
+                                                onChange={(e) => handleAiConfigChange('difficulty', e.target.value)}
+                                                style={styles.select}
+                                            >
+                                                <option value="easy">Dễ</option>
+                                                <option value="medium">Trung bình</option>
+                                                <option value="hard">Khó</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Loại câu hỏi</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            {aiCapabilities?.question_types.map(type => (
+                                                <label key={type.type} style={styles.checkboxLabel}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={aiConfig.question_types.includes(type.type)}
+                                                        onChange={() => handleAiQuestionTypeChange(type.type)}
+                                                        style={styles.checkbox}
+                                                    />
+                                                    <div>
+                                                        <div style={{ fontWeight: 'bold' }}>{type.name}</div>
+                                                        <div style={{ fontSize: '12px', color: '#64748b' }}>{type.description}</div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAiStep(0)}
+                                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                                    >
+                                        <i className="fas fa-arrow-left"></i>
+                                        Quay lại
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handlePreviewAiQuestions}
+                                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                                        disabled={aiLoading || aiConfig.question_types.length === 0}
+                                    >
+                                        {aiLoading ? (
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                        ) : (
+                                            <i className="fas fa-eye"></i>
+                                        )}
+                                        Preview Câu Hỏi
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateAiAssignment}
+                                        style={{ ...styles.button, ...styles.buttonPrimary }}
+                                        disabled={aiLoading || aiConfig.question_types.length === 0}
+                                    >
+                                        {aiLoading ? (
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                        ) : (
+                                            <i className="fas fa-magic"></i>
+                                        )}
+                                        Tạo Template AI
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 3: Preview Questions */}
+                        {aiStep === 2 && previewQuestions && (
+                            <div style={styles.section}>
+                                <h3 style={styles.sectionTitle}>
+                                    <i className="fas fa-eye"></i>
+                                    Preview Câu Hỏi
+                                </h3>
+
+                                {/* Document Info */}
+                                <div style={{ 
+                                    padding: '16px', 
+                                    backgroundColor: '#f8fafc', 
+                                    borderRadius: '8px', 
+                                    marginBottom: '20px',
+                                    border: '1px solid #e2e8f0'
+                                }}>
+                                    <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Thông tin tài liệu</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', fontSize: '12px' }}>
+                                        <div>
+                                            <div style={{ color: '#64748b' }}>Định dạng</div>
+                                            <div style={{ fontWeight: 'bold' }}>{previewQuestions.document_info.format.toUpperCase()}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#64748b' }}>Số từ</div>
+                                            <div style={{ fontWeight: 'bold' }}>{previewQuestions.document_info.word_count}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#64748b' }}>Trang</div>
+                                            <div style={{ fontWeight: 'bold' }}>{previewQuestions.document_info.pages}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ color: '#64748b' }}>Thời gian đọc</div>
+                                            <div style={{ fontWeight: 'bold' }}>{previewQuestions.document_info.estimated_reading_time} phút</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Preview Questions */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>
+                                        Câu hỏi mẫu ({previewQuestions.questions.length}/5)
+                                    </h4>
+                                    {previewQuestions.questions.map((question, index) => (
+                                        <div key={index} style={{ 
+                                            padding: '16px', 
+                                            backgroundColor: '#ffffff', 
+                                            borderRadius: '8px', 
+                                            marginBottom: '12px',
+                                            border: '1px solid #e2e8f0'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    fontSize: '10px', 
+                                                    borderRadius: '4px', 
+                                                    backgroundColor: '#3b82f6', 
+                                                    color: 'white',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {question.type.replace('_', ' ').toUpperCase()}
+                                                </span>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    fontSize: '10px', 
+                                                    borderRadius: '4px', 
+                                                    backgroundColor: question.difficulty === 'hard' ? '#ef4444' : 
+                                                                   question.difficulty === 'medium' ? '#f59e0b' : '#10b981', 
+                                                    color: 'white',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {question.difficulty.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            
+                                            <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                                                Q{index + 1}: {question.question}
+                                            </div>
+                                            
+                                            {question.type === 'multiple_choice' && question.options && (
+                                                <div style={{ marginLeft: '16px', marginBottom: '8px' }}>
+                                                    {question.options.map((option, optIndex) => (
+                                                        <div key={optIndex} style={{ marginBottom: '4px', fontSize: '14px' }}>
+                                                            {String.fromCharCode(65 + optIndex)}. {option}
+                                                        </div>
+                                                    ))}
+                                                    <div style={{ color: '#10b981', fontWeight: 'bold', marginTop: '8px', fontSize: '12px' }}>
+                                                        Đáp án: {question.correct_answer}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {question.explanation && (
+                                                <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                                                    Giải thích: {question.explanation}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAiStep(1)}
+                                        style={{ ...styles.button, ...styles.buttonSecondary }}
+                                    >
+                                        <i className="fas fa-arrow-left"></i>
+                                        Quay lại
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateAiAssignment}
+                                        style={{ ...styles.button, ...styles.buttonPrimary }}
+                                        disabled={aiLoading}
+                                    >
+                                        {aiLoading ? (
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                        ) : (
+                                            <i className="fas fa-magic"></i>
+                                        )}
+                                        Tạo Template Hoàn Chỉnh ({aiConfig.question_count} câu)
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading Overlay */}
+                        {aiLoading && (
+                            <div style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 9999
+                            }}>
+                                <div style={{ 
+                                    backgroundColor: 'white', 
+                                    padding: '32px', 
+                                    borderRadius: '12px', 
+                                    textAlign: 'center',
+                                    minWidth: '300px'
+                                }}>
+                                    <i className="fas fa-robot fa-3x" style={{ color: '#3b82f6', marginBottom: '16px' }}></i>
+                                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+                                        {aiStep === 2 ? 'Đang tạo preview...' : 'AI đang tạo bài tập...'}
+                                    </div>
+                                    <div style={{ fontSize: '14px', color: '#64748b' }}>
+                                        Quá trình này có thể mất vài phút
+                                    </div>
+                                    <div style={{ marginTop: '16px' }}>
+                                        <i className="fas fa-spinner fa-spin fa-2x" style={{ color: '#3b82f6' }}></i>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
