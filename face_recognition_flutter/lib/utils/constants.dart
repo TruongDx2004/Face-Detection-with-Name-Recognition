@@ -1,9 +1,9 @@
 // lib/utils/constants.dart
 
 class ApiConstants {
-  // static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String baseUrl = 'http://10.0.2.2:8000';
   // static const String baseUrl = 'http://172.20.10.9:8000';
-  static const String baseUrl = 'http://localhost:8000';
+  // static const String baseUrl = 'http://localhost:8000';
   // Auth Endpoints
   static const String login = '/auth/login';
   static const String profile = '/auth/profile';

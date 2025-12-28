@@ -222,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ),
         const SizedBox(height: 8),
         Text(
-          'Hệ thống điểm danh thông minh',
+          'Hệ thống quản lý học tập',
           style: TextStyle(
             fontSize: 16,
             color: Colors.white.withOpacity(0.9),

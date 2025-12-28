@@ -1,6 +1,5 @@
 2.1. Tên đề tài dự thi: 
-**"Hệ Thống Điểm Danh Bằng Nhận Diện Khuôn Mặt và Quản Lý Giáo Dục Thông Minh"**
-*(Face Recognition Attendance System with Smart Education Management)*
+**"Hệ Thống Quản Lý Giáo Dục Thông Minh"**
 
 **Mô tả ngắn gọn:** 
 Hệ thống tích hợp công nghệ nhận diện khuôn mặt AI để điểm danh tự động, kết hợp với nền tảng quản lý giáo dục toàn diện bao gồm quản lý bài tập, thi trực tuyến, thông báo sự kiện và chatbot hỗ trợ giáo viên.

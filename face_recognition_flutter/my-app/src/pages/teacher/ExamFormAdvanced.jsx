@@ -481,7 +481,7 @@ const ExamFormAdvanced = () => {
                             <option value="">Chọn lớp học phần</option>
                             {courseSections.map(cs => (
                                 <option key={cs.id} value={cs.id}>
-                                    {cs.name} - {cs.subject_name}
+                                    {cs.class_name} - {cs.subject_name}
                                 </option>
                             ))}
                         </select>
